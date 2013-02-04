@@ -80,3 +80,23 @@ func (d *postgres) SubstituteMarkers(query string) string {
 	}
 	return strings.Join(chunks, "")
 }
+
+func (d *postgres) ColumnsInTable(mg *Migration, table interface {}) map[string]bool {
+	tn := tableName(table)
+	columns := make(map[string]bool)
+	query := "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ?"
+	query = mg.Dialect.SubstituteMarkers(query)
+	rows, err := mg.Db.Query(query, tn)
+	defer rows.Close()
+	if err != nil {
+		panic(err)
+	}
+	for rows.Next() {
+		column := ""
+		err := rows.Scan(&column)
+		if err == nil {
+			columns[column] = true
+		}
+	}
+	return columns
+}

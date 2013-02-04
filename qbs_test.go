@@ -226,7 +226,7 @@ func TestFind(t *testing.T) {
 
 func DoTestFind(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
-	now := time.Now()
+	now := info.dialect.Now()
 
 	type types struct {
 		Id    Id

@@ -332,12 +332,12 @@ func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 		}
 		if updateModelField != nil {
 			updateField := structValue.FieldByName(updateModelField.CamelName)
-			updateField.Set(reflect.ValueOf(now.Local()))
+			updateField.Set(reflect.ValueOf(now))
 		}
 		if isInsert {
 			if createdModelField != nil {
 				createdField := structValue.FieldByName(createdModelField.CamelName)
-				createdField.Set(reflect.ValueOf(now.Local()))
+				createdField.Set(reflect.ValueOf(now))
 			}
 		}
 	}
