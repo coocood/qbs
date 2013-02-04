@@ -36,7 +36,7 @@ Define unique index:
 
 Define multiple attributes with comma separator
 
-    `sql:"size:100,default:'abc'"
+    `sql:"size:100,default:'abc'"`
 
 Define foreign key:
 	
