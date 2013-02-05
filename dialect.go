@@ -47,7 +47,7 @@ type Dialect interface {
 
 	IndexExists(mg *Migration, tableName string, indexName string) bool
 
-	ColumnsInTable(mg *Migration, tableName interface {}) map[string]bool
+	ColumnsInTable(mg *Migration, tableName interface{}) map[string]bool
 
 	KeywordNotNull() string
 

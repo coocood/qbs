@@ -8,15 +8,18 @@ import (
 
 import (
 	"fmt"
-//	_ "github.com/bmizerany/pq"
+	//	_ "github.com/bmizerany/pq"
+	//	_ "github.com/mattn/go-sqlite3"
 	"github.com/coocood/assrt"
-	_ "github.com/ziutek/mymysql/godrv"
+	//	_ "github.com/ziutek/mymysql/godrv"
 	"errors"
+	"os"
 )
 
 var toRun = []dialectInfo{
-	// allDialectInfos[0],
-	allDialectInfos[1],
+// allDialectInfos[0],
+//	allDialectInfos[1],
+// allDialectInfos[2],
 }
 
 const (
@@ -26,6 +29,7 @@ const (
 	mysqlDrvformat = "%v/%v/"
 	pgDriver       = "postgres"
 	pgDrvFormat    = "user=%v dbname=%v sslmode=disable"
+	sqlite3Driver  = "sqlite3"
 )
 
 var allDialectInfos = []dialectInfo{
@@ -36,6 +40,10 @@ var allDialectInfos = []dialectInfo{
 	dialectInfo{
 		NewMysql(),
 		openMysqlDb,
+	},
+	dialectInfo{
+		NewSqlite3(),
+		openSqlite3Db,
 	},
 }
 
@@ -61,6 +69,11 @@ func openPgDb() (*sql.DB, error) {
 
 func openMysqlDb() (*sql.DB, error) {
 	return sql.Open(mysqlDriver, fmt.Sprintf(mysqlDrvformat, dbName, dbUser))
+}
+
+func openSqlite3Db() (*sql.DB, error) {
+	os.Remove("/tmp/foo.db")
+	return sql.Open(sqlite3Driver, "/tmp/foo.db")
 }
 
 func TestTransaction(t *testing.T) {
@@ -368,25 +381,26 @@ func DoTestUpdate(assert *assrt.Assert, info dialectInfo) {
 	assert.MustEqual(0, len(datas))
 }
 
-func TestValidation(t *testing.T){
+func TestValidation(t *testing.T) {
 	for _, info := range toRun {
 		DoTestValidation(assrt.NewAssert(t), info)
 	}
 }
+
 //
 type ValidatorTable struct {
-	Id Id
+	Id   Id
 	Name string
 }
 
-func (v *ValidatorTable) Validate(q *Qbs) error{
-	if q.ContainsValue(v,"name", v.Name) {
+func (v *ValidatorTable) Validate(q *Qbs) error {
+	if q.ContainsValue(v, "name", v.Name) {
 		return errors.New("name already taken")
 	}
 	return nil
 }
 
-func DoTestValidation(assert *assrt.Assert, info dialectInfo){
+func DoTestValidation(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
 	valid := new(ValidatorTable)
 	mg.dropTableIfExists(valid)

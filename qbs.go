@@ -149,10 +149,11 @@ func (q *Qbs) doQueryRow(out interface{}, query string, args ...interface{}) err
 	rowValue := reflect.ValueOf(out)
 	stmt, err := q.Prepare(query)
 	if err != nil {
+		stmt.Close()
 		return q.updateTxError(err)
 	}
-	defer stmt.Close()
 	rows, err := stmt.Query(args...)
+	defer rows.Close()
 	if err != nil {
 		return q.updateTxError(err)
 	}
@@ -169,17 +170,18 @@ func (q *Qbs) doQueryRows(out interface{}, query string, args ...interface{}) er
 	defer q.Reset()
 	sliceValue := reflect.Indirect(reflect.ValueOf(out))
 	sliceType := sliceValue.Type().Elem().Elem()
-	q.log(query, args)
+	q.log(query, args...)
 	stmt, err := q.Prepare(query)
 	if err != nil {
+		stmt.Close()
 		return q.updateTxError(err)
 	}
-	defer stmt.Close()
+
 	rows, err := stmt.Query(args...)
+	defer rows.Close()
 	if err != nil {
 		return q.updateTxError(err)
 	}
-	defer rows.Close()
 	for rows.Next() {
 		rowValue := reflect.New(sliceType)
 		err = q.scanRows(rowValue, rows)
@@ -232,7 +234,7 @@ func (q *Qbs) scanRows(rowValue reflect.Value, rows *sql.Rows) (err error) {
 func (q *Qbs) Exec(query string, args ...interface{}) (sql.Result, error) {
 	defer q.Reset()
 	query = q.Dialect.SubstituteMarkers(query)
-	q.log(query, args)
+	q.log(query, args...)
 	stmt, err := q.Prepare(query)
 	if err != nil {
 		return nil, q.updateTxError(err)
@@ -247,7 +249,7 @@ func (q *Qbs) Exec(query string, args ...interface{}) (sql.Result, error) {
 
 // Same as sql.Db.QueryRow or sql.Tx.QueryRow depends on if transaction has began
 func (q *Qbs) QueryRow(query string, args ...interface{}) *sql.Row {
-	q.log(query, args)
+	q.log(query, args...)
 	query = q.Dialect.SubstituteMarkers(query)
 	if q.Tx != nil {
 		return q.Tx.QueryRow(query, args...)
@@ -257,7 +259,7 @@ func (q *Qbs) QueryRow(query string, args ...interface{}) *sql.Row {
 
 // Same as sql.Db.Query or sql.Tx.Query depends on if transaction has began
 func (q *Qbs) Query(query string, args ...interface{}) (*sql.Rows, error) {
-	q.log(query, args)
+	q.log(query, args...)
 	query = q.Dialect.SubstituteMarkers(query)
 	if q.Tx != nil {
 		return q.Tx.Query(query, args...)
@@ -279,7 +281,7 @@ func (q *Qbs) Prepare(query string) (*sql.Stmt, error) {
 // It will insert the record.
 // If struct implements Validator interface, it will be validated first
 func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
-	if v,ok := structPtr.(Validator); ok{
+	if v, ok := structPtr.(Validator); ok {
 		err = v.Validate(q)
 		if err != nil {
 			return
@@ -350,8 +352,8 @@ func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 // But the temporary struct can not implement Validator interface, we have to validate values manually.
 // The update condition can be inferred by the Id value of the struct.
 // If neither Id value or condition are provided, it would cause runtime panic
-func (q *Qbs) Update(structPtr interface{}) (affected int64,err error) {
-	if v,ok := structPtr.(Validator); ok{
+func (q *Qbs) Update(structPtr interface{}) (affected int64, err error) {
+	if v, ok := structPtr.(Validator); ok {
 		err := v.Validate(q)
 		if err != nil {
 			return 0, err
@@ -380,16 +382,15 @@ func (q *Qbs) Delete(structPtr interface{}) (affected int64, err error) {
 
 // This method can be used to validate unique column before trying to save
 // The table parameter can be either a string or a struct pointer
-func (q *Qbs) ContainsValue(table interface {}, column string, value interface {}) bool{
+func (q *Qbs) ContainsValue(table interface{}, column string, value interface{}) bool {
 	quotedColumn := q.Dialect.Quote(column)
 	quotedTable := q.Dialect.Quote(tableName(table))
-	query := fmt.Sprintf("SELECT %v FROM %v WHERE %v = ?",quotedColumn,quotedTable, quotedColumn)
-	row := q.QueryRow(query,value)
-	var result interface {}
+	query := fmt.Sprintf("SELECT %v FROM %v WHERE %v = ?", quotedColumn, quotedTable, quotedColumn)
+	row := q.QueryRow(query, value)
+	var result interface{}
 	err := row.Scan(&result)
 	return err == nil
 }
-
 
 func (q *Qbs) log(query string, args ...interface{}) {
 	if q.Log {

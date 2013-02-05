@@ -20,7 +20,7 @@ func (d *base) Quote(s string) string {
 	a := []string{}
 	c := strings.Split(s, sep)
 	for _, v := range c {
-		a = append(a, fmt.Sprintf(`"%s"`, v))
+		a = append(a, fmt.Sprintf("`%s`", v))
 	}
 	return strings.Join(a, sep)
 }
@@ -280,7 +280,7 @@ func (d *base) KeywordAutoIncrement() string {
 	return "AUTOINCREMENT"
 }
 
-func (d *base) ColumnsInTable(mg *Migration, table interface {}) map[string]bool {
+func (d *base) ColumnsInTable(mg *Migration, table interface{}) map[string]bool {
 	tn := tableName(table)
 	columns := make(map[string]bool)
 	query := "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?"

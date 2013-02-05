@@ -25,6 +25,7 @@ func (c *Criteria) mergePkCondition(d Dialect) {
 	}
 	c.condition = con
 }
+
 // Conditions are structured in a way to define
 // complex where clause easily.
 type Condition struct {
@@ -42,7 +43,7 @@ func NewCondition(expr string, args ...interface{}) *Condition {
 }
 
 func (c *Condition) And(expr string, args ...interface{}) *Condition {
-	if c.Sub != nil{
+	if c.Sub != nil {
 		panic(subConExists)
 	}
 	c.Sub = NewCondition(expr, args...)
@@ -51,7 +52,7 @@ func (c *Condition) And(expr string, args ...interface{}) *Condition {
 }
 
 func (c *Condition) AndCondition(subCondition *Condition) *Condition {
-	if c.Sub != nil{
+	if c.Sub != nil {
 		panic(subConExists)
 	}
 	c.Sub = subCondition
@@ -60,7 +61,7 @@ func (c *Condition) AndCondition(subCondition *Condition) *Condition {
 }
 
 func (c *Condition) Or(expr string, args ...interface{}) *Condition {
-	if c.Sub != nil{
+	if c.Sub != nil {
 		panic(subConExists)
 	}
 	c.Sub = NewCondition(expr, args...)
@@ -69,7 +70,7 @@ func (c *Condition) Or(expr string, args ...interface{}) *Condition {
 }
 
 func (c *Condition) OrCondition(subCondition *Condition) *Condition {
-	if c.Sub != nil{
+	if c.Sub != nil {
 		panic(subConExists)
 	}
 	c.Sub = subCondition
@@ -83,14 +84,14 @@ func (c *Condition) Merge() (expr string, args []interface{}) {
 	if c.Sub == nil {
 		return
 	}
-	expr = "(" +expr + ")"
+	expr = "(" + expr + ")"
 	if c.IsOr {
 		expr += " OR "
 	} else {
 		expr += " AND "
 	}
 	subExpr, subArgs := c.Sub.Merge()
-	expr += "(" +subExpr + ")"
+	expr += "(" + subExpr + ")"
 	args = append(args, subArgs...)
 	return expr, args
 }

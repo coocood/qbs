@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"reflect"
-	"strings"
 	"time"
 )
 
@@ -16,16 +15,6 @@ func NewMysql() Dialect {
 	d := &mysql{}
 	d.base.Dialect = d
 	return d
-}
-
-func (d *mysql) Quote(s string) string {
-	sep := "."
-	a := []string{}
-	c := strings.Split(s, sep)
-	for _, v := range c {
-		a = append(a, fmt.Sprintf("`%s`", v))
-	}
-	return strings.Join(a, sep)
 }
 
 func (d *mysql) ParseBool(value reflect.Value) bool {

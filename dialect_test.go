@@ -49,6 +49,20 @@ var allDialectSyntax = []dialectSyntax{
 		"CREATE UNIQUE INDEX `iname` ON `itable` (`a`, `b`, `c`)",
 		"CREATE INDEX `iname2` ON `itable2` (`d`, `e`)",
 	},
+	dialectSyntax{
+		NewSqlite3(),
+		"CREATE TABLE IF NOT EXISTS `without_pk` ( `first` text, `last` text, `amount` integer )",
+		"CREATE TABLE `with_pk` ( `primary` integer PRIMARY KEY AUTOINCREMENT, `first` text, `last` text, `amount` integer )",
+		"INSERT INTO `sql_gen_model` (`prim`, `first`, `last`, `amount`) VALUES (?, ?, ?, ?)",
+		"UPDATE `sql_gen_model` SET `first` = ?, `last` = ?, `amount` = ? WHERE `prim` = ?",
+		"DELETE FROM `sql_gen_model` WHERE `prim` = ?",
+		"SELECT `post`.`id`, `post`.`author_id`, `post`.`content`, `author`.`id` AS author___id, `author`.`name` AS author___name FROM `post` LEFT JOIN `user` AS `author` ON `post`.`author_id` = `author`.`id`",
+		"SELECT `name`, `grade`, `score` FROM `student` WHERE (grade > ?) AND ((score <= ?) OR (score >= ?)) ORDER BY `name` DESC LIMIT ? OFFSET ?",
+		"DROP TABLE IF EXISTS `drop_table`",
+		"ALTER TABLE `a` ADD COLUMN `c` text",
+		"CREATE UNIQUE INDEX `iname` ON `itable` (`a`, `b`, `c`)",
+		"CREATE INDEX `iname2` ON `itable2` (`d`, `e`)",
+	},
 }
 
 type sqlGenModel struct {

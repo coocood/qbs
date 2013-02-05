@@ -20,6 +20,16 @@ func (d *postgres) Now() time.Time {
 	return time.Now().UTC()
 }
 
+func (d *postgres) Quote(s string) string {
+	sep := "."
+	a := []string{}
+	c := strings.Split(s, sep)
+	for _, v := range c {
+		a = append(a, fmt.Sprintf(`"%s"`, v))
+	}
+	return strings.Join(a, sep)
+}
+
 func (d *postgres) SqlType(f interface{}, size int) string {
 	switch f.(type) {
 	case Id:
@@ -81,7 +91,7 @@ func (d *postgres) SubstituteMarkers(query string) string {
 	return strings.Join(chunks, "")
 }
 
-func (d *postgres) ColumnsInTable(mg *Migration, table interface {}) map[string]bool {
+func (d *postgres) ColumnsInTable(mg *Migration, table interface{}) map[string]bool {
 	tn := tableName(table)
 	columns := make(map[string]bool)
 	query := "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ?"
