@@ -37,11 +37,11 @@ Qbs stands for Query By Struct. A Go ORM.
 
         //define struct
         type User struct {
-            Id   Id
+            Id   qbs.Id
             Name string
         }
         type Post struct {
-            Id       Id
+            Id       qbs.Id
             Title    string
             AuthorId int64
             Author   *User
@@ -99,12 +99,12 @@ Define multiple attributes with comma separator
 Define foreign key:
 	
 	type User struct{
-		Id Id
+		Id qbs.Id
 		Name string `sql:"size:255"`
 	}
 
     type Post struct{
-    	Id Id
+    	Id qbs.Id
     	AuthorId int64 `sql:"fk:Author"`
     	Author *User
     	Content string
@@ -119,7 +119,7 @@ and that field is a pointer of struct type, then it become a implicit join, so i
 It will perform a join query automatically.
 
     type Post struct{
-    	Id Id
+    	Id qbs.Id
     	AuthorId int64
     	Author *User
     	Content string
