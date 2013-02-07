@@ -27,6 +27,10 @@ Qbs stands for Query By Struct. A Go ORM.
 
 * Support MySQL, PosgreSQL and SQLite3.
 
+##Install
+
+    go get github.com/coocood/qbs
+
 ##Basic Example
 
     func FindAuthorName(){
