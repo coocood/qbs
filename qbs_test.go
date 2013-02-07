@@ -217,17 +217,17 @@ func DoTestForeignKey(assert *assrt.Assert, info dialectInfo) {
 	mg.CreateTableIfNotExists(aUser)
 	mg.CreateTableIfNotExists(aPost)
 
-	uid, err := q.Save(aUser)
+	affected, err := q.Save(aUser)
 	assert.Nil(err)
-	aPost.AuthorId = int64(uid)
-	affected, err := q.Save(aPost)
+	aPost.AuthorId = int64(aUser.Id)
+	affected, err = q.Save(aPost)
 	assert.Equal(1, affected)
 	pst := new(post)
 	pst.Id = aPost.Id
 	err = q.Find(pst)
 	assert.MustNil(err)
 	assert.MustNotNil(pst)
-	assert.Equal(uid, pst.Id)
+	assert.Equal(aPost.Id, pst.Id)
 	assert.Equal("john", pst.Author.Name)
 }
 
