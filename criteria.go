@@ -42,6 +42,19 @@ func NewCondition(expr string, args ...interface{}) *Condition {
 	}
 }
 
+func NewInCondition(column string, values []interface {}) *Condition{
+	expr := column + " IN ("
+	for _ = range values{
+		expr +="?, "
+	}
+	expr = expr[:len(expr)-2]
+	expr += ")"
+	return &Condition{
+		Expr: expr,
+		Args: values,
+	}
+}
+
 func (c *Condition) And(expr string, args ...interface{}) *Condition {
 	if c.Sub != nil {
 		panic(subConExists)

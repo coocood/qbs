@@ -29,7 +29,7 @@ var allDialectSyntax = []dialectSyntax{
 		`UPDATE "sql_gen_model" SET "first" = $1, "last" = $2, "amount" = $3 WHERE "prim" = $4`,
 		`DELETE FROM "sql_gen_model" WHERE "prim" = $1`,
 		`SELECT "post"."id", "post"."author_id", "post"."content", "author"."id" AS author___id, "author"."name" AS author___name FROM "post" LEFT JOIN "user" AS "author" ON "post"."author_id" = "author"."id"`,
-		`SELECT "name", "grade", "score" FROM "student" WHERE (grade > $1) AND ((score <= $2) OR (score >= $3)) ORDER BY "name" DESC LIMIT $4 OFFSET $5`,
+		`SELECT "name", "grade", "score" FROM "student" WHERE (grade IN ($1, $2, $3)) AND ((score <= $4) OR (score >= $5)) ORDER BY "name" DESC LIMIT $6 OFFSET $7`,
 		`DROP TABLE IF EXISTS "drop_table"`,
 		`ALTER TABLE "a" ADD COLUMN "c" varchar(100)`,
 		`CREATE UNIQUE INDEX "iname" ON "itable" ("a", "b", "c")`,
@@ -43,7 +43,7 @@ var allDialectSyntax = []dialectSyntax{
 		"UPDATE `sql_gen_model` SET `first` = ?, `last` = ?, `amount` = ? WHERE `prim` = ?",
 		"DELETE FROM `sql_gen_model` WHERE `prim` = ?",
 		"SELECT `post`.`id`, `post`.`author_id`, `post`.`content`, `author`.`id` AS author___id, `author`.`name` AS author___name FROM `post` LEFT JOIN `user` AS `author` ON `post`.`author_id` = `author`.`id`",
-		"SELECT `name`, `grade`, `score` FROM `student` WHERE (grade > ?) AND ((score <= ?) OR (score >= ?)) ORDER BY `name` DESC LIMIT ? OFFSET ?",
+		"SELECT `name`, `grade`, `score` FROM `student` WHERE (grade IN (?, ?, ?)) AND ((score <= ?) OR (score >= ?)) ORDER BY `name` DESC LIMIT ? OFFSET ?",
 		"DROP TABLE IF EXISTS `drop_table`",
 		"ALTER TABLE `a` ADD COLUMN `c` varchar(100)",
 		"CREATE UNIQUE INDEX `iname` ON `itable` (`a`, `b`, `c`)",
@@ -57,7 +57,7 @@ var allDialectSyntax = []dialectSyntax{
 		"UPDATE `sql_gen_model` SET `first` = ?, `last` = ?, `amount` = ? WHERE `prim` = ?",
 		"DELETE FROM `sql_gen_model` WHERE `prim` = ?",
 		"SELECT `post`.`id`, `post`.`author_id`, `post`.`content`, `author`.`id` AS author___id, `author`.`name` AS author___name FROM `post` LEFT JOIN `user` AS `author` ON `post`.`author_id` = `author`.`id`",
-		"SELECT `name`, `grade`, `score` FROM `student` WHERE (grade > ?) AND ((score <= ?) OR (score >= ?)) ORDER BY `name` DESC LIMIT ? OFFSET ?",
+		"SELECT `name`, `grade`, `score` FROM `student` WHERE (grade IN (?, ?, ?)) AND ((score <= ?) OR (score >= ?)) ORDER BY `name` DESC LIMIT ? OFFSET ?",
 		"DROP TABLE IF EXISTS `drop_table`",
 		"ALTER TABLE `a` ADD COLUMN `c` text",
 		"CREATE UNIQUE INDEX `iname` ON `itable` (`a`, `b`, `c`)",
@@ -218,7 +218,7 @@ func DoTestQuerySQL(assert *assrt.Assert, info dialectSyntax) {
 	model := structPtrToModel(new(Student), true)
 	criteria := new(Criteria)
 	criteria.model = model
-	condition := NewCondition("grade > ?", 6)
+	condition := NewInCondition("grade", []interface {}{6,7,8})
 	subCondition := NewCondition("score <= ?", 60).Or("score >= ?", 80)
 	condition.AndCondition(subCondition)
 	criteria.condition = condition
