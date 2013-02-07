@@ -3,14 +3,72 @@ Qbs
 
 Qbs stands for Query By Struct. A Go ORM.
 
+##Features
+
+* Define table schema in struct type, create table if not exists.
+
+* Detect table columns in database and alter table add new column automatically.
+
+* Define selection clause in struct type, fields in the struct type become the columns to be selected.
+
+* Define join query in struct type by add pointer fields which point to the parent table's struct.
+
+* Do CRUD query by struct value.
+
+* After a query, all the data you need will be filled into the struct value.
+
+* Compose where clause by condition, which can easily handle complex precedence of "AND/OR" sub conditions.
+
+* If Id value in the struct is provided, it will be added to the where clause.
+
+* "Created" column will be set to current time when insert, "Updated" column will be set to current time when insert and update.
+
+* Struct type can implement Validator interface to do validation before insert or update.
+
+* Support MySQL, PosgreSQL and SQLite3.
+
+##Basic Example
+
+    func FindAuthorName(){
+        //create Qbs instance
+        db, _ = sql.Open("mymysql", "qbs_test/qbs_test/")
+        q := qbs.New(db, qbs.NewMysql())
+        defer q.Db.Close()
+
+        //define struct
+        type User struct {
+            Id   Id
+            Name string
+        }
+        type Post struct {
+            Id       Id
+            Title    string
+            AuthorId int64
+            Author   *User
+        }
+
+        //find the post with Id 5.
+        aPost := new(Post)
+        aPost.Id = 5
+
+        //assume table "user", "post" already exists in database, and post table have row which id is 5 and author's name is "john"
+        q.Find(aPost)
+
+        // result would be "john"
+        fmt.Println(aPost.Author.Name)
+
+
+    }
+
+More advanced examples can be found in test files.
 
 ##Limitation
 
-*Every table must have an primary key Id field which has the int64 underlying type.
-*Table name or column name should be in camel style in go code and will be converted to lower case snake style in database 
-*Join type is left join, if you need an inner join, that can be achieved by adding a where condition
-*Currently join only support one level, deeper Join is not supported yet, but it's possible in the future update.
-*Foreign keys are cascade on delete by default, other options has not been supported yet.
+* Every table works with Qbs must have an integer primary key.
+
+* Every table name and culumn name in the database must be lower case, must not have any trailing "_" or any preceding "___"
+
+* Define fields in camelcase to follow Go's nameing convention, Qbs will trasnlate them to snakecase in sql statement.
 
 ##Field tag syntax
 
