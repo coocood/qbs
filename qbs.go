@@ -112,6 +112,11 @@ func (q *Qbs) OrderByDesc(path string) *Qbs {
 	return q
 }
 
+func (q *Qbs) OmitFields(fieldName ... string) *Qbs{
+	q.criteria.omitFields = fieldName
+	return q
+}
+
 // Perform select query by parsing the struct's type and then fill the values into the struct
 // All fields of supported types in the struct will be added in select clause.
 // If Id value is provided, it will be added into the where clause
@@ -119,11 +124,11 @@ func (q *Qbs) OrderByDesc(path string) *Qbs {
 // It will perform a join query, the referenced struct pointer field will be filled in
 // the values obtained by the query.
 func (q *Qbs) Find(structPtr interface{}) error {
-	q.criteria.model = structPtrToModel(structPtr, true)
+	q.criteria.model = structPtrToModel(structPtr, true, q.criteria.omitFields)
 	q.criteria.limit = 1
 	if q.criteria.model.Pk.Value.(Id) != 0 {
 		idPath := q.Dialect.Quote(q.criteria.model.Table) + "." + q.Dialect.Quote(q.criteria.model.Pk.Name)
-		idCondition := NewCondition(idPath+" = ?", q.criteria.model.Pk.Value)
+		idCondition := NewCondition(idPath + " = ?", q.criteria.model.Pk.Value)
 		if q.criteria.condition == nil {
 			q.criteria.condition = idCondition
 		} else {
@@ -139,7 +144,7 @@ func (q *Qbs) Find(structPtr interface{}) error {
 func (q *Qbs) FindAll(ptrOfSliceOfStructPtr interface{}) error {
 	strucType := reflect.TypeOf(ptrOfSliceOfStructPtr).Elem().Elem().Elem()
 	strucPtr := reflect.New(strucType).Interface()
-	q.criteria.model = structPtrToModel(strucPtr, true)
+	q.criteria.model = structPtrToModel(strucPtr, true, q.criteria.omitFields)
 	query, args := q.Dialect.QuerySql(q.criteria)
 	return q.doQueryRows(ptrOfSliceOfStructPtr, query, args...)
 }
@@ -287,7 +292,7 @@ func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 			return
 		}
 	}
-	model := structPtrToModel(structPtr, true)
+	model := structPtrToModel(structPtr, true, q.criteria.omitFields)
 	if model.Pk == nil {
 		panic("no primary key field")
 	}
@@ -359,7 +364,7 @@ func (q *Qbs) Update(structPtr interface{}) (affected int64, err error) {
 			return 0, err
 		}
 	}
-	model := structPtrToModel(structPtr, true)
+	model := structPtrToModel(structPtr, true, q.criteria.omitFields)
 	q.criteria.model = model
 	q.criteria.mergePkCondition(q.Dialect)
 	if q.criteria.condition == nil {
@@ -371,7 +376,7 @@ func (q *Qbs) Update(structPtr interface{}) (affected int64, err error) {
 // The delete condition can be inferred by the Id value of the struct
 // If neither Id value or condition are provided, it would cause runtime panic
 func (q *Qbs) Delete(structPtr interface{}) (affected int64, err error) {
-	model := structPtrToModel(structPtr, true)
+	model := structPtrToModel(structPtr, true, q.criteria.omitFields)
 	q.criteria.model = model
 	q.criteria.mergePkCondition(q.Dialect)
 	if q.criteria.condition == nil {

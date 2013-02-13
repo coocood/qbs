@@ -99,7 +99,7 @@ func DoTestCreateTableSql(assert *assrt.Assert, info dialectSyntax) {
 		Amount int
 	}
 	table := &withoutPk{"a", "b", 5}
-	model := structPtrToModel(table, true)
+	model := structPtrToModel(table, true, nil)
 	sql := info.dialect.CreateTableSql(model, true)
 	assert.Equal(info.createTableWithoutPkIfExistsSql, sql)
 	type withPk struct {
@@ -109,7 +109,7 @@ func DoTestCreateTableSql(assert *assrt.Assert, info dialectSyntax) {
 		Amount  int
 	}
 	table2 := &withPk{First: "a", Last: "b", Amount: 5}
-	model = structPtrToModel(table2, true)
+	model = structPtrToModel(table2, true, nil)
 	sql = info.dialect.CreateTableSql(model, false)
 	assert.Equal(info.createTableWithPkSql, sql)
 }
@@ -136,7 +136,7 @@ func TestInsertSQL(t *testing.T) {
 
 func DoTestInsertSQL(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
-	model := structPtrToModel(sqlGenSampleData, true)
+	model := structPtrToModel(sqlGenSampleData, true, nil)
 	criteria := &Criteria{model: model}
 	criteria.mergePkCondition(info.dialect)
 	sql, _ := info.dialect.InsertSql(criteria)
@@ -152,7 +152,7 @@ func TestUpdateSQL(t *testing.T) {
 
 func DoTestUpdateSQL(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
-	model := structPtrToModel(sqlGenSampleData, true)
+	model := structPtrToModel(sqlGenSampleData, true, nil)
 	criteria := &Criteria{model: model}
 	criteria.mergePkCondition(info.dialect)
 	sql, _ := info.dialect.UpdateSql(criteria)
@@ -168,7 +168,7 @@ func TestDeleteSQL(t *testing.T) {
 
 func DoTestDeleteSQL(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
-	model := structPtrToModel(sqlGenSampleData, true)
+	model := structPtrToModel(sqlGenSampleData, true, nil)
 	criteria := &Criteria{model: model}
 	criteria.mergePkCondition(info.dialect)
 	sql, _ := info.dialect.DeleteSql(criteria)
@@ -194,7 +194,7 @@ func DoTestSelectionSQL(assert *assrt.Assert, info dialectSyntax) {
 		Author   *User
 		Content  string
 	}
-	model := structPtrToModel(new(Post), true)
+	model := structPtrToModel(new(Post), true, nil)
 	criteria := new(Criteria)
 	criteria.model = model
 
@@ -215,10 +215,10 @@ func DoTestQuerySQL(assert *assrt.Assert, info dialectSyntax) {
 		Grade int
 		Score int
 	}
-	model := structPtrToModel(new(Student), true)
+	model := structPtrToModel(new(Student), true, nil)
 	criteria := new(Criteria)
 	criteria.model = model
-	condition := NewInCondition("grade", []interface {}{6,7,8})
+	condition := NewInCondition("grade", []interface {}{6, 7, 8})
 	subCondition := NewCondition("score <= ?", 60).Or("score >= ?", 80)
 	condition.AndCondition(subCondition)
 	criteria.condition = condition

@@ -23,8 +23,9 @@ func TestFieldOmit(t *testing.T) {
 	type Schema struct {
 		A string `sql:"-"`
 		B string
+		C string
 	}
-	m := structPtrToModel(&Schema{}, true)
+	m := structPtrToModel(&Schema{}, true, []string{"C"})
 	assert.OneLen(m.Fields)
 }
 
@@ -43,7 +44,7 @@ func TestInterfaceToModelWithReference(t *testing.T) {
 	table1 := &table{
 		6, 3, &parent{3, "Mrs. A", "infinite"},
 	}
-	m := structPtrToModel(table1, true)
+	m := structPtrToModel(table1, true, nil)
 	ref, ok := m.Refs["Father"]
 	assert.MustTrue(ok)
 	f := ref.Model.Fields[1]
@@ -72,7 +73,7 @@ func TestInterfaceToModel(t *testing.T) {
 		ColVarChar: "orange",
 		ColTime:    now,
 	}
-	m := structPtrToModel(table1, true)
+	m := structPtrToModel(table1, true, nil)
 	assert.Equal("col_primary", m.Pk.Name)
 	assert.Equal(4, len(m.Fields))
 	assert.Equal(2, len(m.Indexes))
@@ -112,6 +113,6 @@ func TestInterfaceToSubModel(t *testing.T) {
 		Content  string
 	}
 	pst := new(Post)
-	model := structPtrToModel(pst, true)
+	model := structPtrToModel(pst, true, nil)
 	assert.OneLen(model.Refs)
 }

@@ -139,7 +139,7 @@ func (model *Model) timeFiled(name string) *ModelField {
 	return nil
 }
 
-func structPtrToModel(f interface{}, root bool) *Model {
+func structPtrToModel(f interface{}, root bool, omitFields []string) *Model {
 	model := &Model{
 		Pk:      nil,
 		Table:   tableName(f),
@@ -151,6 +151,15 @@ func structPtrToModel(f interface{}, root bool) *Model {
 	structValue := reflect.ValueOf(f).Elem()
 	for i := 0; i < structType.NumField(); i++ {
 		structFiled := structType.Field(i)
+		omit := false
+		for _,v := range omitFields{
+			if v == structFiled.Name{
+				omit = true
+			}
+		}
+		if omit {
+			continue
+		}
 		sqlTag := structFiled.Tag.Get("sql")
 		if sqlTag == "-" {
 			continue
@@ -186,14 +195,20 @@ func structPtrToModel(f interface{}, root bool) *Model {
 				}
 			}
 			if fk || explicitJoin || implicitJoin {
-				if field, ok := structType.FieldByName(refName); ok {
+				omit := false
+				for _,v := range omitFields{
+					if v == refName{
+						omit = true
+					}
+				}
+				if field, ok := structType.FieldByName(refName); ok && !omit {
 					fieldValue := structValue.FieldByName(refName)
 					if fieldValue.Kind() == reflect.Ptr {
 						model.Indexes.Add(fd.Name)
 						if fieldValue.IsNil() {
 							fieldValue.Set(reflect.New(field.Type.Elem()))
 						}
-						refModel := structPtrToModel(fieldValue.Interface(), false)
+						refModel := structPtrToModel(fieldValue.Interface(), false, nil)
 						ref := new(Reference)
 						ref.ForeignKey = fk
 						ref.Model = refModel

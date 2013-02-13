@@ -13,7 +13,7 @@ type Migration struct {
 // CreateTableIfNotExists creates a new table and its indexes based on the table struct type
 // It will panic if table creation failed, and it will return error if the index creation failed.
 func (mg *Migration) CreateTableIfNotExists(structPtr interface{}) error {
-	model := structPtrToModel(structPtr, true)
+	model := structPtrToModel(structPtr, true, nil)
 	_, err := mg.Db.Exec(mg.Dialect.CreateTableSql(model, true))
 	if err != nil {
 		panic(err)

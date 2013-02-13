@@ -7,11 +7,9 @@ type Criteria struct {
 	orderDesc bool
 	limit     int
 	offset    int
+	omitFields []string
 }
 
-const (
-	subConExists = "Sub condition already exists"
-)
 
 func (c *Criteria) mergePkCondition(d Dialect) {
 	idValue := c.model.idValue()
@@ -42,12 +40,12 @@ func NewCondition(expr string, args ...interface{}) *Condition {
 	}
 }
 
-func NewInCondition(column string, values []interface {}) *Condition{
+func NewInCondition(column string, values []interface {}) *Condition {
 	expr := column + " IN ("
-	for _ = range values{
+	for _ = range values {
 		expr +="?, "
 	}
-	expr = expr[:len(expr)-2]
+	expr = expr[:len(expr) - 2]
 	expr += ")"
 	return &Condition{
 		Expr: expr,
@@ -57,7 +55,7 @@ func NewInCondition(column string, values []interface {}) *Condition{
 
 func (c *Condition) And(expr string, args ...interface{}) *Condition {
 	if c.Sub != nil {
-		panic(subConExists)
+		c.Expr, c.Args = c.Merge()
 	}
 	c.Sub = NewCondition(expr, args...)
 	c.IsOr = false
@@ -66,7 +64,7 @@ func (c *Condition) And(expr string, args ...interface{}) *Condition {
 
 func (c *Condition) AndCondition(subCondition *Condition) *Condition {
 	if c.Sub != nil {
-		panic(subConExists)
+		c.Expr, c.Args = c.Merge()
 	}
 	c.Sub = subCondition
 	c.IsOr = false
@@ -75,7 +73,7 @@ func (c *Condition) AndCondition(subCondition *Condition) *Condition {
 
 func (c *Condition) Or(expr string, args ...interface{}) *Condition {
 	if c.Sub != nil {
-		panic(subConExists)
+		c.Expr, c.Args = c.Merge()
 	}
 	c.Sub = NewCondition(expr, args...)
 	c.IsOr = true
@@ -84,7 +82,7 @@ func (c *Condition) Or(expr string, args ...interface{}) *Condition {
 
 func (c *Condition) OrCondition(subCondition *Condition) *Condition {
 	if c.Sub != nil {
-		panic(subConExists)
+		c.Expr, c.Args = c.Merge()
 	}
 	c.Sub = subCondition
 	c.IsOr = true

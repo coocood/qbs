@@ -11,15 +11,15 @@ import (
 	//	_ "github.com/bmizerany/pq"
 	//	_ "github.com/mattn/go-sqlite3"
 	"github.com/coocood/assrt"
-	//	_ "github.com/ziutek/mymysql/godrv"
+	//  _ "github.com/ziutek/mymysql/godrv"
 	"errors"
 	"os"
 )
 
 var toRun = []dialectInfo{
-// allDialectInfos[0],
-//	allDialectInfos[1],
-// allDialectInfos[2],
+	// allDialectInfos[0],
+	// allDialectInfos[1],
+	// allDialectInfos[2],
 }
 
 const (
@@ -49,7 +49,7 @@ var allDialectInfos = []dialectInfo{
 
 type dialectInfo struct {
 	dialect    Dialect
-	openDbFunc func() (*sql.DB, error)
+	openDbFunc func () (*sql.DB, error)
 }
 
 func setupDb(assert *assrt.Assert, info dialectInfo) (*Migration, *Qbs) {
@@ -162,7 +162,7 @@ func DoTestSaveAndDelete(assert *assrt.Assert, info dialectInfo) {
 	model1.A = "grape"
 	model1.B = 9
 
-	time.Sleep(time.Second * 1) // sleep for 1 sec
+	time.Sleep(time.Second*1) // sleep for 1 sec
 
 	affected, err = q.Save(&model1)
 	assert.MustNil(err)
@@ -226,9 +226,13 @@ func DoTestForeignKey(assert *assrt.Assert, info dialectInfo) {
 	pst.Id = aPost.Id
 	err = q.Find(pst)
 	assert.MustNil(err)
-	assert.MustNotNil(pst)
 	assert.Equal(aPost.Id, pst.Id)
 	assert.Equal("john", pst.Author.Name)
+	pst.Author = nil
+	err = q.OmitFields("Author").Find(pst)
+	assert.MustNil(err)
+	assert.Equal(aPost.Id, pst.Id)
+	assert.MustNil(pst.Author)
 }
 
 func TestFind(t *testing.T) {
