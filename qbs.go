@@ -215,6 +215,9 @@ func (q *Qbs) scanRows(rowValue reflect.Value, rows *sql.Rows) (err error) {
 		paths := strings.Split(key, "___")
 		if len(paths) == 2 {
 			subStruct := rowValue.Elem().FieldByName(snakeToUpperCamel(paths[0]))
+			if subStruct.IsNil() {
+				subStruct.Set(reflect.New(subStruct.Type().Elem()))
+			}
 			subField := subStruct.Elem().FieldByName(snakeToUpperCamel(paths[1]))
 			if subField.IsValid() {
 				err = q.Dialect.SetModelValue(value, subField)
