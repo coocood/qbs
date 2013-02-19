@@ -31,6 +31,13 @@ Qbs stands for Query By Struct. A Go ORM.
 
     go get github.com/coocood/qbs
 
+##Warning
+ 
+* New version may break backward compatibility.
+* Once you installed it for the first time by "go get", do not "go get" again for your existing application.
+* You should copy local source code when you need to compile your application on another mechine.
+* Or you can simply fork this repo, so you won't get any suprise.
+
 ##Basic Example
 
     func FindAuthorName(){
