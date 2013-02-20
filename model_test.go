@@ -8,7 +8,7 @@ import (
 
 func TestParseTags(t *testing.T) {
 	assert := assrt.NewAssert(t)
-	m := parseTags(`fk`)
+	m := parseTags(`fk:User`)
 	_, ok := m["fk"]
 	assert.True(ok)
 	m = parseTags(`notnull,default:'banana'`)
@@ -21,7 +21,7 @@ func TestParseTags(t *testing.T) {
 func TestFieldOmit(t *testing.T) {
 	assert := assrt.NewAssert(t)
 	type Schema struct {
-		A string `sql:"-"`
+		A string `qbs:"-"`
 		B string
 		C string
 	}
@@ -32,13 +32,13 @@ func TestFieldOmit(t *testing.T) {
 func TestInterfaceToModelWithReference(t *testing.T) {
 	assert := assrt.NewAssert(t)
 	type parent struct {
-		Id    Id
+		Id    int64
 		Name  string
 		Value string
 	}
 	type table struct {
-		ColPrimary Id
-		FatherId   int64 `sql:"fk:Father"`
+		ColPrimary int64 `qbs:"pk"`
+		FatherId   int64 `qbs:"fk:Father"`
 		Father     *parent
 	}
 	table1 := &table{
@@ -54,9 +54,9 @@ func TestInterfaceToModelWithReference(t *testing.T) {
 }
 
 type indexedTable struct {
-	ColPrimary Id
-	ColNotNull string `sql:"notnull,default:'banana'"`
-	ColVarChar string `sql:"size:64"`
+	ColPrimary int64  `qbs:"pk"`
+	ColNotNull string `qbs:"notnull,default:'banana'"`
+	ColVarChar string `qbs:"size:64"`
 	ColTime    time.Time
 }
 
@@ -83,9 +83,8 @@ func TestInterfaceToModel(t *testing.T) {
 	assert.True(m.Indexes[1].Unique)
 
 	f := m.Fields[0]
-	id, _ := f.Value.(Id)
-	assert.Equal(6, id)
-	assert.True(f.PrimaryKey())
+	assert.Equal(6, f.Value)
+	assert.True(f.PK)
 
 	f = m.Fields[1]
 	assert.Equal("'banana'", f.Default())
@@ -103,12 +102,12 @@ func TestInterfaceToModel(t *testing.T) {
 func TestInterfaceToSubModel(t *testing.T) {
 	assert := assrt.NewAssert(t)
 	type User struct {
-		Id   Id
+		Id   int64
 		Name string
 	}
 	type Post struct {
-		Id       Id
-		AuthorId int64 `sql:"fk:Author"`
+		Id       int64
+		AuthorId int64 `qbs:"fk:Author"`
 		Author   *User
 		Content  string
 	}

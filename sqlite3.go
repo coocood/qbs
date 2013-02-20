@@ -25,8 +25,6 @@ func NewSqlite3() Dialect {
 
 func (d *Sqlite3) SqlType(f interface{}, size int) string {
 	switch f.(type) {
-	case Id:
-		return "integer"
 	case bool:
 		return "integer"
 	case int, int8, int16, int32, uint, uint8, uint16, uint32, int64, uint64:
@@ -109,4 +107,11 @@ func (d *Sqlite3) ColumnsInTable(mg *Migration, table interface{}) map[string]bo
 		}
 	}
 	return columns
+}
+
+func (d *Sqlite3) PrimaryKeySql(isString bool, size int) string {
+	if isString {
+		return "text PRIMARY KEY NOT NULL"
+	}
+	return "integer PRIMARY KEY AUTOINCREMENT NOT NULL"
 }

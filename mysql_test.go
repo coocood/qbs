@@ -13,7 +13,6 @@ func TestSqlTypeForMysqlDialect(t *testing.T) {
 	var indirect interface{} = true
 	assert.Equal("boolean", d.SqlType(indirect, 0))
 	assert.Equal("int", d.SqlType(uint32(2), 0))
-	assert.Equal("bigint", d.SqlType(Id(1), 0))
 	assert.Equal("bigint", d.SqlType(int64(1), 0))
 	assert.Equal("double", d.SqlType(1.8, 0))
 	assert.Equal("longblob", d.SqlType([]byte("asdf"), 0))
