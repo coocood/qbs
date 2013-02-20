@@ -120,7 +120,7 @@ func (d *base) QuerySql(criteria *Criteria) (string, []interface{}) {
 	return d.Dialect.SubstituteMarkers(strings.Join(query, " ")), args
 }
 
-func (d *base) Insert(q *Qbs) (Id, error) {
+func (d *base) Insert(q *Qbs) (int64, error) {
 	sql, args := d.Dialect.InsertSql(q.criteria)
 	result, err := q.Exec(sql, args...)
 	if err != nil {
@@ -130,7 +130,7 @@ func (d *base) Insert(q *Qbs) (Id, error) {
 	if err != nil {
 		return -1, err
 	}
-	return Id(id), nil
+	return id, nil
 }
 
 func (d *base) InsertSql(criteria *Criteria) (string, []interface{}) {
@@ -202,19 +202,18 @@ func (d *base) CreateTableSql(model *Model, ifNotExists bool) string {
 	for i, field := range model.Fields {
 		b := []string{
 			d.Dialect.Quote(field.Name),
-			d.Dialect.SqlType(field.Value, field.Size()),
 		}
-		if field.NotNull() {
-			b = append(b, d.Dialect.KeywordNotNull())
-		}
-		if x := field.Default(); x != "" {
-			b = append(b, d.Dialect.KeywordDefault(x))
-		}
-		if field.PrimaryKey() {
-			b = append(b, d.Dialect.KeywordPrimaryKey())
-		}
-		if incKeyword := d.Dialect.KeywordAutoIncrement(); field.PrimaryKey() && incKeyword != "" {
-			b = append(b, incKeyword)
+		if field.PK {
+			_, ok := field.Value.(string)
+			b = append(b, d.Dialect.PrimaryKeySql(ok, field.Size()))
+		} else {
+			b = append(b, d.Dialect.SqlType(field.Value, field.Size()))
+			if field.NotNull() {
+				b = append(b, "NOT NULL")
+			}
+			if x := field.Default(); x != "" {
+				b = append(b, "DEFAULT "+x)
+			}
 		}
 		a = append(a, strings.Join(b, " "))
 		if i < len(model.Fields)-1 {
@@ -262,22 +261,6 @@ func (d *base) CreateIndexSql(name, table string, unique bool, columns ...string
 		strings.Join(quotedColumns, ", "),
 	))
 	return strings.Join(a, " ")
-}
-
-func (d *base) KeywordNotNull() string {
-	return "NOT NULL"
-}
-
-func (d *base) KeywordDefault(s string) string {
-	return fmt.Sprintf("DEFAULT %v", s)
-}
-
-func (d *base) KeywordPrimaryKey() string {
-	return "PRIMARY KEY"
-}
-
-func (d *base) KeywordAutoIncrement() string {
-	return "AUTOINCREMENT"
 }
 
 func (d *base) ColumnsInTable(mg *Migration, table interface{}) map[string]bool {

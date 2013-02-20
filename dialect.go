@@ -25,7 +25,7 @@ type Dialect interface {
 
 	QuerySql(criteria *Criteria) (sql string, args []interface{})
 
-	Insert(q *Qbs) (Id, error)
+	Insert(q *Qbs) (int64, error)
 
 	InsertSql(criteria *Criteria) (sql string, args []interface{})
 
@@ -49,11 +49,5 @@ type Dialect interface {
 
 	ColumnsInTable(mg *Migration, tableName interface{}) map[string]bool
 
-	KeywordNotNull() string
-
-	KeywordDefault(s string) string
-
-	KeywordPrimaryKey() string
-
-	KeywordAutoIncrement() string
+	PrimaryKeySql(isString bool, size int) string
 }

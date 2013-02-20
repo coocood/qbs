@@ -32,8 +32,6 @@ func (d *postgres) Quote(s string) string {
 
 func (d *postgres) SqlType(f interface{}, size int) string {
 	switch f.(type) {
-	case Id:
-		return "bigserial"
 	case time.Time:
 		return "timestamp"
 	case bool:
@@ -55,11 +53,11 @@ func (d *postgres) SqlType(f interface{}, size int) string {
 	panic("invalid sql type")
 }
 
-func (d *postgres) Insert(q *Qbs) (Id, error) {
+func (d *postgres) Insert(q *Qbs) (int64, error) {
 	sql, args := d.Dialect.InsertSql(q.criteria)
 	var id int64
 	err := q.QueryRow(sql, args...).Scan(&id)
-	return Id(id), err
+	return id, err
 }
 
 func (d *postgres) InsertSql(criteria *Criteria) (string, []interface{}) {
@@ -109,4 +107,11 @@ func (d *postgres) ColumnsInTable(mg *Migration, table interface{}) map[string]b
 		}
 	}
 	return columns
+}
+
+func (d *postgres) PrimaryKeySql(isString bool, size int) string {
+	if isString {
+		return "text PRIMARY KEY"
+	}
+	return "bigserial PRIMARY KEY"
 }

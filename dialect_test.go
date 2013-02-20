@@ -52,7 +52,7 @@ var allDialectSyntax = []dialectSyntax{
 	dialectSyntax{
 		NewSqlite3(),
 		"CREATE TABLE IF NOT EXISTS `without_pk` ( `first` text, `last` text, `amount` integer )",
-		"CREATE TABLE `with_pk` ( `primary` integer PRIMARY KEY AUTOINCREMENT, `first` text, `last` text, `amount` integer )",
+		"CREATE TABLE `with_pk` ( `primary` integer PRIMARY KEY AUTOINCREMENT NOT NULL, `first` text, `last` text, `amount` integer )",
 		"INSERT INTO `sql_gen_model` (`prim`, `first`, `last`, `amount`) VALUES (?, ?, ?, ?)",
 		"UPDATE `sql_gen_model` SET `first` = ?, `last` = ?, `amount` = ? WHERE `prim` = ?",
 		"DELETE FROM `sql_gen_model` WHERE `prim` = ?",
@@ -66,7 +66,7 @@ var allDialectSyntax = []dialectSyntax{
 }
 
 type sqlGenModel struct {
-	Prim   Id
+	Prim   int64 `qbs:"pk"`
 	First  string
 	Last   string
 	Amount int
@@ -103,7 +103,7 @@ func DoTestCreateTableSql(assert *assrt.Assert, info dialectSyntax) {
 	sql := info.dialect.CreateTableSql(model, true)
 	assert.Equal(info.createTableWithoutPkIfExistsSql, sql)
 	type withPk struct {
-		Primary Id
+		Primary int64 `qbs:"pk"`
 		First   string
 		Last    string
 		Amount  int
@@ -185,12 +185,12 @@ func TestSelectionSQL(t *testing.T) {
 func DoTestSelectionSQL(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
 	type User struct {
-		Id   Id
+		Id   int64
 		Name string
 	}
 	type Post struct {
-		Id       Id
-		AuthorId int64 `sql:"fk:Author"`
+		Id       int64
+		AuthorId int64 `qbs:"fk:Author"`
 		Author   *User
 		Content  string
 	}
@@ -218,7 +218,7 @@ func DoTestQuerySQL(assert *assrt.Assert, info dialectSyntax) {
 	model := structPtrToModel(new(Student), true, nil)
 	criteria := new(Criteria)
 	criteria.model = model
-	condition := NewInCondition("grade", []interface {}{6, 7, 8})
+	condition := NewInCondition("grade", []interface{}{6, 7, 8})
 	subCondition := NewCondition("score <= ?", 60).Or("score >= ?", 80)
 	condition.AndCondition(subCondition)
 	criteria.condition = condition

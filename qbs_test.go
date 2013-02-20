@@ -10,15 +10,15 @@ import (
 	"fmt"
 	//	_ "github.com/bmizerany/pq"
 	//	_ "github.com/mattn/go-sqlite3"
-	"github.com/coocood/assrt"
-	//  _ "github.com/ziutek/mymysql/godrv"
 	"errors"
+	"github.com/coocood/assrt"
+	_ "github.com/ziutek/mymysql/godrv"
 	"os"
 )
 
 var toRun = []dialectInfo{
 	// allDialectInfos[0],
-	// allDialectInfos[1],
+	allDialectInfos[1],
 	// allDialectInfos[2],
 }
 
@@ -49,7 +49,7 @@ var allDialectInfos = []dialectInfo{
 
 type dialectInfo struct {
 	dialect    Dialect
-	openDbFunc func () (*sql.DB, error)
+	openDbFunc func() (*sql.DB, error)
 }
 
 func setupDb(assert *assrt.Assert, info dialectInfo) (*Migration, *Qbs) {
@@ -85,7 +85,7 @@ func TestTransaction(t *testing.T) {
 func DoTestTransaction(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
 	type txModel struct {
-		Id Id
+		Id int64
 		A  string
 	}
 	table := txModel{
@@ -101,14 +101,14 @@ func DoTestTransaction(assert *assrt.Assert, info dialectInfo) {
 	assert.Nil(err)
 	out := new(txModel)
 	err = q.Find(out)
-	assert.Nil(err)
-	assert.Zero(out.Id)
+	assert.Equal(sql.ErrNoRows, err)
 	q.Begin()
 	table.Id = 0
 	_, err = q.Save(&table)
 	assert.Nil(err)
 	err = q.Commit()
 	assert.Nil(err)
+	out.Id = table.Id
 	err = q.Find(out)
 	assert.Nil(err)
 	assert.Equal("A", out.A)
@@ -126,7 +126,7 @@ func DoTestSaveAndDelete(assert *assrt.Assert, info dialectInfo) {
 	now := time.Now()
 	mg, q := setupDb(assert, info)
 	type saveModel struct {
-		Id      Id
+		Id      int64
 		A       string
 		B       int
 		Updated time.Time
@@ -162,7 +162,7 @@ func DoTestSaveAndDelete(assert *assrt.Assert, info dialectInfo) {
 	model1.A = "grape"
 	model1.B = 9
 
-	time.Sleep(time.Second*1) // sleep for 1 sec
+	time.Sleep(time.Second * 1) // sleep for 1 sec
 
 	affected, err = q.Save(&model1)
 	assert.MustNil(err)
@@ -197,11 +197,11 @@ func TestForeignKey(t *testing.T) {
 func DoTestForeignKey(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
 	type user struct {
-		Id   Id
+		Id   int64
 		Name string
 	}
 	type post struct {
-		Id       Id
+		Id       int64
 		Title    string
 		AuthorId int64
 		Author   *user
@@ -233,6 +233,10 @@ func DoTestForeignKey(assert *assrt.Assert, info dialectInfo) {
 	assert.MustNil(err)
 	assert.Equal(aPost.Id, pst.Id)
 	assert.MustNil(pst.Author)
+	var psts []*post
+	err = q.FindAll(&psts)
+	assert.MustNil(err)
+	assert.OneLen(psts)
 }
 
 func TestFind(t *testing.T) {
@@ -246,7 +250,7 @@ func DoTestFind(assert *assrt.Assert, info dialectInfo) {
 	now := info.dialect.Now()
 
 	type types struct {
-		Id    Id
+		Id    int64
 		Str   string
 		Intgr int64
 		Flt   float64
@@ -267,13 +271,12 @@ func DoTestFind(assert *assrt.Assert, info dialectInfo) {
 	out := new(types)
 	condition := NewCondition("str = ?", "string!").And("intgr = ?", -1)
 	err := q.Condition(condition).Find(out)
-	assert.Nil(err)
-	assert.Zero(out.Id)
+	assert.Equal(sql.ErrNoRows, err)
 
 	affected, err := q.Save(modelData)
 	assert.Nil(err)
 	assert.Equal(1, affected)
-
+	out.Id = modelData.Id
 	err = q.Condition(condition).Find(out)
 	assert.Nil(err)
 	assert.Equal(1, out.Id)
@@ -295,6 +298,11 @@ func DoTestFind(assert *assrt.Assert, info dialectInfo) {
 	assert.Nil(err)
 	assert.Equal(5, out.Id)
 
+	out = new(types)
+	out.Id = 100
+	err = q.Find(out)
+	assert.NotNil(err)
+
 	allOut := []*types{}
 	err = q.Where("intgr = ?", -1).FindAll(&allOut)
 	assert.Nil(err)
@@ -308,9 +316,9 @@ func TestCreateTable(t *testing.T) {
 }
 
 type AddColumn struct {
-	Prim   Id
-	First  string `sql:"size:64,notnull"`
-	Last   string `sql:"size:128,default:'defaultValue'"`
+	Prim   int64  `qbs:"pk"`
+	First  string `qbs:"size:64,notnull"`
+	Last   string `qbs:"size:128,default:'defaultValue'"`
 	Amount int
 }
 
@@ -323,7 +331,7 @@ func DoTestCreateTable(assert *assrt.Assert, info dialectInfo) {
 	mg, _ := setupDb(assert, info)
 	{
 		type AddColumn struct {
-			Prim Id
+			Prim int64 `qbs:"pk"`
 		}
 		table := &AddColumn{}
 		mg.dropTableIfExists(table)
@@ -339,8 +347,8 @@ func DoTestCreateTable(assert *assrt.Assert, info dialectInfo) {
 }
 
 type basic struct {
-	Id    Id
-	Name  string `sql:"size:64"`
+	Id    int64
+	Name  string `qbs:"size:64"`
 	State int64
 }
 
@@ -393,7 +401,7 @@ func TestValidation(t *testing.T) {
 
 //
 type ValidatorTable struct {
-	Id   Id
+	Id   int64
 	Name string
 }
 
@@ -415,4 +423,50 @@ func DoTestValidation(assert *assrt.Assert, info dialectInfo) {
 	_, err := q.Save(valid)
 	assert.MustNotNil(err)
 	assert.Equal("name already taken", err.Error())
+}
+
+func TestBoolType(t *testing.T) {
+	for _, info := range toRun {
+		DoTestBoolType(assrt.NewAssert(t), info)
+	}
+}
+
+func DoTestBoolType(assert *assrt.Assert, info dialectInfo) {
+	type BoolType struct {
+		Id     int64
+		Active bool
+	}
+	bt := new(BoolType)
+	mg, q := setupDb(assert, info)
+	mg.dropTableIfExists(bt)
+	mg.CreateTableIfNotExists(bt)
+	bt.Active = true
+	q.Save(bt)
+	bt.Active = false
+	q.Where("active = ?", true).Find(bt)
+	assert.True(bt.Active)
+}
+
+func TestStringPk(t *testing.T) {
+	for _, info := range toRun {
+		DoTestStringPk(assrt.NewAssert(t), info)
+	}
+}
+
+func DoTestStringPk(assert *assrt.Assert, info dialectInfo) {
+	type StringPk struct {
+		Tag   string `qbs:"pk,size:16"`
+		Count int32
+	}
+	spk := new(StringPk)
+	spk.Tag = "health"
+	spk.Count = 10
+	mg, q := setupDb(assert, info)
+	mg.dropTableIfExists(spk)
+	mg.CreateTableIfNotExists(spk)
+	affected, _ := q.Save(spk)
+	assert.Equal(1, affected)
+	spk.Count = 0
+	q.Find(spk)
+	assert.Equal(10, spk.Count)
 }

@@ -1,22 +1,20 @@
 package qbs
 
 type Criteria struct {
-	model     *Model
-	condition *Condition
-	orderBy   string
-	orderDesc bool
-	limit     int
-	offset    int
+	model      *Model
+	condition  *Condition
+	orderBy    string
+	orderDesc  bool
+	limit      int
+	offset     int
 	omitFields []string
 }
 
-
 func (c *Criteria) mergePkCondition(d Dialect) {
-	idValue := c.model.idValue()
 	var con *Condition
-	if idValue != 0 {
+	if !c.model.pkZero() {
 		expr := d.Quote(c.model.Pk.Name) + " = ?"
-		con = NewCondition(expr, idValue)
+		con = NewCondition(expr, c.model.Pk.Value)
 		con.AndCondition(c.condition)
 	} else {
 		con = c.condition
@@ -40,12 +38,12 @@ func NewCondition(expr string, args ...interface{}) *Condition {
 	}
 }
 
-func NewInCondition(column string, values []interface {}) *Condition {
+func NewInCondition(column string, values []interface{}) *Condition {
 	expr := column + " IN ("
 	for _ = range values {
-		expr +="?, "
+		expr += "?, "
 	}
-	expr = expr[:len(expr) - 2]
+	expr = expr[:len(expr)-2]
 	expr += ")"
 	return &Condition{
 		Expr: expr,

@@ -13,7 +13,6 @@ func TestSqlTypeForPgDialect(t *testing.T) {
 	var indirect interface{} = true
 	assert.Equal("boolean", d.SqlType(indirect, 0))
 	assert.Equal("integer", d.SqlType(uint32(2), 0))
-	assert.Equal("bigserial", d.SqlType(Id(1), 0))
 	assert.Equal("bigint", d.SqlType(int64(1), 0))
 	assert.Equal("double precision", d.SqlType(1.8, 0))
 	assert.Equal("bytea", d.SqlType([]byte("asdf"), 0))

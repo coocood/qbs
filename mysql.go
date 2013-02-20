@@ -23,8 +23,6 @@ func (d *mysql) ParseBool(value reflect.Value) bool {
 
 func (d *mysql) SqlType(f interface{}, size int) string {
 	switch f.(type) {
-	case Id:
-		return "bigint"
 	case time.Time:
 		return "timestamp"
 	case bool:
@@ -60,4 +58,11 @@ func (d *mysql) IndexExists(mg *Migration, tableName, indexName string) bool {
 		"WHERE AND TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?", mg.DbName, tableName, indexName)
 	err := row.Scan(&name)
 	return err != nil
+}
+
+func (d *mysql) PrimaryKeySql(isString bool, size int) string {
+	if isString {
+		return fmt.Sprintf("varchar(%d) PRIMARY KEY", size)
+	}
+	return "bigint PRIMARY KEY AUTO_INCREMENT"
 }

@@ -112,7 +112,7 @@ func (q *Qbs) OrderByDesc(path string) *Qbs {
 	return q
 }
 
-func (q *Qbs) OmitFields(fieldName ... string) *Qbs{
+func (q *Qbs) OmitFields(fieldName ...string) *Qbs {
 	q.criteria.omitFields = fieldName
 	return q
 }
@@ -126,9 +126,9 @@ func (q *Qbs) OmitFields(fieldName ... string) *Qbs{
 func (q *Qbs) Find(structPtr interface{}) error {
 	q.criteria.model = structPtrToModel(structPtr, true, q.criteria.omitFields)
 	q.criteria.limit = 1
-	if q.criteria.model.Pk.Value.(Id) != 0 {
+	if !q.criteria.model.pkZero() {
 		idPath := q.Dialect.Quote(q.criteria.model.Table) + "." + q.Dialect.Quote(q.criteria.model.Pk.Name)
-		idCondition := NewCondition(idPath + " = ?", q.criteria.model.Pk.Value)
+		idCondition := NewCondition(idPath+" = ?", q.criteria.model.Pk.Value)
 		if q.criteria.condition == nil {
 			q.criteria.condition = idCondition
 		} else {
@@ -167,6 +167,8 @@ func (q *Qbs) doQueryRow(out interface{}, query string, args ...interface{}) err
 		if err != nil {
 			return err
 		}
+	} else {
+		return sql.ErrNoRows
 	}
 	return nil
 }
@@ -302,13 +304,13 @@ func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 	q.criteria.model = model
 	preservedCriteria := q.criteria
 	now := q.Dialect.Now()
-	id := model.idValue()
+	var id int64 = 0
 	updateModelField := model.timeFiled("updated")
 	if updateModelField != nil {
 		updateModelField.Value = now
 	}
 	createdModelField := model.timeFiled("created")
-	canBeUpdate := id != 0
+	canBeUpdate := !model.pkZero()
 	var isInsert bool
 	if canBeUpdate {
 		q.criteria.mergePkCondition(q.Dialect)
@@ -320,7 +322,7 @@ func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 			q.criteria = preservedCriteria
 			id, err = q.Dialect.Insert(q)
 			isInsert = true
-			if err == nil && id != 0 {
+			if err == nil {
 				affected = 1
 			}
 		}
@@ -330,15 +332,15 @@ func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 		}
 		id, err = q.Dialect.Insert(q)
 		isInsert = true
-		if err == nil && id != 0 {
+		if err == nil {
 			affected = 1
 		}
 	}
 	if err == nil {
 		structValue := reflect.Indirect(reflect.ValueOf(structPtr))
-		if id != 0 {
+		if _, ok := model.Pk.Value.(int64); ok && id != 0 {
 			idField := structValue.FieldByName(model.Pk.CamelName)
-			idField.SetInt(int64(id))
+			idField.SetInt(id)
 		}
 		if updateModelField != nil {
 			updateField := structValue.FieldByName(updateModelField.CamelName)

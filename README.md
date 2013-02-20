@@ -6,25 +6,15 @@ Qbs stands for Query By Struct. A Go ORM.
 ##Features
 
 * Define table schema in struct type, create table if not exists.
-
 * Detect table columns in database and alter table add new column automatically.
-
 * Define selection clause in struct type, fields in the struct type become the columns to be selected.
-
 * Define join query in struct type by add pointer fields which point to the parent table's struct.
-
 * Do CRUD query by struct value.
-
 * After a query, all the data you need will be filled into the struct value.
-
 * Compose where clause by condition, which can easily handle complex precedence of "AND/OR" sub conditions.
-
 * If Id value in the struct is provided, it will be added to the where clause.
-
 * "Created" column will be set to current time when insert, "Updated" column will be set to current time when insert and update.
-
 * Struct type can implement Validator interface to do validation before insert or update.
-
 * Support MySQL, PosgreSQL and SQLite3.
 
 ##Install
@@ -48,11 +38,11 @@ Qbs stands for Query By Struct. A Go ORM.
 
         //define struct
         type User struct {
-            Id   qbs.Id
+            Id   int64
             Name string
         }
         type Post struct {
-            Id       qbs.Id
+            Id       int64
             Title    string
             AuthorId int64
             Author   *User
@@ -73,9 +63,7 @@ Qbs stands for Query By Struct. A Go ORM.
 
 More advanced examples can be found in test files.
 
-##Limitation
-
-* Every table works with Qbs must have an integer primary key.
+##Restriction
 
 * Every table name and culumn name in the database must be lower case, must not have any trailing "_" or any preceding "___"
 
@@ -83,65 +71,78 @@ More advanced examples can be found in test files.
 
 ##Field tag syntax
 
-Define not null column:
+###Ignore field:
 
-    `sql:"notnull"`
+    `qbs:"-"`
 
-Define column size:
+###Define primary key:
 
-    `sql:"size:255"`
+- Primary key must be of type in64 or string, string type primary key must define column size.
+- If field name is "Id" and type is "int64" the field becomes a implicit primary key.
 
-Define column default value:
 
-    `sql:"default:'abc'"`
+    `qbs:"pk"`
 
-Define column index:
 
-    `sql:"index"`
+###Define not null column:
 
-Define unique index:
+    `qbs:"notnull"`
 
-    `sql:"unique"`
+###Define column size:
 
-Define multiple attributes with comma separator
+    `qbs:"size:255"`
 
-    `sql:"size:100,default:'abc'"`
+###Define column default value:
 
-Define foreign key:
+    `qbs:"default:'abc'"`
+
+###Define column index:
+
+    `qbs:"index"`
+
+###Define unique index:
+
+    `qbs:"unique"`
+
+###Define multiple attributes with comma separator
+
+    `qbs:"size:100,default:'abc'"`
+
+###Define foreign key:
 	
 	type User struct{
-		Id qbs.Id
-		Name string `sql:"size:255"`
+		Id int64
+		Name string `qbs:"size:255"`
 	}
 
     type Post struct{
-    	Id qbs.Id
-    	AuthorId int64 `sql:"fk:Author"`
+    	Id int64
+    	AuthorId int64 `qbs:"fk:Author"`
     	Author *User
     	Content string
     }
 
-Define Join without foreign key constraint:
+###Define Join without foreign key constraint:
 
-    `sql:"join:Author"`
+    `qbs:"join:Author"`
 
-If a struct field's type is int64 and its suffix is "Id"(converted to "_id" in database), And the rest of the name can be found in the struct field,
-and that field is a pointer of struct type, then it become a implicit join, so in a find query, the previous example's `sql:"join:Author"` tag can be omitted.
+- If a struct field's type is int64 and its suffix is "Id"(converted to "_id" in database), And the rest of the name can be found in the struct field,
+and that field is a pointer of struct type, then it become a implicit join, so in a find query, the previous example's `qbs:"join:Author"` tag can be omitted.
 It will perform a join query automatically.
 
     type Post struct{
-    	Id qbs.Id
+    	Id int64
     	AuthorId int64
     	Author *User
     	Content string
     }
 
-Define Updated and Created field:
+###Define Updated and Created field:
 
-	Updated time.Time `sql:"updated"`
-	Created time.Time `sql:"created"`
+	Updated time.Time `qbs:"updated"`
+	Created time.Time `qbs:"created"`
 
-If the field name is "Updated" and its type is "time.Time", then the field became the updated field automatically.
+- If the field name is "Updated" and its type is "time.Time", then the field became the updated field automatically.
 Its value will get updated when update. If the field name is "Created" and its type is "time.Time" it's value will be set when insert.
 So the previous example's tag can be omitted.
 
