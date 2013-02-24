@@ -215,6 +215,9 @@ func (q *Qbs) scanRows(rowValue reflect.Value, rows *sql.Rows) (err error) {
 	}
 	for i, v := range containers {
 		value := reflect.Indirect(reflect.ValueOf(v))
+		if value.Elem().IsValid() {
+			continue
+		}
 		key := cols[i]
 		paths := strings.Split(key, "___")
 		if len(paths) == 2 {
