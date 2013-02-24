@@ -112,6 +112,7 @@ func (q *Qbs) OrderByDesc(path string) *Qbs {
 	return q
 }
 
+// Camel case field names
 func (q *Qbs) OmitFields(fieldName ...string) *Qbs {
 	q.criteria.omitFields = fieldName
 	return q
@@ -182,7 +183,9 @@ func (q *Qbs) doQueryRows(out interface{}, query string, args ...interface{}) er
 	q.log(query, args...)
 	stmt, err := q.Prepare(query)
 	if err != nil {
-		stmt.Close()
+		if stmt != nil {
+			stmt.Close()
+		}
 		return q.updateTxError(err)
 	}
 
@@ -215,6 +218,9 @@ func (q *Qbs) scanRows(rowValue reflect.Value, rows *sql.Rows) (err error) {
 	}
 	for i, v := range containers {
 		value := reflect.Indirect(reflect.ValueOf(v))
+		if !value.Elem().IsValid() {
+			continue
+		}
 		key := cols[i]
 		paths := strings.Split(key, "___")
 		if len(paths) == 2 {
