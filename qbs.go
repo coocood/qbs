@@ -154,7 +154,9 @@ func (q *Qbs) doQueryRow(out interface{}, query string, args ...interface{}) err
 	rowValue := reflect.ValueOf(out)
 	stmt, err := q.Prepare(query)
 	if err != nil {
-		stmt.Close()
+		if stmt != nil {
+			stmt.Close()
+		}
 		return q.updateTxError(err)
 	}
 	rows, err := stmt.Query(args...)
