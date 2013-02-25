@@ -151,7 +151,7 @@ func DoTestSaveAndDelete(assert *assrt.Assert, info dialectInfo) {
 
 	// make sure created/updated values match the db
 	var model1r []*saveModel
-	err = q.Where("id = ?", model1.Id).FindAll(&model1r)
+	err = q.WhereEqual("id", model1.Id).FindAll(&model1r)
 	assert.MustNil(err)
 	assert.MustOneLen(model1r)
 	assert.Equal(model1.Created.Unix(), model1r[0].Created.Unix())
@@ -304,7 +304,7 @@ func DoTestFind(assert *assrt.Assert, info dialectInfo) {
 	assert.NotNil(err)
 
 	allOut := []*types{}
-	err = q.Where("intgr = ?", -1).FindAll(&allOut)
+	err = q.WhereEqual("intgr", -1).FindAll(&allOut)
 	assert.Nil(err)
 	assert.Equal(2, len(allOut))
 }
@@ -372,12 +372,12 @@ func DoTestUpdate(assert *assrt.Assert, info dialectInfo) {
 		type basic struct {
 			Name string
 		}
-		affected, err := q.Where("state = ?", 1).Update(&basic{Name: "d"})
+		affected, err := q.WhereEqual("state", 1).Update(&basic{Name: "d"})
 		assert.MustNil(err)
 		assert.Equal(2, affected)
 
 		var datas []*basic
-		q.Where("state = ?", 1).FindAll(&datas)
+		q.WhereEqual("state", 1).FindAll(&datas)
 		assert.MustEqual(2, len(datas))
 		assert.Equal("d", datas[0].Name)
 		assert.Equal("d", datas[1].Name)
@@ -389,7 +389,7 @@ func DoTestUpdate(assert *assrt.Assert, info dialectInfo) {
 	assert.MustNil(err)
 	assert.Equal(2, affected)
 	var datas []*basic
-	q.Where("state = ?", 1).FindAll(&datas)
+	q.WhereEqual("state", 1).FindAll(&datas)
 	assert.MustEqual(0, len(datas))
 }
 
@@ -443,7 +443,7 @@ func DoTestBoolType(assert *assrt.Assert, info dialectInfo) {
 	bt.Active = true
 	q.Save(bt)
 	bt.Active = false
-	q.Where("active = ?", true).Find(bt)
+	q.WhereEqual("active", true).Find(bt)
 	assert.True(bt.Active)
 }
 

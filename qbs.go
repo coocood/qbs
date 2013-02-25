@@ -83,6 +83,12 @@ func (q *Qbs) Where(expr string, args ...interface{}) *Qbs {
 	return q
 }
 
+//Snakecase column name
+func (q *Qbs) WhereEqual(column string, value interface {}) *Qbs{
+	q.criteria.condition = NewEqualCondition(column, value)
+	return q
+}
+
 //Condition defines the SQL "WHERE" clause
 //If other condition can be inferred by the struct argument in
 //Find method, it will be merged with AND

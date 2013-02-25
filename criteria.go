@@ -38,6 +38,12 @@ func NewCondition(expr string, args ...interface{}) *Condition {
 	}
 }
 
+//Snakecase column name
+func NewEqualCondition(column string, value interface {}) *Condition{
+	expr := column + " = ?"
+	return NewCondition(expr,value)
+}
+
 func NewInCondition(column string, values []interface{}) *Condition {
 	expr := column + " IN ("
 	for _ = range values {
@@ -60,6 +66,13 @@ func (c *Condition) And(expr string, args ...interface{}) *Condition {
 	return c
 }
 
+//Snakecase column name
+func (c *Condition) AndEqual(column string, value interface {}) *Condition{
+	expr := column + " = ?"
+	c.And(expr,value)
+	return c
+}
+
 func (c *Condition) AndCondition(subCondition *Condition) *Condition {
 	if c.Sub != nil {
 		c.Expr, c.Args = c.Merge()
@@ -75,6 +88,13 @@ func (c *Condition) Or(expr string, args ...interface{}) *Condition {
 	}
 	c.Sub = NewCondition(expr, args...)
 	c.IsOr = true
+	return c
+}
+
+//Snakecase column name
+func (c *Condition) OrEqual(column string, value interface {}) *Condition{
+	expr := column + " = ?"
+	c.Or(expr,value)
 	return c
 }
 
