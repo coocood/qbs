@@ -23,10 +23,11 @@ Qbs stands for Query By Struct. A Go ORM.
 
 ##Warning
  
-* New version may break backward compatibility.
+* New version may break backwards compatibility.
 * Once you installed it for the first time by "go get", do not "go get" again for your existing application.
 * You should copy local source code when you need to compile your application on another mechine.
 * Or you can simply fork this repo, so you won't get any suprise.
+* When new version break backwards compatiblity, a branch with the number of the date will be created to keep the legacy code.
 
 ##Basic Example
 
