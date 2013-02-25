@@ -55,8 +55,16 @@ func (d *postgres) SqlType(f interface{}, size int) string {
 
 func (d *postgres) Insert(q *Qbs) (int64, error) {
 	sql, args := d.Dialect.InsertSql(q.criteria)
+	row := q.QueryRow(sql, args...)
+	value := q.criteria.model.Pk.Value
+	var err error
 	var id int64
-	err := q.QueryRow(sql, args...).Scan(&id)
+	if _, ok := value.(int64); ok {
+		err = row.Scan(&id)
+	}else if _, ok := value.(string); ok {
+		var str string
+		err = row.Scan(&str)
+	}
 	return id, err
 }
 
