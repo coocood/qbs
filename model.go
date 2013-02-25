@@ -87,8 +87,16 @@ func (model *Model) columnsAndValues(forUpdate bool) ([]string, []interface{}) {
 		if forUpdate {
 			include = column.Value != nil && !column.PK
 		} else {
-			zeroPk := column.PK && column.Value == 0
-			include = column.Value != nil && !zeroPk
+			include = true
+			if column.Value == nil{
+				include = false
+			}else if column.PK {
+				if intValue,ok := column.Value.(int64); ok{
+					include = intValue != 0
+				}else if strValue, ok := column.Value.(string); ok{
+					include = strValue != ""
+				}
+			}
 		}
 		if include {
 			columns = append(columns, column.Name)

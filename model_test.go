@@ -115,3 +115,16 @@ func TestInterfaceToSubModel(t *testing.T) {
 	model := structPtrToModel(pst, true, nil)
 	assert.OneLen(model.Refs)
 }
+
+func TestColumnsAndValues(t *testing.T) {
+	assert := assrt.NewAssert(t)
+	type User struct {
+		Id   int64
+		Name string
+	}
+	user := new(User)
+	model := structPtrToModel(user, true, nil)
+	columns, values := model.columnsAndValues(false)
+	assert.MustOneLen(columns)
+	assert.MustOneLen(values)
+}
