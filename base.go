@@ -98,13 +98,20 @@ func (d *base) QuerySql(criteria *Criteria) (string, []interface{}) {
 		query = append(query, "WHERE", cexpr)
 		args = append(args, cargs...)
 	}
-
-	if x := criteria.orderBy; x != "" {
-		query = append(query, "ORDER BY "+x)
-		if criteria.orderDesc {
-			query = append(query, "DESC")
+	orderByLen := len(criteria.orderBys)
+	if orderByLen > 0 {
+		query = append(query, "ORDER BY")
+		for i, order := range criteria.orderBys {
+			query = append(query, order.path)
+			if order.desc {
+				query = append(query, "DESC")
+			}
+			if i < orderByLen -1 {
+				query = append(query, ",")
+			}
 		}
 	}
+
 	if x := criteria.limit; x > 0 {
 		query = append(query, "LIMIT ?")
 		args = append(args, criteria.limit)

@@ -84,6 +84,8 @@ func TestTransaction(t *testing.T) {
 
 func DoTestTransaction(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
+	defer mg.Close()
+	defer q.Close()
 	type txModel struct {
 		Id int64
 		A  string
@@ -125,6 +127,8 @@ func DoTestSaveAndDelete(assert *assrt.Assert, info dialectInfo) {
 	assert.MustZero(x.Sub(x.UTC()))
 	now := time.Now()
 	mg, q := setupDb(assert, info)
+	defer mg.Close()
+	defer q.Close()
 	type saveModel struct {
 		Id      int64
 		A       string
@@ -196,6 +200,8 @@ func TestForeignKey(t *testing.T) {
 
 func DoTestForeignKey(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
+	defer mg.Close()
+	defer q.Close()
 	type user struct {
 		Id   int64
 		Name string
@@ -228,15 +234,21 @@ func DoTestForeignKey(assert *assrt.Assert, info dialectInfo) {
 	assert.MustNil(err)
 	assert.Equal(aPost.Id, pst.Id)
 	assert.Equal("john", pst.Author.Name)
+
 	pst.Author = nil
 	err = q.OmitFields("Author").Find(pst)
 	assert.MustNil(err)
-	assert.Equal(aPost.Id, pst.Id)
 	assert.MustNil(pst.Author)
+
+	err = q.OmitJoin().Find(pst)
+	assert.MustNil(err)
+	assert.MustNil(pst.Author)
+
 	var psts []*post
 	err = q.FindAll(&psts)
 	assert.MustNil(err)
 	assert.OneLen(psts)
+	assert.Equal("john", psts[0].Author.Name)
 }
 
 func TestFind(t *testing.T) {
@@ -247,6 +259,8 @@ func TestFind(t *testing.T) {
 
 func DoTestFind(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
+	defer mg.Close()
+	defer q.Close()
 	now := info.dialect.Now()
 
 	type types struct {
@@ -329,6 +343,7 @@ func (table *AddColumn) Indexes(indexes *Indexes) {
 func DoTestCreateTable(assert *assrt.Assert, info dialectInfo) {
 	assert.Logf("Dialect %T\n", info.dialect)
 	mg, _ := setupDb(assert, info)
+	defer mg.Close()
 	{
 		type AddColumn struct {
 			Prim int64 `qbs:"pk"`
@@ -360,6 +375,8 @@ func TestUpdate(t *testing.T) {
 
 func DoTestUpdate(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
+	defer mg.Close()
+	defer q.Close()
 	mg.dropTableIfExists(&basic{})
 	mg.CreateTableIfNotExists(&basic{})
 	_, err := q.Save(&basic{Name: "a", State: 1})
@@ -414,6 +431,8 @@ func (v *ValidatorTable) Validate(q *Qbs) error {
 
 func DoTestValidation(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
+	defer mg.Close()
+	defer q.Close()
 	valid := new(ValidatorTable)
 	mg.dropTableIfExists(valid)
 	mg.CreateTableIfNotExists(valid)
@@ -438,6 +457,8 @@ func DoTestBoolType(assert *assrt.Assert, info dialectInfo) {
 	}
 	bt := new(BoolType)
 	mg, q := setupDb(assert, info)
+	defer mg.Close()
+	defer q.Close()
 	mg.dropTableIfExists(bt)
 	mg.CreateTableIfNotExists(bt)
 	bt.Active = true
@@ -462,6 +483,8 @@ func DoTestStringPk(assert *assrt.Assert, info dialectInfo) {
 	spk.Tag = "health"
 	spk.Count = 10
 	mg, q := setupDb(assert, info)
+	defer mg.Close()
+	defer q.Close()
 	mg.dropTableIfExists(spk)
 	mg.CreateTableIfNotExists(spk)
 	affected, _ := q.Save(spk)

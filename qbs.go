@@ -108,13 +108,12 @@ func (q *Qbs) Offset(offset int) *Qbs {
 }
 
 func (q *Qbs) OrderBy(path string) *Qbs {
-	q.criteria.orderBy = q.Dialect.Quote(path)
+	q.criteria.orderBys = append(q.criteria.orderBys,order{q.Dialect.Quote(path),false})
 	return q
 }
 
 func (q *Qbs) OrderByDesc(path string) *Qbs {
-	q.criteria.orderBy = q.Dialect.Quote(path)
-	q.criteria.orderDesc = true
+	q.criteria.orderBys = append(q.criteria.orderBys,order{q.Dialect.Quote(path),true})
 	return q
 }
 
@@ -124,14 +123,20 @@ func (q *Qbs) OmitFields(fieldName ...string) *Qbs {
 	return q
 }
 
+func (q *Qbs) OmitJoin() *Qbs {
+	q.criteria.omitJoin = true
+	return q
+}
+
 // Perform select query by parsing the struct's type and then fill the values into the struct
 // All fields of supported types in the struct will be added in select clause.
 // If Id value is provided, it will be added into the where clause
 // If a foreign key field with its referenced struct pointer field are provided,
 // It will perform a join query, the referenced struct pointer field will be filled in
 // the values obtained by the query.
+// If not found, "sql.ErrNoRows" will be returned.
 func (q *Qbs) Find(structPtr interface{}) error {
-	q.criteria.model = structPtrToModel(structPtr, true, q.criteria.omitFields)
+	q.criteria.model = structPtrToModel(structPtr, !q.criteria.omitJoin, q.criteria.omitFields)
 	q.criteria.limit = 1
 	if !q.criteria.model.pkZero() {
 		idPath := q.Dialect.Quote(q.criteria.model.Table) + "." + q.Dialect.Quote(q.criteria.model.Pk.Name)
@@ -151,7 +156,7 @@ func (q *Qbs) Find(structPtr interface{}) error {
 func (q *Qbs) FindAll(ptrOfSliceOfStructPtr interface{}) error {
 	strucType := reflect.TypeOf(ptrOfSliceOfStructPtr).Elem().Elem().Elem()
 	strucPtr := reflect.New(strucType).Interface()
-	q.criteria.model = structPtrToModel(strucPtr, true, q.criteria.omitFields)
+	q.criteria.model = structPtrToModel(strucPtr, !q.criteria.omitJoin, q.criteria.omitFields)
 	query, args := q.Dialect.QuerySql(q.criteria)
 	return q.doQueryRows(ptrOfSliceOfStructPtr, query, args...)
 }
@@ -414,6 +419,13 @@ func (q *Qbs) ContainsValue(table interface{}, column string, value interface{})
 	var result interface{}
 	err := row.Scan(&result)
 	return err == nil
+}
+
+func (q *Qbs) Close() error{
+	if q.Db != nil{
+		return q.Db.Close()
+	}
+	return nil
 }
 
 func (q *Qbs) log(query string, args ...interface{}) {

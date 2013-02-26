@@ -3,11 +3,11 @@ package qbs
 type Criteria struct {
 	model      *Model
 	condition  *Condition
-	orderBy    string
-	orderDesc  bool
+	orderBys   []order
 	limit      int
 	offset     int
 	omitFields []string
+	omitJoin   bool
 }
 
 func (c *Criteria) mergePkCondition(d Dialect) {
@@ -20,6 +20,11 @@ func (c *Criteria) mergePkCondition(d Dialect) {
 		con = c.condition
 	}
 	c.condition = con
+}
+
+type order struct {
+	path string
+	desc bool
 }
 
 // Conditions are structured in a way to define

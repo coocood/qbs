@@ -72,6 +72,15 @@ func (mg *Migration) CreateIndexIfNotExists(table interface{}, name string, uniq
 	return nil
 }
 
+func (mg *Migration) Close() {
+	if mg.Db != nil {
+		err := mg.Db.Close()
+		if err != nil{
+			panic(err)
+		}
+	}
+}
+
 // Migration only support incremental migrations like create table if not exists
 // create index if not exists, add columns, so it's safe to keep it in production environment.
 func NewMigration(db *sql.DB, dbName string, dialect Dialect) *Migration {
