@@ -52,6 +52,15 @@ func (mg *Migration) dropTableIfExists(structPtr interface{}) {
 	}
 }
 
+//Can only drop table on database which name has "test" suffix.
+//Used for testing
+func (mg *Migration) DropTable(strutPtr interface {}) {
+	if !strings.HasSuffix(mg.DbName, "test") {
+		panic("Drop table can only be executed on database which name has 'test' suffix")
+	}
+	mg.dropTableIfExists(strutPtr)
+}
+
 func (mg *Migration) addColumn(table string, column *ModelField) {
 	_, err := mg.Db.Exec(mg.Dialect.AddColumnSql(table, column.Name, column.Value, column.Size()))
 	if err != nil {
