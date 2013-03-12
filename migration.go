@@ -2,6 +2,7 @@ package qbs
 
 import (
 	"database/sql"
+	"strings"
 )
 
 type Migration struct {
