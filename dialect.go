@@ -2,7 +2,6 @@ package qbs
 
 import (
 	"reflect"
-	"time"
 )
 
 type Dialect interface {
@@ -12,10 +11,6 @@ type Dialect interface {
 
 	// Quote will quote identifiers in a SQL statement.
 	Quote(s string) string
-
-	// Now returns the current time. Some drivers have problems with time zones,
-	// so this method can be used to prepare the time (e.g. convert to UTC).
-	Now() time.Time
 
 	SqlType(f interface{}, size int) string
 

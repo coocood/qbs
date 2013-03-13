@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"database/sql"
 )
 
 type postgres struct {
@@ -14,10 +15,6 @@ func NewPostgres() Dialect {
 	d := &postgres{}
 	d.base.Dialect = d
 	return d
-}
-
-func (d *postgres) Now() time.Time {
-	return time.Now().UTC()
 }
 
 func (d *postgres) Quote(s string) string {
@@ -33,7 +30,7 @@ func (d *postgres) Quote(s string) string {
 func (d *postgres) SqlType(f interface{}, size int) string {
 	switch f.(type) {
 	case time.Time:
-		return "timestamp"
+		return "timestamp with time zone"
 	case bool:
 		return "boolean"
 	case int, int8, int16, int32, uint, uint8, uint16, uint32:
@@ -80,7 +77,14 @@ func (d *postgres) KeywordAutoIncrement() string {
 }
 
 func (d *postgres) IndexExists(mg *Migration, tableName, indexName string) bool {
-	return false
+	var row *sql.Row
+	var name string
+	query := "SELECT indexname FROM pg_indexes "
+	query += "WHERE tablename = ? AND indexname = ?"
+	query = d.SubstituteMarkers(query)
+	row = mg.Db.QueryRow(query, tableName, indexName)
+	row.Scan(&name)
+	return name != ""
 }
 
 func (d *postgres) SubstituteMarkers(query string) string {

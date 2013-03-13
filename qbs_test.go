@@ -261,7 +261,7 @@ func DoTestFind(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
 	defer mg.Close()
 	defer q.Close()
-	now := info.dialect.Now()
+	now := time.Now()
 
 	type types struct {
 		Id    int64
@@ -357,6 +357,7 @@ func DoTestCreateTable(assert *assrt.Assert, info dialectInfo) {
 	}
 	table := &AddColumn{}
 	mg.CreateTableIfNotExists(table)
+	assert.True(mg.Dialect.IndexExists(mg, "add_column", "first_last"))
 	columns := mg.Dialect.ColumnsInTable(mg, table)
 	assert.Equal(4, len(columns))
 }
@@ -493,3 +494,4 @@ func DoTestStringPk(assert *assrt.Assert, info dialectInfo) {
 	q.Find(spk)
 	assert.Equal(10, spk.Count)
 }
+

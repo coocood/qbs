@@ -25,10 +25,6 @@ func (d *base) Quote(s string) string {
 	return strings.Join(a, sep)
 }
 
-func (d *base) Now() time.Time {
-	return time.Now()
-}
-
 func (d *base) ParseBool(value reflect.Value) bool {
 	return value.Bool()
 }

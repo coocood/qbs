@@ -19,5 +19,5 @@ func TestSqlTypeForPgDialect(t *testing.T) {
 	assert.Equal("text", d.SqlType("astring", 0))
 	assert.Equal("varchar(255)", d.SqlType("a", 255))
 	assert.Equal("varchar(128)", d.SqlType("b", 128))
-	assert.Equal("timestamp", d.SqlType(time.Now(), 0))
+	assert.Equal("timestamp with time zone", d.SqlType(time.Now(), 0))
 }

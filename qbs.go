@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 )
 
 type Qbs struct {
@@ -322,7 +323,7 @@ func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 	}
 	q.criteria.model = model
 	preservedCriteria := q.criteria
-	now := q.Dialect.Now()
+	now := time.Now()
 	var id int64 = 0
 	updateModelField := model.timeFiled("updated")
 	if updateModelField != nil {
