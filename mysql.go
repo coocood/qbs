@@ -55,9 +55,9 @@ func (d *mysql) IndexExists(mg *Migration, tableName, indexName string) bool {
 	var row *sql.Row
 	var name string
 	row = mg.Db.QueryRow("SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS "+
-		"WHERE AND TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?", mg.DbName, tableName, indexName)
-	err := row.Scan(&name)
-	return err != nil
+		"WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?", mg.DbName, tableName, indexName)
+	row.Scan(&name)
+	return name != ""
 }
 
 func (d *mysql) PrimaryKeySql(isString bool, size int) string {
