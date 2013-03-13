@@ -26,7 +26,6 @@ Qbs stands for Query By Struct. A Go ORM.
 See [GoDoc](http://godoc.org/github.com/coocood/qbs) for automatic
 documentation.
 
-
 ##Warning
  
 * New version may break backwards compatibility.
@@ -160,3 +159,5 @@ So the previous example's tag can be omitted.
 [Erik Aigner](https://github.com/eaigner)
 Qbs was originally a fork from [hood](https://github.com/eaigner/hood) by [Erik Aigner](https://github.com/eaigner), 
 but I changed more than 80% of the code, then it ended up become a totally different ORM.
+
+[NuVivo314](https://github.com/NuVivo314),  [Jason McVetta](https://github.com/jmcvetta)
