@@ -1,10 +1,3 @@
-/**
- * Created with IntelliJ IDEA.
- * User: Ewan
- * Date: 13-2-4
- * Time: 下午2:59
- * To change this template use File | Settings | File Templates.
- */
 package qbs
 
 import (
