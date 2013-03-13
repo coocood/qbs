@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"database/sql"
 )
 
 type postgres struct {
@@ -80,7 +81,13 @@ func (d *postgres) KeywordAutoIncrement() string {
 }
 
 func (d *postgres) IndexExists(mg *Migration, tableName, indexName string) bool {
-	return false
+	var row *sql.Row
+	var name string
+	query := "SELECT indexname FROM pg_indexes"
+	query += "WHERE tablename = ? AND indexname = ?"
+	row = mg.Db.QueryRow(query, tableName, indexName)
+	err := row.Scan(&name)
+	return err != nil
 }
 
 func (d *postgres) SubstituteMarkers(query string) string {
