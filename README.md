@@ -21,6 +21,12 @@ Qbs stands for Query By Struct. A Go ORM.
 
     go get github.com/coocood/qbs
 
+## API Documentation
+
+See [GoDoc](http://godoc.org/github.com/coocood/qbs) for automatic
+documentation.
+
+
 ##Warning
  
 * New version may break backwards compatibility.
