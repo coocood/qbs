@@ -29,7 +29,7 @@ Qbs stands for Query By Struct. A Go ORM.
 * Or you can simply fork this repo, so you won't get any suprise.
 * When new version break backwards compatiblity, a branch with the number of the date will be created to keep the legacy code.
 
-##Basic Example
+##Examples
 
     func FindAuthorName(){
         //create Qbs instance
@@ -63,6 +63,8 @@ Qbs stands for Query By Struct. A Go ORM.
     }
 
 More advanced examples can be found in test files.
+
+A complete application can be found in a CMS system [toropress](https://github.com/insionng/toropress), specifically in [models.go](https://github.com/insionng/toropress/blob/master/models/models.go) file
 
 ##Restriction
 
