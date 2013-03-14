@@ -17,11 +17,11 @@ func NewMysql() Dialect {
 	return d
 }
 
-func (d *mysql) ParseBool(value reflect.Value) bool {
+func (d *mysql) parseBool(value reflect.Value) bool {
 	return value.Int() != 0
 }
 
-func (d *mysql) SqlType(f interface{}, size int) string {
+func (d *mysql) sqlType(f interface{}, size int) string {
 	switch f.(type) {
 	case time.Time:
 		return "timestamp"
@@ -47,20 +47,17 @@ func (d *mysql) SqlType(f interface{}, size int) string {
 	panic("invalid sql type")
 }
 
-func (d *mysql) KeywordAutoIncrement() string {
-	return "AUTO_INCREMENT"
-}
 
-func (d *mysql) IndexExists(mg *Migration, tableName, indexName string) bool {
+func (d *mysql) indexExists(mg *Migration, tableName, indexName string) bool {
 	var row *sql.Row
 	var name string
 	row = mg.Db.QueryRow("SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS "+
-		"WHERE AND TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?", mg.DbName, tableName, indexName)
-	err := row.Scan(&name)
-	return err != nil
+		"WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?", mg.DbName, tableName, indexName)
+	row.Scan(&name)
+	return name != ""
 }
 
-func (d *mysql) PrimaryKeySql(isString bool, size int) string {
+func (d *mysql) primaryKeySql(isString bool, size int) string {
 	if isString {
 		return fmt.Sprintf("varchar(%d) PRIMARY KEY", size)
 	}

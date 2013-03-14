@@ -29,7 +29,7 @@ var allDialectSyntax = []dialectSyntax{
 		`UPDATE "sql_gen_model" SET "first" = $1, "last" = $2, "amount" = $3 WHERE "prim" = $4`,
 		`DELETE FROM "sql_gen_model" WHERE "prim" = $1`,
 		`SELECT "post"."id", "post"."author_id", "post"."content", "author"."id" AS author___id, "author"."name" AS author___name FROM "post" LEFT JOIN "user" AS "author" ON "post"."author_id" = "author"."id"`,
-		`SELECT "name", "grade", "score" FROM "student" WHERE (grade IN ($1, $2, $3)) AND ((score <= $4) OR (score >= $5)) ORDER BY "name" DESC LIMIT $6 OFFSET $7`,
+		`SELECT "name", "grade", "score" FROM "student" WHERE (grade IN ($1, $2, $3)) AND ((score <= $4) OR (score >= $5)) ORDER BY "name" , "grade" DESC LIMIT $6 OFFSET $7`,
 		`DROP TABLE IF EXISTS "drop_table"`,
 		`ALTER TABLE "a" ADD COLUMN "c" varchar(100)`,
 		`CREATE UNIQUE INDEX "iname" ON "itable" ("a", "b", "c")`,
@@ -43,7 +43,7 @@ var allDialectSyntax = []dialectSyntax{
 		"UPDATE `sql_gen_model` SET `first` = ?, `last` = ?, `amount` = ? WHERE `prim` = ?",
 		"DELETE FROM `sql_gen_model` WHERE `prim` = ?",
 		"SELECT `post`.`id`, `post`.`author_id`, `post`.`content`, `author`.`id` AS author___id, `author`.`name` AS author___name FROM `post` LEFT JOIN `user` AS `author` ON `post`.`author_id` = `author`.`id`",
-		"SELECT `name`, `grade`, `score` FROM `student` WHERE (grade IN (?, ?, ?)) AND ((score <= ?) OR (score >= ?)) ORDER BY `name` DESC LIMIT ? OFFSET ?",
+		"SELECT `name`, `grade`, `score` FROM `student` WHERE (grade IN (?, ?, ?)) AND ((score <= ?) OR (score >= ?)) ORDER BY `name` , `grade` DESC LIMIT ? OFFSET ?",
 		"DROP TABLE IF EXISTS `drop_table`",
 		"ALTER TABLE `a` ADD COLUMN `c` varchar(100)",
 		"CREATE UNIQUE INDEX `iname` ON `itable` (`a`, `b`, `c`)",
@@ -57,7 +57,7 @@ var allDialectSyntax = []dialectSyntax{
 		"UPDATE `sql_gen_model` SET `first` = ?, `last` = ?, `amount` = ? WHERE `prim` = ?",
 		"DELETE FROM `sql_gen_model` WHERE `prim` = ?",
 		"SELECT `post`.`id`, `post`.`author_id`, `post`.`content`, `author`.`id` AS author___id, `author`.`name` AS author___name FROM `post` LEFT JOIN `user` AS `author` ON `post`.`author_id` = `author`.`id`",
-		"SELECT `name`, `grade`, `score` FROM `student` WHERE (grade IN (?, ?, ?)) AND ((score <= ?) OR (score >= ?)) ORDER BY `name` DESC LIMIT ? OFFSET ?",
+		"SELECT `name`, `grade`, `score` FROM `student` WHERE (grade IN (?, ?, ?)) AND ((score <= ?) OR (score >= ?)) ORDER BY `name` , `grade` DESC LIMIT ? OFFSET ?",
 		"DROP TABLE IF EXISTS `drop_table`",
 		"ALTER TABLE `a` ADD COLUMN `c` text",
 		"CREATE UNIQUE INDEX `iname` ON `itable` (`a`, `b`, `c`)",
@@ -82,7 +82,7 @@ func TestAddColumSQL(t *testing.T) {
 
 func DoTestAddColumSQL(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
-	sql := info.dialect.AddColumnSql("a", "c", "", 100)
+	sql := info.dialect.addColumnSql("a", "c", "", 100)
 	assert.Equal(info.addColumnSql, sql)
 }
 func TestCreateTableSql(t *testing.T) {
@@ -100,7 +100,7 @@ func DoTestCreateTableSql(assert *assrt.Assert, info dialectSyntax) {
 	}
 	table := &withoutPk{"a", "b", 5}
 	model := structPtrToModel(table, true, nil)
-	sql := info.dialect.CreateTableSql(model, true)
+	sql := info.dialect.createTableSql(model, true)
 	assert.Equal(info.createTableWithoutPkIfExistsSql, sql)
 	type withPk struct {
 		Primary int64 `qbs:"pk"`
@@ -110,7 +110,7 @@ func DoTestCreateTableSql(assert *assrt.Assert, info dialectSyntax) {
 	}
 	table2 := &withPk{First: "a", Last: "b", Amount: 5}
 	model = structPtrToModel(table2, true, nil)
-	sql = info.dialect.CreateTableSql(model, false)
+	sql = info.dialect.createTableSql(model, false)
 	assert.Equal(info.createTableWithPkSql, sql)
 }
 
@@ -122,9 +122,9 @@ func TestCreateIndexSql(t *testing.T) {
 
 func DoTestCreateIndexSql(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
-	sql := info.dialect.CreateIndexSql("iname", "itable", true, "a", "b", "c")
+	sql := info.dialect.createIndexSql("iname", "itable", true, "a", "b", "c")
 	assert.Equal(info.createUniqueIndexSql, sql)
-	sql = info.dialect.CreateIndexSql("iname2", "itable2", false, "d", "e")
+	sql = info.dialect.createIndexSql("iname2", "itable2", false, "d", "e")
 	assert.Equal(info.createIndexSql, sql)
 }
 
@@ -137,10 +137,10 @@ func TestInsertSQL(t *testing.T) {
 func DoTestInsertSQL(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
 	model := structPtrToModel(sqlGenSampleData, true, nil)
-	criteria := &Criteria{model: model}
+	criteria := &criteria{model: model}
 	criteria.mergePkCondition(info.dialect)
-	sql, _ := info.dialect.InsertSql(criteria)
-	sql = info.dialect.SubstituteMarkers(sql)
+	sql, _ := info.dialect.insertSql(criteria)
+	sql = info.dialect.substituteMarkers(sql)
 	assert.Equal(info.insertSql, sql)
 }
 
@@ -153,10 +153,10 @@ func TestUpdateSQL(t *testing.T) {
 func DoTestUpdateSQL(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
 	model := structPtrToModel(sqlGenSampleData, true, nil)
-	criteria := &Criteria{model: model}
+	criteria := &criteria{model: model}
 	criteria.mergePkCondition(info.dialect)
-	sql, _ := info.dialect.UpdateSql(criteria)
-	sql = info.dialect.SubstituteMarkers(sql)
+	sql, _ := info.dialect.updateSql(criteria)
+	sql = info.dialect.substituteMarkers(sql)
 	assert.Equal(info.updateSql, sql)
 }
 
@@ -169,10 +169,10 @@ func TestDeleteSQL(t *testing.T) {
 func DoTestDeleteSQL(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
 	model := structPtrToModel(sqlGenSampleData, true, nil)
-	criteria := &Criteria{model: model}
+	criteria := &criteria{model: model}
 	criteria.mergePkCondition(info.dialect)
-	sql, _ := info.dialect.DeleteSql(criteria)
-	sql = info.dialect.SubstituteMarkers(sql)
+	sql, _ := info.dialect.deleteSql(criteria)
+	sql = info.dialect.substituteMarkers(sql)
 	assert.Equal(info.deleteSql, sql)
 }
 
@@ -195,10 +195,10 @@ func DoTestSelectionSQL(assert *assrt.Assert, info dialectSyntax) {
 		Content  string
 	}
 	model := structPtrToModel(new(Post), true, nil)
-	criteria := new(Criteria)
+	criteria := new(criteria)
 	criteria.model = model
 
-	sql, _ := info.dialect.QuerySql(criteria)
+	sql, _ := info.dialect.querySql(criteria)
 	assert.Equal(info.selectionSql, sql)
 }
 
@@ -216,23 +216,22 @@ func DoTestQuerySQL(assert *assrt.Assert, info dialectSyntax) {
 		Score int
 	}
 	model := structPtrToModel(new(Student), true, nil)
-	criteria := new(Criteria)
+	criteria := new(criteria)
 	criteria.model = model
 	condition := NewInCondition("grade", []interface{}{6, 7, 8})
 	subCondition := NewCondition("score <= ?", 60).Or("score >= ?", 80)
 	condition.AndCondition(subCondition)
 	criteria.condition = condition
-	criteria.orderBy = info.dialect.Quote("name")
-	criteria.orderDesc = true
+	criteria.orderBys = []order{order{info.dialect.quote("name"),false},order{info.dialect.quote("grade"),true}}
 	criteria.offset = 3
 	criteria.limit = 10
-	sql, _ := info.dialect.QuerySql(criteria)
-	sql = info.dialect.SubstituteMarkers(sql)
+	sql, _ := info.dialect.querySql(criteria)
+	sql = info.dialect.substituteMarkers(sql)
 	assert.Equal(info.querySql, sql)
 }
 
 func DoTestDropTableSQL(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
-	sql := info.dialect.DropTableSql("drop_table")
+	sql := info.dialect.dropTableSql("drop_table")
 	assert.Equal(info.dropTableIfExistsSql, sql)
 }

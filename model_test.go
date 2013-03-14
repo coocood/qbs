@@ -26,7 +26,7 @@ func TestFieldOmit(t *testing.T) {
 		C string
 	}
 	m := structPtrToModel(&Schema{}, true, []string{"C"})
-	assert.OneLen(m.Fields)
+	assert.OneLen(m.fields)
 }
 
 func TestInterfaceToModelWithReference(t *testing.T) {
@@ -45,10 +45,10 @@ func TestInterfaceToModelWithReference(t *testing.T) {
 		6, 3, &parent{3, "Mrs. A", "infinite"},
 	}
 	m := structPtrToModel(table1, true, nil)
-	ref, ok := m.Refs["Father"]
+	ref, ok := m.refs["Father"]
 	assert.MustTrue(ok)
-	f := ref.Model.Fields[1]
-	x, ok := f.Value.(string)
+	f := ref.model.fields[1]
+	x, ok := f.value.(string)
 	assert.True(ok)
 	assert.Equal("Mrs. A", x)
 }
@@ -74,28 +74,28 @@ func TestInterfaceToModel(t *testing.T) {
 		ColTime:    now,
 	}
 	m := structPtrToModel(table1, true, nil)
-	assert.Equal("col_primary", m.Pk.Name)
-	assert.Equal(4, len(m.Fields))
-	assert.Equal(2, len(m.Indexes))
-	assert.Equal("col_primary_col_time", m.Indexes[0].Name)
-	assert.True(!m.Indexes[0].Unique)
-	assert.Equal("col_var_char_col_time", m.Indexes[1].Name)
-	assert.True(m.Indexes[1].Unique)
+	assert.Equal("col_primary", m.pk.name)
+	assert.Equal(4, len(m.fields))
+	assert.Equal(2, len(m.indexes))
+	assert.Equal("col_primary_col_time", m.indexes[0].name)
+	assert.True(!m.indexes[0].unique)
+	assert.Equal("col_var_char_col_time", m.indexes[1].name)
+	assert.True(m.indexes[1].unique)
 
-	f := m.Fields[0]
-	assert.Equal(6, f.Value)
-	assert.True(f.PK)
+	f := m.fields[0]
+	assert.Equal(6, f.value)
+	assert.True(f.pk)
 
-	f = m.Fields[1]
-	assert.Equal("'banana'", f.Default())
+	f = m.fields[1]
+	assert.Equal("'banana'", f.dfault())
 
-	f = m.Fields[2]
-	str, _ := f.Value.(string)
+	f = m.fields[2]
+	str, _ := f.value.(string)
 	assert.Equal("orange", str)
-	assert.Equal(64, f.Size())
+	assert.Equal(64, f.size())
 
-	f = m.Fields[3]
-	tm, _ := f.Value.(time.Time)
+	f = m.fields[3]
+	tm, _ := f.value.(time.Time)
 	assert.Equal(now, tm)
 }
 
@@ -113,5 +113,18 @@ func TestInterfaceToSubModel(t *testing.T) {
 	}
 	pst := new(Post)
 	model := structPtrToModel(pst, true, nil)
-	assert.OneLen(model.Refs)
+	assert.OneLen(model.refs)
+}
+
+func TestColumnsAndValues(t *testing.T) {
+	assert := assrt.NewAssert(t)
+	type User struct {
+		Id   int64
+		Name string
+	}
+	user := new(User)
+	model := structPtrToModel(user, true, nil)
+	columns, values := model.columnsAndValues(false)
+	assert.MustOneLen(columns)
+	assert.MustOneLen(values)
 }

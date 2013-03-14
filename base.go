@@ -11,11 +11,11 @@ type base struct {
 	Dialect Dialect
 }
 
-func (d *base) SubstituteMarkers(query string) string {
+func (d *base) substituteMarkers(query string) string {
 	return query
 }
 
-func (d *base) Quote(s string) string {
+func (d *base) quote(s string) string {
 	sep := "."
 	a := []string{}
 	c := strings.Split(s, sep)
@@ -25,18 +25,14 @@ func (d *base) Quote(s string) string {
 	return strings.Join(a, sep)
 }
 
-func (d *base) Now() time.Time {
-	return time.Now()
-}
-
-func (d *base) ParseBool(value reflect.Value) bool {
+func (d *base) parseBool(value reflect.Value) bool {
 	return value.Bool()
 }
 
-func (d *base) SetModelValue(driverValue, fieldValue reflect.Value) error {
+func (d *base) setModelValue(driverValue, fieldValue reflect.Value) error {
 	switch fieldValue.Type().Kind() {
 	case reflect.Bool:
-		fieldValue.SetBool(d.Dialect.ParseBool(driverValue.Elem()))
+		fieldValue.SetBool(d.Dialect.parseBool(driverValue.Elem()))
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		fieldValue.SetInt(driverValue.Elem().Int())
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -63,32 +59,32 @@ func (d *base) SetModelValue(driverValue, fieldValue reflect.Value) error {
 	return nil
 }
 
-func (d *base) QuerySql(criteria *Criteria) (string, []interface{}) {
+func (d *base) querySql(criteria *criteria) (string, []interface{}) {
 	query := make([]string, 0, 20)
 	args := make([]interface{}, 0, 20)
 
-	table := d.Dialect.Quote(criteria.model.Table)
+	table := d.Dialect.quote(criteria.model.table)
 	columns := []string{}
 	tables := []string{table}
-	hasJoin := len(criteria.model.Refs) > 0
-	for _, v := range criteria.model.Fields {
-		colName := d.Dialect.Quote(v.Name)
+	hasJoin := len(criteria.model.refs) > 0
+	for _, v := range criteria.model.fields {
+		colName := d.Dialect.quote(v.name)
 		if hasJoin {
-			colName = d.Dialect.Quote(criteria.model.Table) + "." + colName
+			colName = d.Dialect.quote(criteria.model.table) + "." + colName
 		}
 		columns = append(columns, colName)
 	}
-	for k, v := range criteria.model.Refs {
+	for k, v := range criteria.model.refs {
 		tableAlias := toSnake(k)
-		quotedTableAlias := d.Dialect.Quote(tableAlias)
-		quotedParentTable := d.Dialect.Quote(v.Model.Table)
-		leftKey := table + "." + d.Dialect.Quote(v.RefKey)
-		parentPrimary := quotedTableAlias + "." + d.Dialect.Quote(v.Model.Pk.Name)
+		quotedTableAlias := d.Dialect.quote(tableAlias)
+		quotedParentTable := d.Dialect.quote(v.model.table)
+		leftKey := table + "." + d.Dialect.quote(v.refKey)
+		parentPrimary := quotedTableAlias + "." + d.Dialect.quote(v.model.pk.name)
 		joinClause := fmt.Sprintf("LEFT JOIN %v AS %v ON %v = %v", quotedParentTable, quotedTableAlias, leftKey, parentPrimary)
 		tables = append(tables, joinClause)
-		for _, f := range v.Model.Fields {
-			alias := tableAlias + "___" + f.Name
-			columns = append(columns, d.Dialect.Quote(tableAlias+"."+f.Name)+" AS "+alias)
+		for _, f := range v.model.fields {
+			alias := tableAlias + "___" + f.name
+			columns = append(columns, d.Dialect.quote(tableAlias+"."+f.name)+" AS "+alias)
 		}
 	}
 	query = append(query, "SELECT", strings.Join(columns, ", "), "FROM", strings.Join(tables, " "))
@@ -98,13 +94,20 @@ func (d *base) QuerySql(criteria *Criteria) (string, []interface{}) {
 		query = append(query, "WHERE", cexpr)
 		args = append(args, cargs...)
 	}
-
-	if x := criteria.orderBy; x != "" {
-		query = append(query, "ORDER BY "+x)
-		if criteria.orderDesc {
-			query = append(query, "DESC")
+	orderByLen := len(criteria.orderBys)
+	if orderByLen > 0 {
+		query = append(query, "ORDER BY")
+		for i, order := range criteria.orderBys {
+			query = append(query, order.path)
+			if order.desc {
+				query = append(query, "DESC")
+			}
+			if i < orderByLen -1 {
+				query = append(query, ",")
+			}
 		}
 	}
+
 	if x := criteria.limit; x > 0 {
 		query = append(query, "LIMIT ?")
 		args = append(args, criteria.limit)
@@ -113,11 +116,11 @@ func (d *base) QuerySql(criteria *Criteria) (string, []interface{}) {
 		query = append(query, "OFFSET ?")
 		args = append(args, criteria.offset)
 	}
-	return d.Dialect.SubstituteMarkers(strings.Join(query, " ")), args
+	return d.Dialect.substituteMarkers(strings.Join(query, " ")), args
 }
 
-func (d *base) Insert(q *Qbs) (int64, error) {
-	sql, args := d.Dialect.InsertSql(q.criteria)
+func (d *base) insert(q *Qbs) (int64, error) {
+	sql, args := d.Dialect.insertSql(q.criteria)
 	result, err := q.Exec(sql, args...)
 	if err != nil {
 		return -1, err
@@ -129,25 +132,25 @@ func (d *base) Insert(q *Qbs) (int64, error) {
 	return id, nil
 }
 
-func (d *base) InsertSql(criteria *Criteria) (string, []interface{}) {
+func (d *base) insertSql(criteria *criteria) (string, []interface{}) {
 	columns, values := criteria.model.columnsAndValues(false)
 	quotedColumns := make([]string, 0, len(columns))
 	markers := make([]string, 0, len(columns))
 	for _, c := range columns {
-		quotedColumns = append(quotedColumns, d.Dialect.Quote(c))
+		quotedColumns = append(quotedColumns, d.Dialect.quote(c))
 		markers = append(markers, "?")
 	}
 	sql := fmt.Sprintf(
 		"INSERT INTO %v (%v) VALUES (%v)",
-		d.Dialect.Quote(criteria.model.Table),
+		d.Dialect.quote(criteria.model.table),
 		strings.Join(quotedColumns, ", "),
 		strings.Join(markers, ", "),
 	)
 	return sql, values
 }
 
-func (d *base) Update(q *Qbs) (int64, error) {
-	sql, args := d.Dialect.UpdateSql(q.criteria)
+func (d *base) update(q *Qbs) (int64, error) {
+	sql, args := d.Dialect.updateSql(q.criteria)
 	result, err := q.Exec(sql, args...)
 	if err != nil {
 		return 0, err
@@ -156,16 +159,16 @@ func (d *base) Update(q *Qbs) (int64, error) {
 	return affected, err
 }
 
-func (d *base) UpdateSql(criteria *Criteria) (string, []interface{}) {
+func (d *base) updateSql(criteria *criteria) (string, []interface{}) {
 	columns, values := criteria.model.columnsAndValues(true)
 	pairs := make([]string, 0, len(columns))
 	for _, column := range columns {
-		pairs = append(pairs, fmt.Sprintf("%v = ?", d.Dialect.Quote(column)))
+		pairs = append(pairs, fmt.Sprintf("%v = ?", d.Dialect.quote(column)))
 	}
 	conditionSql, args := criteria.condition.Merge()
 	sql := fmt.Sprintf(
 		"UPDATE %v SET %v WHERE %v",
-		d.Dialect.Quote(criteria.model.Table),
+		d.Dialect.quote(criteria.model.table),
 		strings.Join(pairs, ", "),
 		conditionSql,
 	)
@@ -173,8 +176,8 @@ func (d *base) UpdateSql(criteria *Criteria) (string, []interface{}) {
 	return sql, values
 }
 
-func (d *base) Delete(q *Qbs) (int64, error) {
-	sql, args := d.Dialect.DeleteSql(q.criteria)
+func (d *base) delete(q *Qbs) (int64, error) {
+	sql, args := d.Dialect.deleteSql(q.criteria)
 	result, err := q.Exec(sql, args...)
 	affected, err := result.RowsAffected()
 	if err != nil {
@@ -183,87 +186,87 @@ func (d *base) Delete(q *Qbs) (int64, error) {
 	return affected, err
 }
 
-func (d *base) DeleteSql(criteria *Criteria) (string, []interface{}) {
+func (d *base) deleteSql(criteria *criteria) (string, []interface{}) {
 	conditionSql, args := criteria.condition.Merge()
-	sql := "DELETE FROM " + d.Dialect.Quote(criteria.model.Table) + " WHERE " + conditionSql
+	sql := "DELETE FROM " + d.Dialect.quote(criteria.model.table) + " WHERE " + conditionSql
 	return sql, args
 }
 
-func (d *base) CreateTableSql(model *Model, ifNotExists bool) string {
+func (d *base) createTableSql(model *model, ifNotExists bool) string {
 	a := []string{"CREATE TABLE "}
 	if ifNotExists {
 		a = append(a, "IF NOT EXISTS ")
 	}
-	a = append(a, d.Dialect.Quote(model.Table), " ( ")
-	for i, field := range model.Fields {
+	a = append(a, d.Dialect.quote(model.table), " ( ")
+	for i, field := range model.fields {
 		b := []string{
-			d.Dialect.Quote(field.Name),
+			d.Dialect.quote(field.name),
 		}
-		if field.PK {
-			_, ok := field.Value.(string)
-			b = append(b, d.Dialect.PrimaryKeySql(ok, field.Size()))
+		if field.pk {
+			_, ok := field.value.(string)
+			b = append(b, d.Dialect.primaryKeySql(ok, field.size()))
 		} else {
-			b = append(b, d.Dialect.SqlType(field.Value, field.Size()))
-			if field.NotNull() {
+			b = append(b, d.Dialect.sqlType(field.value, field.size()))
+			if field.notNull() {
 				b = append(b, "NOT NULL")
 			}
-			if x := field.Default(); x != "" {
+			if x := field.dfault(); x != "" {
 				b = append(b, "DEFAULT "+x)
 			}
 		}
 		a = append(a, strings.Join(b, " "))
-		if i < len(model.Fields)-1 {
+		if i < len(model.fields)-1 {
 			a = append(a, ", ")
 		}
 	}
-	for _, v := range model.Refs {
-		if v.ForeignKey {
-			a = append(a, ", FOREIGN KEY (", d.Dialect.Quote(v.RefKey), ") REFERENCES ")
-			a = append(a, d.Dialect.Quote(v.Model.Table), " (", d.Dialect.Quote(v.Model.Pk.Name), ") ON DELETE CASCADE")
+	for _, v := range model.refs {
+		if v.foreignKey {
+			a = append(a, ", FOREIGN KEY (", d.Dialect.quote(v.refKey), ") REFERENCES ")
+			a = append(a, d.Dialect.quote(v.model.table), " (", d.Dialect.quote(v.model.pk.name), ") ON DELETE CASCADE")
 		}
 	}
 	a = append(a, " )")
 	return strings.Join(a, "")
 }
 
-func (d *base) DropTableSql(table string) string {
+func (d *base) dropTableSql(table string) string {
 	a := []string{"DROP TABLE IF EXISTS"}
-	a = append(a, d.Dialect.Quote(table))
+	a = append(a, d.Dialect.quote(table))
 	return strings.Join(a, " ")
 }
 
-func (d *base) AddColumnSql(table, column string, typ interface{}, size int) string {
+func (d *base) addColumnSql(table, column string, typ interface{}, size int) string {
 	return fmt.Sprintf(
 		"ALTER TABLE %v ADD COLUMN %v %v",
-		d.Dialect.Quote(table),
-		d.Dialect.Quote(column),
-		d.Dialect.SqlType(typ, size),
+		d.Dialect.quote(table),
+		d.Dialect.quote(column),
+		d.Dialect.sqlType(typ, size),
 	)
 }
 
-func (d *base) CreateIndexSql(name, table string, unique bool, columns ...string) string {
+func (d *base) createIndexSql(name, table string, unique bool, columns ...string) string {
 	a := []string{"CREATE"}
 	if unique {
 		a = append(a, "UNIQUE")
 	}
 	quotedColumns := make([]string, 0, len(columns))
 	for _, c := range columns {
-		quotedColumns = append(quotedColumns, d.Dialect.Quote(c))
+		quotedColumns = append(quotedColumns, d.Dialect.quote(c))
 	}
 	a = append(a, fmt.Sprintf(
 		"INDEX %v ON %v (%v)",
-		d.Dialect.Quote(name),
-		d.Dialect.Quote(table),
+		d.Dialect.quote(name),
+		d.Dialect.quote(table),
 		strings.Join(quotedColumns, ", "),
 	))
 	return strings.Join(a, " ")
 }
 
-func (d *base) ColumnsInTable(mg *Migration, table interface{}) map[string]bool {
+func (d *base) columnsInTable(mg *Migration, table interface{}) map[string]bool {
 	tn := tableName(table)
 	columns := make(map[string]bool)
 	query := "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?"
-	query = mg.Dialect.SubstituteMarkers(query)
+	query = mg.Dialect.substituteMarkers(query)
 	rows, err := mg.Db.Query(query, mg.DbName, tn)
 	defer rows.Close()
 	if err != nil {

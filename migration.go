@@ -2,6 +2,7 @@ package qbs
 
 import (
 	"database/sql"
+	"strings"
 )
 
 type Migration struct {
@@ -14,16 +15,16 @@ type Migration struct {
 // It will panic if table creation failed, and it will return error if the index creation failed.
 func (mg *Migration) CreateTableIfNotExists(structPtr interface{}) error {
 	model := structPtrToModel(structPtr, true, nil)
-	_, err := mg.Db.Exec(mg.Dialect.CreateTableSql(model, true))
+	_, err := mg.Db.Exec(mg.Dialect.createTableSql(model, true))
 	if err != nil {
 		panic(err)
 	}
-	columns := mg.Dialect.ColumnsInTable(mg, model.Table)
-	if len(model.Fields) > len(columns) {
-		oldFields := []*ModelField{}
-		newFields := []*ModelField{}
-		for _, v := range model.Fields {
-			if _, ok := columns[v.Name]; ok {
+	columns := mg.Dialect.columnsInTable(mg, model.table)
+	if len(model.fields) > len(columns) {
+		oldFields := []*modelField{}
+		newFields := []*modelField{}
+		for _, v := range model.fields {
+			if _, ok := columns[v.name]; ok {
 				oldFields = append(oldFields, v)
 			} else {
 				newFields = append(newFields, v)
@@ -33,12 +34,12 @@ func (mg *Migration) CreateTableIfNotExists(structPtr interface{}) error {
 			panic("Column name has changed, rename column migration is not supported.")
 		}
 		for _, v := range newFields {
-			mg.addColumn(model.Table, v)
+			mg.addColumn(model.table, v)
 		}
 	}
 	var indexErr error
-	for _, i := range model.Indexes {
-		indexErr = mg.CreateIndexIfNotExists(model.Table, i.Name, i.Unique, i.Columns...)
+	for _, i := range model.indexes {
+		indexErr = mg.CreateIndexIfNotExists(model.table, i.name, i.unique, i.columns...)
 	}
 	return indexErr
 }
@@ -46,14 +47,23 @@ func (mg *Migration) CreateTableIfNotExists(structPtr interface{}) error {
 // this is only used for testing.
 func (mg *Migration) dropTableIfExists(structPtr interface{}) {
 	tn := tableName(structPtr)
-	_, err := mg.Db.Exec(mg.Dialect.DropTableSql(tn))
+	_, err := mg.Db.Exec(mg.Dialect.dropTableSql(tn))
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (mg *Migration) addColumn(table string, column *ModelField) {
-	_, err := mg.Db.Exec(mg.Dialect.AddColumnSql(table, column.Name, column.Value, column.Size()))
+//Can only drop table on database which name has "test" suffix.
+//Used for testing
+func (mg *Migration) DropTable(strutPtr interface {}) {
+	if !strings.HasSuffix(mg.DbName, "test") {
+		panic("Drop table can only be executed on database which name has 'test' suffix")
+	}
+	mg.dropTableIfExists(strutPtr)
+}
+
+func (mg *Migration) addColumn(table string, column *modelField) {
+	_, err := mg.Db.Exec(mg.Dialect.addColumnSql(table, column.name, column.value, column.size()))
 	if err != nil {
 		panic(err)
 	}
@@ -65,11 +75,21 @@ func (mg *Migration) addColumn(table string, column *ModelField) {
 // Normally you don't need to do it explicitly, it will be created automatically in CreateTableIfNotExists method.
 func (mg *Migration) CreateIndexIfNotExists(table interface{}, name string, unique bool, columns ...string) error {
 	tn := tableName(table)
-	if !mg.Dialect.IndexExists(mg, tn, name) {
-		_, err := mg.Db.Exec(mg.Dialect.CreateIndexSql(name, tn, unique, columns...))
+	name = tn + "_" + name
+	if !mg.Dialect.indexExists(mg, tn, name) {
+		_, err := mg.Db.Exec(mg.Dialect.createIndexSql(name, tn, unique, columns...))
 		return err
 	}
 	return nil
+}
+
+func (mg *Migration) Close() {
+	if mg.Db != nil {
+		err := mg.Db.Close()
+		if err != nil{
+			panic(err)
+		}
+	}
 }
 
 // Migration only support incremental migrations like create table if not exists

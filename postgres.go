@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"database/sql"
 )
 
 type postgres struct {
@@ -16,11 +17,7 @@ func NewPostgres() Dialect {
 	return d
 }
 
-func (d *postgres) Now() time.Time {
-	return time.Now().UTC()
-}
-
-func (d *postgres) Quote(s string) string {
+func (d *postgres) quote(s string) string {
 	sep := "."
 	a := []string{}
 	c := strings.Split(s, sep)
@@ -30,10 +27,10 @@ func (d *postgres) Quote(s string) string {
 	return strings.Join(a, sep)
 }
 
-func (d *postgres) SqlType(f interface{}, size int) string {
+func (d *postgres) sqlType(f interface{}, size int) string {
 	switch f.(type) {
 	case time.Time:
-		return "timestamp"
+		return "timestamp with time zone"
 	case bool:
 		return "boolean"
 	case int, int8, int16, int32, uint, uint8, uint16, uint32:
@@ -53,29 +50,39 @@ func (d *postgres) SqlType(f interface{}, size int) string {
 	panic("invalid sql type")
 }
 
-func (d *postgres) Insert(q *Qbs) (int64, error) {
-	sql, args := d.Dialect.InsertSql(q.criteria)
+func (d *postgres) insert(q *Qbs) (int64, error) {
+	sql, args := d.Dialect.insertSql(q.criteria)
+	row := q.QueryRow(sql, args...)
+	value := q.criteria.model.pk.value
+	var err error
 	var id int64
-	err := q.QueryRow(sql, args...).Scan(&id)
+	if _, ok := value.(int64); ok {
+		err = row.Scan(&id)
+	}else if _, ok := value.(string); ok {
+		var str string
+		err = row.Scan(&str)
+	}
 	return id, err
 }
 
-func (d *postgres) InsertSql(criteria *Criteria) (string, []interface{}) {
-	sql, values := d.base.InsertSql(criteria)
-	sql += " RETURNING " + d.Dialect.Quote(criteria.model.Pk.Name)
+func (d *postgres) insertSql(criteria *criteria) (string, []interface{}) {
+	sql, values := d.base.insertSql(criteria)
+	sql += " RETURNING " + d.Dialect.quote(criteria.model.pk.name)
 	return sql, values
 }
 
-func (d *postgres) KeywordAutoIncrement() string {
-	// postgres has not auto increment keyword, uses SERIAL type
-	return ""
+func (d *postgres) indexExists(mg *Migration, tableName, indexName string) bool {
+	var row *sql.Row
+	var name string
+	query := "SELECT indexname FROM pg_indexes "
+	query += "WHERE tablename = ? AND indexname = ?"
+	query = d.substituteMarkers(query)
+	row = mg.Db.QueryRow(query, tableName, indexName)
+	row.Scan(&name)
+	return name != ""
 }
 
-func (d *postgres) IndexExists(mg *Migration, tableName, indexName string) bool {
-	return false
-}
-
-func (d *postgres) SubstituteMarkers(query string) string {
+func (d *postgres) substituteMarkers(query string) string {
 	position := 1
 	chunks := make([]string, 0, len(query)*2)
 	for _, v := range query {
@@ -89,11 +96,11 @@ func (d *postgres) SubstituteMarkers(query string) string {
 	return strings.Join(chunks, "")
 }
 
-func (d *postgres) ColumnsInTable(mg *Migration, table interface{}) map[string]bool {
+func (d *postgres) columnsInTable(mg *Migration, table interface{}) map[string]bool {
 	tn := tableName(table)
 	columns := make(map[string]bool)
 	query := "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ?"
-	query = mg.Dialect.SubstituteMarkers(query)
+	query = mg.Dialect.substituteMarkers(query)
 	rows, err := mg.Db.Query(query, tn)
 	defer rows.Close()
 	if err != nil {
@@ -109,7 +116,7 @@ func (d *postgres) ColumnsInTable(mg *Migration, table interface{}) map[string]b
 	return columns
 }
 
-func (d *postgres) PrimaryKeySql(isString bool, size int) string {
+func (d *postgres) primaryKeySql(isString bool, size int) string {
 	if isString {
 		return "text PRIMARY KEY"
 	}

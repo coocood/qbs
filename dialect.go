@@ -2,52 +2,47 @@ package qbs
 
 import (
 	"reflect"
-	"time"
 )
 
 type Dialect interface {
 
 	//Substitute "?" marker if database use other symbol as marker
-	SubstituteMarkers(query string) string
+	substituteMarkers(query string) string
 
 	// Quote will quote identifiers in a SQL statement.
-	Quote(s string) string
+	quote(s string) string
 
-	// Now returns the current time. Some drivers have problems with time zones,
-	// so this method can be used to prepare the time (e.g. convert to UTC).
-	Now() time.Time
+	sqlType(f interface{}, size int) string
 
-	SqlType(f interface{}, size int) string
+	parseBool(value reflect.Value) bool
 
-	ParseBool(value reflect.Value) bool
+	setModelValue(value reflect.Value, field reflect.Value) error
 
-	SetModelValue(value reflect.Value, field reflect.Value) error
+	querySql(criteria *criteria) (sql string, args []interface{})
 
-	QuerySql(criteria *Criteria) (sql string, args []interface{})
+	insert(q *Qbs) (int64, error)
 
-	Insert(q *Qbs) (int64, error)
+	insertSql(criteria *criteria) (sql string, args []interface{})
 
-	InsertSql(criteria *Criteria) (sql string, args []interface{})
+	update(q *Qbs) (int64, error)
 
-	Update(q *Qbs) (int64, error)
+	updateSql(criteria *criteria) (string, []interface{})
 
-	UpdateSql(criteria *Criteria) (string, []interface{})
+	delete(q *Qbs) (int64, error)
 
-	Delete(q *Qbs) (int64, error)
+	deleteSql(criteria *criteria) (string, []interface{})
 
-	DeleteSql(criteria *Criteria) (string, []interface{})
+	createTableSql(model *model, ifNotExists bool) string
 
-	CreateTableSql(model *Model, ifNotExists bool) string
+	dropTableSql(table string) string
 
-	DropTableSql(table string) string
+	addColumnSql(table, column string, typ interface{}, size int) string
 
-	AddColumnSql(table, column string, typ interface{}, size int) string
+	createIndexSql(name, table string, unique bool, columns ...string) string
 
-	CreateIndexSql(name, table string, unique bool, columns ...string) string
+	indexExists(mg *Migration, tableName string, indexName string) bool
 
-	IndexExists(mg *Migration, tableName string, indexName string) bool
+	columnsInTable(mg *Migration, tableName interface{}) map[string]bool
 
-	ColumnsInTable(mg *Migration, tableName interface{}) map[string]bool
-
-	PrimaryKeySql(isString bool, size int) string
+	primaryKeySql(isString bool, size int) string
 }

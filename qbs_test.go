@@ -84,6 +84,8 @@ func TestTransaction(t *testing.T) {
 
 func DoTestTransaction(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
+	defer mg.Close()
+	defer q.Close()
 	type txModel struct {
 		Id int64
 		A  string
@@ -125,6 +127,8 @@ func DoTestSaveAndDelete(assert *assrt.Assert, info dialectInfo) {
 	assert.MustZero(x.Sub(x.UTC()))
 	now := time.Now()
 	mg, q := setupDb(assert, info)
+	defer mg.Close()
+	defer q.Close()
 	type saveModel struct {
 		Id      int64
 		A       string
@@ -151,7 +155,7 @@ func DoTestSaveAndDelete(assert *assrt.Assert, info dialectInfo) {
 
 	// make sure created/updated values match the db
 	var model1r []*saveModel
-	err = q.Where("id = ?", model1.Id).FindAll(&model1r)
+	err = q.WhereEqual("id", model1.Id).FindAll(&model1r)
 	assert.MustNil(err)
 	assert.MustOneLen(model1r)
 	assert.Equal(model1.Created.Unix(), model1r[0].Created.Unix())
@@ -196,6 +200,8 @@ func TestForeignKey(t *testing.T) {
 
 func DoTestForeignKey(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
+	defer mg.Close()
+	defer q.Close()
 	type user struct {
 		Id   int64
 		Name string
@@ -228,15 +234,21 @@ func DoTestForeignKey(assert *assrt.Assert, info dialectInfo) {
 	assert.MustNil(err)
 	assert.Equal(aPost.Id, pst.Id)
 	assert.Equal("john", pst.Author.Name)
+
 	pst.Author = nil
 	err = q.OmitFields("Author").Find(pst)
 	assert.MustNil(err)
-	assert.Equal(aPost.Id, pst.Id)
 	assert.MustNil(pst.Author)
+
+	err = q.OmitJoin().Find(pst)
+	assert.MustNil(err)
+	assert.MustNil(pst.Author)
+
 	var psts []*post
 	err = q.FindAll(&psts)
 	assert.MustNil(err)
 	assert.OneLen(psts)
+	assert.Equal("john", psts[0].Author.Name)
 }
 
 func TestFind(t *testing.T) {
@@ -247,7 +259,9 @@ func TestFind(t *testing.T) {
 
 func DoTestFind(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
-	now := info.dialect.Now()
+	defer mg.Close()
+	defer q.Close()
+	now := time.Now()
 
 	type types struct {
 		Id    int64
@@ -304,7 +318,7 @@ func DoTestFind(assert *assrt.Assert, info dialectInfo) {
 	assert.NotNil(err)
 
 	allOut := []*types{}
-	err = q.Where("intgr = ?", -1).FindAll(&allOut)
+	err = q.WhereEqual("intgr", -1).FindAll(&allOut)
 	assert.Nil(err)
 	assert.Equal(2, len(allOut))
 }
@@ -329,6 +343,7 @@ func (table *AddColumn) Indexes(indexes *Indexes) {
 func DoTestCreateTable(assert *assrt.Assert, info dialectInfo) {
 	assert.Logf("Dialect %T\n", info.dialect)
 	mg, _ := setupDb(assert, info)
+	defer mg.Close()
 	{
 		type AddColumn struct {
 			Prim int64 `qbs:"pk"`
@@ -336,13 +351,14 @@ func DoTestCreateTable(assert *assrt.Assert, info dialectInfo) {
 		table := &AddColumn{}
 		mg.dropTableIfExists(table)
 		mg.CreateTableIfNotExists(table)
-		columns := mg.Dialect.ColumnsInTable(mg, table)
+		columns := mg.Dialect.columnsInTable(mg, table)
 		assert.OneLen(columns)
 		assert.True(columns["prim"])
 	}
 	table := &AddColumn{}
 	mg.CreateTableIfNotExists(table)
-	columns := mg.Dialect.ColumnsInTable(mg, table)
+	assert.True(mg.Dialect.indexExists(mg, "add_column", "add_column_first_last"))
+	columns := mg.Dialect.columnsInTable(mg, table)
 	assert.Equal(4, len(columns))
 }
 
@@ -360,6 +376,8 @@ func TestUpdate(t *testing.T) {
 
 func DoTestUpdate(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
+	defer mg.Close()
+	defer q.Close()
 	mg.dropTableIfExists(&basic{})
 	mg.CreateTableIfNotExists(&basic{})
 	_, err := q.Save(&basic{Name: "a", State: 1})
@@ -372,12 +390,12 @@ func DoTestUpdate(assert *assrt.Assert, info dialectInfo) {
 		type basic struct {
 			Name string
 		}
-		affected, err := q.Where("state = ?", 1).Update(&basic{Name: "d"})
+		affected, err := q.WhereEqual("state", 1).Update(&basic{Name: "d"})
 		assert.MustNil(err)
 		assert.Equal(2, affected)
 
 		var datas []*basic
-		q.Where("state = ?", 1).FindAll(&datas)
+		q.WhereEqual("state", 1).FindAll(&datas)
 		assert.MustEqual(2, len(datas))
 		assert.Equal("d", datas[0].Name)
 		assert.Equal("d", datas[1].Name)
@@ -389,7 +407,7 @@ func DoTestUpdate(assert *assrt.Assert, info dialectInfo) {
 	assert.MustNil(err)
 	assert.Equal(2, affected)
 	var datas []*basic
-	q.Where("state = ?", 1).FindAll(&datas)
+	q.WhereEqual("state", 1).FindAll(&datas)
 	assert.MustEqual(0, len(datas))
 }
 
@@ -414,6 +432,8 @@ func (v *ValidatorTable) Validate(q *Qbs) error {
 
 func DoTestValidation(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
+	defer mg.Close()
+	defer q.Close()
 	valid := new(ValidatorTable)
 	mg.dropTableIfExists(valid)
 	mg.CreateTableIfNotExists(valid)
@@ -438,12 +458,14 @@ func DoTestBoolType(assert *assrt.Assert, info dialectInfo) {
 	}
 	bt := new(BoolType)
 	mg, q := setupDb(assert, info)
+	defer mg.Close()
+	defer q.Close()
 	mg.dropTableIfExists(bt)
 	mg.CreateTableIfNotExists(bt)
 	bt.Active = true
 	q.Save(bt)
 	bt.Active = false
-	q.Where("active = ?", true).Find(bt)
+	q.WhereEqual("active", true).Find(bt)
 	assert.True(bt.Active)
 }
 
@@ -462,6 +484,8 @@ func DoTestStringPk(assert *assrt.Assert, info dialectInfo) {
 	spk.Tag = "health"
 	spk.Count = 10
 	mg, q := setupDb(assert, info)
+	defer mg.Close()
+	defer q.Close()
 	mg.dropTableIfExists(spk)
 	mg.CreateTableIfNotExists(spk)
 	affected, _ := q.Save(spk)
@@ -470,3 +494,4 @@ func DoTestStringPk(assert *assrt.Assert, info dialectInfo) {
 	q.Find(spk)
 	assert.Equal(10, spk.Count)
 }
+

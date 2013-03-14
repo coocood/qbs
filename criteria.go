@@ -1,25 +1,30 @@
 package qbs
 
-type Criteria struct {
-	model      *Model
+type criteria struct {
+	model      *model
 	condition  *Condition
-	orderBy    string
-	orderDesc  bool
+	orderBys   []order
 	limit      int
 	offset     int
 	omitFields []string
+	omitJoin   bool
 }
 
-func (c *Criteria) mergePkCondition(d Dialect) {
+func (c *criteria) mergePkCondition(d Dialect) {
 	var con *Condition
 	if !c.model.pkZero() {
-		expr := d.Quote(c.model.Pk.Name) + " = ?"
-		con = NewCondition(expr, c.model.Pk.Value)
+		expr := d.quote(c.model.pk.name) + " = ?"
+		con = NewCondition(expr, c.model.pk.value)
 		con.AndCondition(c.condition)
 	} else {
 		con = c.condition
 	}
 	c.condition = con
+}
+
+type order struct {
+	path string
+	desc bool
 }
 
 // Conditions are structured in a way to define
@@ -36,6 +41,12 @@ func NewCondition(expr string, args ...interface{}) *Condition {
 		Expr: expr,
 		Args: args,
 	}
+}
+
+//Snakecase column name
+func NewEqualCondition(column string, value interface {}) *Condition{
+	expr := column + " = ?"
+	return NewCondition(expr,value)
 }
 
 func NewInCondition(column string, values []interface{}) *Condition {
@@ -60,6 +71,13 @@ func (c *Condition) And(expr string, args ...interface{}) *Condition {
 	return c
 }
 
+//Snakecase column name
+func (c *Condition) AndEqual(column string, value interface {}) *Condition{
+	expr := column + " = ?"
+	c.And(expr,value)
+	return c
+}
+
 func (c *Condition) AndCondition(subCondition *Condition) *Condition {
 	if c.Sub != nil {
 		c.Expr, c.Args = c.Merge()
@@ -75,6 +93,13 @@ func (c *Condition) Or(expr string, args ...interface{}) *Condition {
 	}
 	c.Sub = NewCondition(expr, args...)
 	c.IsOr = true
+	return c
+}
+
+//Snakecase column name
+func (c *Condition) OrEqual(column string, value interface {}) *Condition{
+	expr := column + " = ?"
+	c.Or(expr,value)
 	return c
 }
 

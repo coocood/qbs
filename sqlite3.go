@@ -1,10 +1,3 @@
-/**
- * Created with IntelliJ IDEA.
- * User: Ewan
- * Date: 13-2-4
- * Time: 下午2:59
- * To change this template use File | Settings | File Templates.
- */
 package qbs
 
 import (
@@ -13,17 +6,17 @@ import (
 	"unsafe"
 )
 
-type Sqlite3 struct {
+type sqlite3 struct {
 	base
 }
 
 func NewSqlite3() Dialect {
-	d := &Sqlite3{}
+	d := &sqlite3{}
 	d.base.Dialect = d
 	return d
 }
 
-func (d *Sqlite3) SqlType(f interface{}, size int) string {
+func (d *sqlite3) sqlType(f interface{}, size int) string {
 	switch f.(type) {
 	case bool:
 		return "integer"
@@ -41,7 +34,7 @@ func (d *Sqlite3) SqlType(f interface{}, size int) string {
 	panic("invalid sql type")
 }
 
-func (d *Sqlite3) SetModelValue(value reflect.Value, field reflect.Value) error {
+func (d *sqlite3) setModelValue(value reflect.Value, field reflect.Value) error {
 	switch field.Type().Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		field.SetInt(value.Elem().Int())
@@ -80,11 +73,24 @@ func (d *Sqlite3) SetModelValue(value reflect.Value, field reflect.Value) error 
 	return nil
 }
 
-func (d *Sqlite3) IndexExists(mg *Migration, tableName string, indexName string) bool {
+func (d *sqlite3) indexExists(mg *Migration, tableName string, indexName string) bool {
+	query := "PRAGMA index_list('" + tableName + "')"
+	rows, err := mg.Db.Query(query)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var c0, c1, c2 string
+		rows.Scan(&c0, &c1, &c2)
+		if c1 == indexName {
+			return true
+		}
+	}
 	return false
 }
 
-func (d *Sqlite3) ColumnsInTable(mg *Migration, table interface{}) map[string]bool {
+func (d *sqlite3) columnsInTable(mg *Migration, table interface{}) map[string]bool {
 	tn := tableName(table)
 	columns := make(map[string]bool)
 	query := "PRAGMA table_info('" + tn + "')"
@@ -109,7 +115,7 @@ func (d *Sqlite3) ColumnsInTable(mg *Migration, table interface{}) map[string]bo
 	return columns
 }
 
-func (d *Sqlite3) PrimaryKeySql(isString bool, size int) string {
+func (d *sqlite3) primaryKeySql(isString bool, size int) string {
 	if isString {
 		return "text PRIMARY KEY NOT NULL"
 	}

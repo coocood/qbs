@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 )
 
 type Qbs struct {
@@ -12,7 +13,7 @@ type Qbs struct {
 	Dialect      Dialect
 	Log          bool
 	Tx           *sql.Tx
-	criteria     *Criteria
+	criteria     *criteria
 	firstTxError error
 }
 
@@ -32,7 +33,7 @@ func New(database *sql.DB, dialect Dialect) *Qbs {
 
 // Create a new criteria for subsequent query
 func (q *Qbs) Reset() {
-	q.criteria = new(Criteria)
+	q.criteria = new(criteria)
 }
 
 // Begin create a transaction object internally
@@ -83,6 +84,12 @@ func (q *Qbs) Where(expr string, args ...interface{}) *Qbs {
 	return q
 }
 
+//Snakecase column name
+func (q *Qbs) WhereEqual(column string, value interface {}) *Qbs{
+	q.criteria.condition = NewEqualCondition(column, value)
+	return q
+}
+
 //Condition defines the SQL "WHERE" clause
 //If other condition can be inferred by the struct argument in
 //Find method, it will be merged with AND
@@ -102,13 +109,12 @@ func (q *Qbs) Offset(offset int) *Qbs {
 }
 
 func (q *Qbs) OrderBy(path string) *Qbs {
-	q.criteria.orderBy = q.Dialect.Quote(path)
+	q.criteria.orderBys = append(q.criteria.orderBys,order{q.Dialect.quote(path),false})
 	return q
 }
 
 func (q *Qbs) OrderByDesc(path string) *Qbs {
-	q.criteria.orderBy = q.Dialect.Quote(path)
-	q.criteria.orderDesc = true
+	q.criteria.orderBys = append(q.criteria.orderBys,order{q.Dialect.quote(path),true})
 	return q
 }
 
@@ -118,25 +124,31 @@ func (q *Qbs) OmitFields(fieldName ...string) *Qbs {
 	return q
 }
 
+func (q *Qbs) OmitJoin() *Qbs {
+	q.criteria.omitJoin = true
+	return q
+}
+
 // Perform select query by parsing the struct's type and then fill the values into the struct
 // All fields of supported types in the struct will be added in select clause.
 // If Id value is provided, it will be added into the where clause
 // If a foreign key field with its referenced struct pointer field are provided,
 // It will perform a join query, the referenced struct pointer field will be filled in
 // the values obtained by the query.
+// If not found, "sql.ErrNoRows" will be returned.
 func (q *Qbs) Find(structPtr interface{}) error {
-	q.criteria.model = structPtrToModel(structPtr, true, q.criteria.omitFields)
+	q.criteria.model = structPtrToModel(structPtr, !q.criteria.omitJoin, q.criteria.omitFields)
 	q.criteria.limit = 1
 	if !q.criteria.model.pkZero() {
-		idPath := q.Dialect.Quote(q.criteria.model.Table) + "." + q.Dialect.Quote(q.criteria.model.Pk.Name)
-		idCondition := NewCondition(idPath+" = ?", q.criteria.model.Pk.Value)
+		idPath := q.Dialect.quote(q.criteria.model.table) + "." + q.Dialect.quote(q.criteria.model.pk.name)
+		idCondition := NewCondition(idPath+" = ?", q.criteria.model.pk.value)
 		if q.criteria.condition == nil {
 			q.criteria.condition = idCondition
 		} else {
 			q.criteria.condition = idCondition.AndCondition(q.criteria.condition)
 		}
 	}
-	query, args := q.Dialect.QuerySql(q.criteria)
+	query, args := q.Dialect.querySql(q.criteria)
 	return q.doQueryRow(structPtr, query, args...)
 }
 
@@ -145,8 +157,8 @@ func (q *Qbs) Find(structPtr interface{}) error {
 func (q *Qbs) FindAll(ptrOfSliceOfStructPtr interface{}) error {
 	strucType := reflect.TypeOf(ptrOfSliceOfStructPtr).Elem().Elem().Elem()
 	strucPtr := reflect.New(strucType).Interface()
-	q.criteria.model = structPtrToModel(strucPtr, true, q.criteria.omitFields)
-	query, args := q.Dialect.QuerySql(q.criteria)
+	q.criteria.model = structPtrToModel(strucPtr, !q.criteria.omitJoin, q.criteria.omitFields)
+	query, args := q.Dialect.querySql(q.criteria)
 	return q.doQueryRows(ptrOfSliceOfStructPtr, query, args...)
 }
 
@@ -230,7 +242,7 @@ func (q *Qbs) scanRows(rowValue reflect.Value, rows *sql.Rows) (err error) {
 			}
 			subField := subStruct.Elem().FieldByName(snakeToUpperCamel(paths[1]))
 			if subField.IsValid() {
-				err = q.Dialect.SetModelValue(value, subField)
+				err = q.Dialect.setModelValue(value, subField)
 				if err != nil {
 					return
 				}
@@ -238,7 +250,7 @@ func (q *Qbs) scanRows(rowValue reflect.Value, rows *sql.Rows) (err error) {
 		} else {
 			field := rowValue.Elem().FieldByName(snakeToUpperCamel(key))
 			if field.IsValid() {
-				err = q.Dialect.SetModelValue(value, field)
+				err = q.Dialect.setModelValue(value, field)
 				if err != nil {
 					return
 				}
@@ -251,7 +263,7 @@ func (q *Qbs) scanRows(rowValue reflect.Value, rows *sql.Rows) (err error) {
 // Same as sql.Db.Exec or sql.Tx.Exec depends on if transaction has began
 func (q *Qbs) Exec(query string, args ...interface{}) (sql.Result, error) {
 	defer q.Reset()
-	query = q.Dialect.SubstituteMarkers(query)
+	query = q.Dialect.substituteMarkers(query)
 	q.log(query, args...)
 	stmt, err := q.Prepare(query)
 	if err != nil {
@@ -268,7 +280,7 @@ func (q *Qbs) Exec(query string, args ...interface{}) (sql.Result, error) {
 // Same as sql.Db.QueryRow or sql.Tx.QueryRow depends on if transaction has began
 func (q *Qbs) QueryRow(query string, args ...interface{}) *sql.Row {
 	q.log(query, args...)
-	query = q.Dialect.SubstituteMarkers(query)
+	query = q.Dialect.substituteMarkers(query)
 	if q.Tx != nil {
 		return q.Tx.QueryRow(query, args...)
 	}
@@ -278,7 +290,7 @@ func (q *Qbs) QueryRow(query string, args ...interface{}) *sql.Row {
 // Same as sql.Db.Query or sql.Tx.Query depends on if transaction has began
 func (q *Qbs) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	q.log(query, args...)
-	query = q.Dialect.SubstituteMarkers(query)
+	query = q.Dialect.substituteMarkers(query)
 	if q.Tx != nil {
 		return q.Tx.Query(query, args...)
 	}
@@ -306,29 +318,29 @@ func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 		}
 	}
 	model := structPtrToModel(structPtr, true, q.criteria.omitFields)
-	if model.Pk == nil {
+	if model.pk == nil {
 		panic("no primary key field")
 	}
 	q.criteria.model = model
 	preservedCriteria := q.criteria
-	now := q.Dialect.Now()
+	now := time.Now()
 	var id int64 = 0
 	updateModelField := model.timeFiled("updated")
 	if updateModelField != nil {
-		updateModelField.Value = now
+		updateModelField.value = now
 	}
 	createdModelField := model.timeFiled("created")
 	canBeUpdate := !model.pkZero()
 	var isInsert bool
 	if canBeUpdate {
 		q.criteria.mergePkCondition(q.Dialect)
-		affected, err = q.Dialect.Update(q)
+		affected, err = q.Dialect.update(q)
 		if affected == 0 && err == nil {
 			if createdModelField != nil {
-				createdModelField.Value = now
+				createdModelField.value = now
 			}
 			q.criteria = preservedCriteria
-			id, err = q.Dialect.Insert(q)
+			id, err = q.Dialect.insert(q)
 			isInsert = true
 			if err == nil {
 				affected = 1
@@ -336,9 +348,9 @@ func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 		}
 	} else {
 		if createdModelField != nil {
-			createdModelField.Value = now
+			createdModelField.value = now
 		}
-		id, err = q.Dialect.Insert(q)
+		id, err = q.Dialect.insert(q)
 		isInsert = true
 		if err == nil {
 			affected = 1
@@ -346,17 +358,17 @@ func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 	}
 	if err == nil {
 		structValue := reflect.Indirect(reflect.ValueOf(structPtr))
-		if _, ok := model.Pk.Value.(int64); ok && id != 0 {
-			idField := structValue.FieldByName(model.Pk.CamelName)
+		if _, ok := model.pk.value.(int64); ok && id != 0 {
+			idField := structValue.FieldByName(model.pk.camelName)
 			idField.SetInt(id)
 		}
 		if updateModelField != nil {
-			updateField := structValue.FieldByName(updateModelField.CamelName)
+			updateField := structValue.FieldByName(updateModelField.camelName)
 			updateField.Set(reflect.ValueOf(now))
 		}
 		if isInsert {
 			if createdModelField != nil {
-				createdField := structValue.FieldByName(createdModelField.CamelName)
+				createdField := structValue.FieldByName(createdModelField.camelName)
 				createdField.Set(reflect.ValueOf(now))
 			}
 		}
@@ -383,7 +395,7 @@ func (q *Qbs) Update(structPtr interface{}) (affected int64, err error) {
 	if q.criteria.condition == nil {
 		panic("Can not update without condition")
 	}
-	return q.Dialect.Update(q)
+	return q.Dialect.update(q)
 }
 
 // The delete condition can be inferred by the Id value of the struct
@@ -395,19 +407,26 @@ func (q *Qbs) Delete(structPtr interface{}) (affected int64, err error) {
 	if q.criteria.condition == nil {
 		panic("Can not delete without condition")
 	}
-	return q.Dialect.Delete(q)
+	return q.Dialect.delete(q)
 }
 
 // This method can be used to validate unique column before trying to save
 // The table parameter can be either a string or a struct pointer
 func (q *Qbs) ContainsValue(table interface{}, column string, value interface{}) bool {
-	quotedColumn := q.Dialect.Quote(column)
-	quotedTable := q.Dialect.Quote(tableName(table))
+	quotedColumn := q.Dialect.quote(column)
+	quotedTable := q.Dialect.quote(tableName(table))
 	query := fmt.Sprintf("SELECT %v FROM %v WHERE %v = ?", quotedColumn, quotedTable, quotedColumn)
 	row := q.QueryRow(query, value)
 	var result interface{}
 	err := row.Scan(&result)
 	return err == nil
+}
+
+func (q *Qbs) Close() error{
+	if q.Db != nil{
+		return q.Db.Close()
+	}
+	return nil
 }
 
 func (q *Qbs) log(query string, args ...interface{}) {
