@@ -78,11 +78,11 @@ func openSqlite3Db() (*sql.DB, error) {
 
 func TestTransaction(t *testing.T) {
 	for _, info := range toRun {
-		DoTestTransaction(assrt.NewAssert(t), info)
+		doTestTransaction(assrt.NewAssert(t), info)
 	}
 }
 
-func DoTestTransaction(assert *assrt.Assert, info dialectInfo) {
+func doTestTransaction(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
 	defer mg.Close()
 	defer q.Close()
@@ -118,11 +118,11 @@ func DoTestTransaction(assert *assrt.Assert, info dialectInfo) {
 
 func TestSaveAndDelete(t *testing.T) {
 	for _, info := range toRun {
-		DoTestSaveAndDelete(assrt.NewAssert(t), info)
+		doTestSaveAndDelete(assrt.NewAssert(t), info)
 	}
 }
 
-func DoTestSaveAndDelete(assert *assrt.Assert, info dialectInfo) {
+func doTestSaveAndDelete(assert *assrt.Assert, info dialectInfo) {
 	x := time.Now()
 	assert.MustZero(x.Sub(x.UTC()))
 	now := time.Now()
@@ -194,11 +194,11 @@ func DoTestSaveAndDelete(assert *assrt.Assert, info dialectInfo) {
 
 func TestForeignKey(t *testing.T) {
 	for _, info := range toRun {
-		DoTestForeignKey(assrt.NewAssert(t), info)
+		doTestForeignKey(assrt.NewAssert(t), info)
 	}
 }
 
-func DoTestForeignKey(assert *assrt.Assert, info dialectInfo) {
+func doTestForeignKey(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
 	defer mg.Close()
 	defer q.Close()
@@ -253,11 +253,11 @@ func DoTestForeignKey(assert *assrt.Assert, info dialectInfo) {
 
 func TestFind(t *testing.T) {
 	for _, info := range toRun {
-		DoTestFind(assrt.NewAssert(t), info)
+		doTestFind(assrt.NewAssert(t), info)
 	}
 }
 
-func DoTestFind(assert *assrt.Assert, info dialectInfo) {
+func doTestFind(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
 	defer mg.Close()
 	defer q.Close()
@@ -325,7 +325,7 @@ func DoTestFind(assert *assrt.Assert, info dialectInfo) {
 
 func TestCreateTable(t *testing.T) {
 	for _, info := range toRun {
-		DoTestCreateTable(assrt.NewAssert(t), info)
+		doTestCreateTable(assrt.NewAssert(t), info)
 	}
 }
 
@@ -340,7 +340,7 @@ func (table *AddColumn) Indexes(indexes *Indexes) {
 	indexes.AddUnique("first", "last")
 }
 
-func DoTestCreateTable(assert *assrt.Assert, info dialectInfo) {
+func doTestCreateTable(assert *assrt.Assert, info dialectInfo) {
 	assert.Logf("Dialect %T\n", info.dialect)
 	mg, _ := setupDb(assert, info)
 	defer mg.Close()
@@ -370,11 +370,11 @@ type basic struct {
 
 func TestUpdate(t *testing.T) {
 	for _, info := range toRun {
-		DoTestUpdate(assrt.NewAssert(t), info)
+		doTestUpdate(assrt.NewAssert(t), info)
 	}
 }
 
-func DoTestUpdate(assert *assrt.Assert, info dialectInfo) {
+func doTestUpdate(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
 	defer mg.Close()
 	defer q.Close()
@@ -413,7 +413,7 @@ func DoTestUpdate(assert *assrt.Assert, info dialectInfo) {
 
 func TestValidation(t *testing.T) {
 	for _, info := range toRun {
-		DoTestValidation(assrt.NewAssert(t), info)
+		doTestValidation(assrt.NewAssert(t), info)
 	}
 }
 
@@ -430,7 +430,7 @@ func (v *ValidatorTable) Validate(q *Qbs) error {
 	return nil
 }
 
-func DoTestValidation(assert *assrt.Assert, info dialectInfo) {
+func doTestValidation(assert *assrt.Assert, info dialectInfo) {
 	mg, q := setupDb(assert, info)
 	defer mg.Close()
 	defer q.Close()
@@ -447,11 +447,11 @@ func DoTestValidation(assert *assrt.Assert, info dialectInfo) {
 
 func TestBoolType(t *testing.T) {
 	for _, info := range toRun {
-		DoTestBoolType(assrt.NewAssert(t), info)
+		doTestBoolType(assrt.NewAssert(t), info)
 	}
 }
 
-func DoTestBoolType(assert *assrt.Assert, info dialectInfo) {
+func doTestBoolType(assert *assrt.Assert, info dialectInfo) {
 	type BoolType struct {
 		Id     int64
 		Active bool
@@ -471,11 +471,11 @@ func DoTestBoolType(assert *assrt.Assert, info dialectInfo) {
 
 func TestStringPk(t *testing.T) {
 	for _, info := range toRun {
-		DoTestStringPk(assrt.NewAssert(t), info)
+		doTestStringPk(assrt.NewAssert(t), info)
 	}
 }
 
-func DoTestStringPk(assert *assrt.Assert, info dialectInfo) {
+func doTestStringPk(assert *assrt.Assert, info dialectInfo) {
 	type StringPk struct {
 		Tag   string `qbs:"pk,size:16"`
 		Count int32

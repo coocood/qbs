@@ -324,12 +324,12 @@ func validateTag(tagMap map[string]string) {
 }
 
 var ValidTags = map[string]bool{
-	"pk":      true,
-	"fk":      true,
+	"pk":      true,//primary key
+	"fk":      true,//foreign key
 	"size":    true,
 	"default": true,
 	"join":    true,
-	"-":       true,
+	"-":       true,//ignore
 	"index":   true,
 	"unique":  true,
 	"notnull": true,

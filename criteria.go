@@ -30,16 +30,16 @@ type order struct {
 // Conditions are structured in a way to define
 // complex where clause easily.
 type Condition struct {
-	Expr string
-	Args []interface{}
-	Sub  *Condition
-	IsOr bool
+	expr string
+	args []interface{}
+	sub  *Condition
+	isOr bool
 }
 
 func NewCondition(expr string, args ...interface{}) *Condition {
 	return &Condition{
-		Expr: expr,
-		Args: args,
+		expr: expr,
+		args: args,
 	}
 }
 
@@ -57,17 +57,17 @@ func NewInCondition(column string, values []interface{}) *Condition {
 	expr = expr[:len(expr)-2]
 	expr += ")"
 	return &Condition{
-		Expr: expr,
-		Args: values,
+		expr: expr,
+		args: values,
 	}
 }
 
 func (c *Condition) And(expr string, args ...interface{}) *Condition {
-	if c.Sub != nil {
-		c.Expr, c.Args = c.Merge()
+	if c.sub != nil {
+		c.expr, c.args = c.Merge()
 	}
-	c.Sub = NewCondition(expr, args...)
-	c.IsOr = false
+	c.sub = NewCondition(expr, args...)
+	c.isOr = false
 	return c
 }
 
@@ -79,20 +79,20 @@ func (c *Condition) AndEqual(column string, value interface {}) *Condition{
 }
 
 func (c *Condition) AndCondition(subCondition *Condition) *Condition {
-	if c.Sub != nil {
-		c.Expr, c.Args = c.Merge()
+	if c.sub != nil {
+		c.expr, c.args = c.Merge()
 	}
-	c.Sub = subCondition
-	c.IsOr = false
+	c.sub = subCondition
+	c.isOr = false
 	return c
 }
 
 func (c *Condition) Or(expr string, args ...interface{}) *Condition {
-	if c.Sub != nil {
-		c.Expr, c.Args = c.Merge()
+	if c.sub != nil {
+		c.expr, c.args = c.Merge()
 	}
-	c.Sub = NewCondition(expr, args...)
-	c.IsOr = true
+	c.sub = NewCondition(expr, args...)
+	c.isOr = true
 	return c
 }
 
@@ -104,27 +104,27 @@ func (c *Condition) OrEqual(column string, value interface {}) *Condition{
 }
 
 func (c *Condition) OrCondition(subCondition *Condition) *Condition {
-	if c.Sub != nil {
-		c.Expr, c.Args = c.Merge()
+	if c.sub != nil {
+		c.expr, c.args = c.Merge()
 	}
-	c.Sub = subCondition
-	c.IsOr = true
+	c.sub = subCondition
+	c.isOr = true
 	return c
 }
 
 func (c *Condition) Merge() (expr string, args []interface{}) {
-	expr = c.Expr
-	args = c.Args
-	if c.Sub == nil {
+	expr = c.expr
+	args = c.args
+	if c.sub == nil {
 		return
 	}
 	expr = "(" + expr + ")"
-	if c.IsOr {
+	if c.isOr {
 		expr += " OR "
 	} else {
 		expr += " AND "
 	}
-	subExpr, subArgs := c.Sub.Merge()
+	subExpr, subArgs := c.sub.Merge()
 	expr += "(" + subExpr + ")"
 	args = append(args, subArgs...)
 	return expr, args

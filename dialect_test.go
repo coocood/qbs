@@ -76,22 +76,22 @@ var sqlGenSampleData = &sqlGenModel{3, "FirstName", "LastName", 6}
 
 func TestAddColumSQL(t *testing.T) {
 	for _, info := range allDialectSyntax {
-		DoTestAddColumSQL(assrt.NewAssert(t), info)
+		doTestAddColumSQL(assrt.NewAssert(t), info)
 	}
 }
 
-func DoTestAddColumSQL(assert *assrt.Assert, info dialectSyntax) {
+func doTestAddColumSQL(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
 	sql := info.dialect.addColumnSql("a", "c", "", 100)
 	assert.Equal(info.addColumnSql, sql)
 }
 func TestCreateTableSql(t *testing.T) {
 	for _, info := range allDialectSyntax {
-		DoTestCreateTableSql(assrt.NewAssert(t), info)
+		doTestCreateTableSql(assrt.NewAssert(t), info)
 	}
 }
 
-func DoTestCreateTableSql(assert *assrt.Assert, info dialectSyntax) {
+func doTestCreateTableSql(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
 	type withoutPk struct {
 		First  string
@@ -116,11 +116,11 @@ func DoTestCreateTableSql(assert *assrt.Assert, info dialectSyntax) {
 
 func TestCreateIndexSql(t *testing.T) {
 	for _, info := range allDialectSyntax {
-		DoTestCreateIndexSql(assrt.NewAssert(t), info)
+		doTestCreateIndexSql(assrt.NewAssert(t), info)
 	}
 }
 
-func DoTestCreateIndexSql(assert *assrt.Assert, info dialectSyntax) {
+func doTestCreateIndexSql(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
 	sql := info.dialect.createIndexSql("iname", "itable", true, "a", "b", "c")
 	assert.Equal(info.createUniqueIndexSql, sql)
@@ -130,11 +130,11 @@ func DoTestCreateIndexSql(assert *assrt.Assert, info dialectSyntax) {
 
 func TestInsertSQL(t *testing.T) {
 	for _, info := range allDialectSyntax {
-		DoTestInsertSQL(assrt.NewAssert(t), info)
+		doTestInsertSQL(assrt.NewAssert(t), info)
 	}
 }
 
-func DoTestInsertSQL(assert *assrt.Assert, info dialectSyntax) {
+func doTestInsertSQL(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
 	model := structPtrToModel(sqlGenSampleData, true, nil)
 	criteria := &criteria{model: model}
@@ -146,11 +146,11 @@ func DoTestInsertSQL(assert *assrt.Assert, info dialectSyntax) {
 
 func TestUpdateSQL(t *testing.T) {
 	for _, info := range allDialectSyntax {
-		DoTestUpdateSQL(assrt.NewAssert(t), info)
+		doTestUpdateSQL(assrt.NewAssert(t), info)
 	}
 }
 
-func DoTestUpdateSQL(assert *assrt.Assert, info dialectSyntax) {
+func doTestUpdateSQL(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
 	model := structPtrToModel(sqlGenSampleData, true, nil)
 	criteria := &criteria{model: model}
@@ -162,11 +162,11 @@ func DoTestUpdateSQL(assert *assrt.Assert, info dialectSyntax) {
 
 func TestDeleteSQL(t *testing.T) {
 	for _, info := range allDialectSyntax {
-		DoTestDeleteSQL(assrt.NewAssert(t), info)
+		doTestDeleteSQL(assrt.NewAssert(t), info)
 	}
 }
 
-func DoTestDeleteSQL(assert *assrt.Assert, info dialectSyntax) {
+func doTestDeleteSQL(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
 	model := structPtrToModel(sqlGenSampleData, true, nil)
 	criteria := &criteria{model: model}
@@ -178,11 +178,11 @@ func DoTestDeleteSQL(assert *assrt.Assert, info dialectSyntax) {
 
 func TestSelectionSQL(t *testing.T) {
 	for _, info := range allDialectSyntax {
-		DoTestSelectionSQL(assrt.NewAssert(t), info)
+		doTestSelectionSQL(assrt.NewAssert(t), info)
 	}
 }
 
-func DoTestSelectionSQL(assert *assrt.Assert, info dialectSyntax) {
+func doTestSelectionSQL(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
 	type User struct {
 		Id   int64
@@ -204,11 +204,11 @@ func DoTestSelectionSQL(assert *assrt.Assert, info dialectSyntax) {
 
 func TestQuerySQL(t *testing.T) {
 	for _, info := range allDialectSyntax {
-		DoTestQuerySQL(assrt.NewAssert(t), info)
+		doTestQuerySQL(assrt.NewAssert(t), info)
 	}
 }
 
-func DoTestQuerySQL(assert *assrt.Assert, info dialectSyntax) {
+func doTestQuerySQL(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
 	type Student struct {
 		Name  string
@@ -230,7 +230,13 @@ func DoTestQuerySQL(assert *assrt.Assert, info dialectSyntax) {
 	assert.Equal(info.querySql, sql)
 }
 
-func DoTestDropTableSQL(assert *assrt.Assert, info dialectSyntax) {
+func TestDropTableSQL(t *testing.T){
+	for _, info := range allDialectSyntax {
+		doTestDropTableSQL(assrt.NewAssert(t), info)
+	}
+}
+
+func doTestDropTableSQL(assert *assrt.Assert, info dialectSyntax) {
 	assert.Logf("Dialect %T\n", info.dialect)
 	sql := info.dialect.dropTableSql("drop_table")
 	assert.Equal(info.dropTableIfExistsSql, sql)
