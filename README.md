@@ -3,6 +3,11 @@ Qbs
 
 Qbs stands for Query By Struct. A Go ORM.
 
+##ChangeLog
+
+* 2013.03.14: index name has changed to `{table name}_{column name}`.
+    - For existing application with existing database, update to this change may lead to creating redundant index, you may need to drop duplicated index manually.
+
 ##Features
 
 * Define table schema in struct type, create table if not exists.
