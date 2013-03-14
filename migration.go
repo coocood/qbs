@@ -75,6 +75,7 @@ func (mg *Migration) addColumn(table string, column *ModelField) {
 // Normally you don't need to do it explicitly, it will be created automatically in CreateTableIfNotExists method.
 func (mg *Migration) CreateIndexIfNotExists(table interface{}, name string, unique bool, columns ...string) error {
 	tn := tableName(table)
+	name = tn + "_" + name
 	if !mg.Dialect.IndexExists(mg, tn, name) {
 		_, err := mg.Db.Exec(mg.Dialect.CreateIndexSql(name, tn, unique, columns...))
 		return err

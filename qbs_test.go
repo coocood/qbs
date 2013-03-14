@@ -357,7 +357,7 @@ func DoTestCreateTable(assert *assrt.Assert, info dialectInfo) {
 	}
 	table := &AddColumn{}
 	mg.CreateTableIfNotExists(table)
-	assert.True(mg.Dialect.IndexExists(mg, "add_column", "first_last"))
+	assert.True(mg.Dialect.IndexExists(mg, "add_column", "add_column_first_last"))
 	columns := mg.Dialect.ColumnsInTable(mg, table)
 	assert.Equal(4, len(columns))
 }
