@@ -23,14 +23,14 @@ type Indexed interface {
 }
 
 // Add adds an index
-func (ix *Indexes) Add(columns ...string) {
-	name := strings.Join(columns, "_")
+func (ix *Indexes) Add(table string, columns ...string) {
+	name := table + "_" + strings.Join(columns, "_")
 	*ix = append(*ix, &Index{Name: name, Columns: columns, Unique: false})
 }
 
 // AddUnique adds an unique index
-func (ix *Indexes) AddUnique(columns ...string) {
-	name := strings.Join(columns, "_")
+func (ix *Indexes) AddUnique(table string, columns ...string) {
+	name := table + "_" + strings.Join(columns, "_")
 	*ix = append(*ix, &Index{Name: name, Columns: columns, Unique: true})
 }
 
@@ -88,12 +88,12 @@ func (model *Model) columnsAndValues(forUpdate bool) ([]string, []interface{}) {
 			include = column.Value != nil && !column.PK
 		} else {
 			include = true
-			if column.Value == nil{
+			if column.Value == nil {
 				include = false
-			}else if column.PK {
-				if intValue,ok := column.Value.(int64); ok{
+			} else if column.PK {
+				if intValue, ok := column.Value.(int64); ok {
 					include = intValue != 0
-				}else if strValue, ok := column.Value.(string); ok{
+				} else if strValue, ok := column.Value.(string); ok {
 					include = strValue != ""
 				}
 			}
@@ -210,7 +210,7 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *Model {
 				if field, ok := structType.FieldByName(refName); ok && !omit {
 					fieldValue := structValue.FieldByName(refName)
 					if fieldValue.Kind() == reflect.Ptr {
-						model.Indexes.Add(fd.Name)
+						model.Indexes.Add(model.Table, fd.Name)
 						if fieldValue.IsNil() {
 							fieldValue.Set(reflect.New(field.Type.Elem()))
 						}
@@ -228,9 +228,9 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *Model {
 				}
 			}
 			if _, ok := parsedSqlTags["unique"]; ok {
-				model.Indexes.AddUnique(fd.Name)
+				model.Indexes.AddUnique(model.Table, fd.Name)
 			} else if _, ok := parsedSqlTags["index"]; ok {
-				model.Indexes.Add(fd.Name)
+				model.Indexes.Add(model.Table, fd.Name)
 			}
 		}
 	}
