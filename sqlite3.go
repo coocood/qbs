@@ -11,12 +11,12 @@ type sqlite3 struct {
 }
 
 func NewSqlite3() Dialect {
-	d := &sqlite3{}
+	d := new(sqlite3)
 	d.base.Dialect = d
 	return d
 }
 
-func (d *sqlite3) sqlType(f interface{}, size int) string {
+func (d sqlite3) sqlType(f interface{}, size int) string {
 	switch f.(type) {
 	case bool:
 		return "integer"
@@ -34,7 +34,7 @@ func (d *sqlite3) sqlType(f interface{}, size int) string {
 	panic("invalid sql type")
 }
 
-func (d *sqlite3) setModelValue(value reflect.Value, field reflect.Value) error {
+func (d sqlite3) setModelValue(value reflect.Value, field reflect.Value) error {
 	switch field.Type().Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		field.SetInt(value.Elem().Int())
@@ -73,7 +73,7 @@ func (d *sqlite3) setModelValue(value reflect.Value, field reflect.Value) error 
 	return nil
 }
 
-func (d *sqlite3) indexExists(mg *Migration, tableName string, indexName string) bool {
+func (d sqlite3) indexExists(mg *Migration, tableName string, indexName string) bool {
 	query := "PRAGMA index_list('" + tableName + "')"
 	rows, err := mg.Db.Query(query)
 	if err != nil {
@@ -90,7 +90,7 @@ func (d *sqlite3) indexExists(mg *Migration, tableName string, indexName string)
 	return false
 }
 
-func (d *sqlite3) columnsInTable(mg *Migration, table interface{}) map[string]bool {
+func (d sqlite3) columnsInTable(mg *Migration, table interface{}) map[string]bool {
 	tn := tableName(table)
 	columns := make(map[string]bool)
 	query := "PRAGMA table_info('" + tn + "')"
@@ -115,7 +115,7 @@ func (d *sqlite3) columnsInTable(mg *Migration, table interface{}) map[string]bo
 	return columns
 }
 
-func (d *sqlite3) primaryKeySql(isString bool, size int) string {
+func (d sqlite3) primaryKeySql(isString bool, size int) string {
 	if isString {
 		return "text PRIMARY KEY NOT NULL"
 	}

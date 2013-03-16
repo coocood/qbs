@@ -12,16 +12,16 @@ type mysql struct {
 }
 
 func NewMysql() Dialect {
-	d := &mysql{}
+	d := new(mysql)
 	d.base.Dialect = d
 	return d
 }
 
-func (d *mysql) parseBool(value reflect.Value) bool {
+func (d mysql) parseBool(value reflect.Value) bool {
 	return value.Int() != 0
 }
 
-func (d *mysql) sqlType(f interface{}, size int) string {
+func (d mysql) sqlType(f interface{}, size int) string {
 	switch f.(type) {
 	case time.Time:
 		return "timestamp"
@@ -48,7 +48,7 @@ func (d *mysql) sqlType(f interface{}, size int) string {
 }
 
 
-func (d *mysql) indexExists(mg *Migration, tableName, indexName string) bool {
+func (d mysql) indexExists(mg *Migration, tableName, indexName string) bool {
 	var row *sql.Row
 	var name string
 	row = mg.Db.QueryRow("SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS "+
@@ -57,7 +57,7 @@ func (d *mysql) indexExists(mg *Migration, tableName, indexName string) bool {
 	return name != ""
 }
 
-func (d *mysql) primaryKeySql(isString bool, size int) string {
+func (d mysql) primaryKeySql(isString bool, size int) string {
 	if isString {
 		return fmt.Sprintf("varchar(%d) PRIMARY KEY", size)
 	}

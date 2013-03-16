@@ -12,12 +12,12 @@ type postgres struct {
 }
 
 func NewPostgres() Dialect {
-	d := &postgres{}
+	d := new(postgres)
 	d.base.Dialect = d
 	return d
 }
 
-func (d *postgres) quote(s string) string {
+func (d postgres) quote(s string) string {
 	sep := "."
 	a := []string{}
 	c := strings.Split(s, sep)
@@ -27,7 +27,7 @@ func (d *postgres) quote(s string) string {
 	return strings.Join(a, sep)
 }
 
-func (d *postgres) sqlType(f interface{}, size int) string {
+func (d postgres) sqlType(f interface{}, size int) string {
 	switch f.(type) {
 	case time.Time:
 		return "timestamp with time zone"
@@ -50,7 +50,7 @@ func (d *postgres) sqlType(f interface{}, size int) string {
 	panic("invalid sql type")
 }
 
-func (d *postgres) insert(q *Qbs) (int64, error) {
+func (d postgres) insert(q *Qbs) (int64, error) {
 	sql, args := d.Dialect.insertSql(q.criteria)
 	row := q.QueryRow(sql, args...)
 	value := q.criteria.model.pk.value
@@ -65,13 +65,13 @@ func (d *postgres) insert(q *Qbs) (int64, error) {
 	return id, err
 }
 
-func (d *postgres) insertSql(criteria *criteria) (string, []interface{}) {
+func (d postgres) insertSql(criteria *criteria) (string, []interface{}) {
 	sql, values := d.base.insertSql(criteria)
 	sql += " RETURNING " + d.Dialect.quote(criteria.model.pk.name)
 	return sql, values
 }
 
-func (d *postgres) indexExists(mg *Migration, tableName, indexName string) bool {
+func (d postgres) indexExists(mg *Migration, tableName, indexName string) bool {
 	var row *sql.Row
 	var name string
 	query := "SELECT indexname FROM pg_indexes "
@@ -82,7 +82,7 @@ func (d *postgres) indexExists(mg *Migration, tableName, indexName string) bool 
 	return name != ""
 }
 
-func (d *postgres) substituteMarkers(query string) string {
+func (d postgres) substituteMarkers(query string) string {
 	position := 1
 	chunks := make([]string, 0, len(query)*2)
 	for _, v := range query {
@@ -96,7 +96,7 @@ func (d *postgres) substituteMarkers(query string) string {
 	return strings.Join(chunks, "")
 }
 
-func (d *postgres) columnsInTable(mg *Migration, table interface{}) map[string]bool {
+func (d postgres) columnsInTable(mg *Migration, table interface{}) map[string]bool {
 	tn := tableName(table)
 	columns := make(map[string]bool)
 	query := "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ?"
@@ -116,7 +116,7 @@ func (d *postgres) columnsInTable(mg *Migration, table interface{}) map[string]b
 	return columns
 }
 
-func (d *postgres) primaryKeySql(isString bool, size int) string {
+func (d postgres) primaryKeySql(isString bool, size int) string {
 	if isString {
 		return "text PRIMARY KEY"
 	}
