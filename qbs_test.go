@@ -8,11 +8,11 @@ import (
 
 import (
 	"fmt"
-	//	_ "github.com/bmizerany/pq"
+	// _ "github.com/lib/pq"
 	//	_ "github.com/mattn/go-sqlite3"
 	"errors"
 	"github.com/coocood/assrt"
-	_ "github.com/ziutek/mymysql/godrv"
+	_ "github.com/go-sql-driver/mysql"
 	"os"
 )
 
@@ -25,8 +25,8 @@ var toRun = []dialectInfo{
 const (
 	dbName         = "qbs_test"
 	dbUser         = "qbs_test"
-	mysqlDriver    = "mymysql"
-	mysqlDrvformat = "%v/%v/"
+	mysqlDriver    = "mysql"
+	mysqlDrvformat = "%v@/%v?charset=utf8&loc=Local"
 	pgDriver       = "postgres"
 	pgDrvFormat    = "user=%v dbname=%v sslmode=disable"
 	sqlite3Driver  = "sqlite3"
@@ -495,3 +495,27 @@ func doTestStringPk(assert *assrt.Assert, info dialectInfo) {
 	assert.Equal(10, spk.Count)
 }
 
+func BenchmarkMysql(b *testing.B){
+	b.StopTimer()
+	info := allDialectInfos[1]
+	db1, _ := info.openDbFunc()
+	mg := NewMigration(db1, dbName, info.dialect)
+	bas := new(basic)
+	mg.DropTable(bas)
+	mg.CreateTableIfNotExists(bas)
+	mg.Close()
+	db2, _ := info.openDbFunc()
+	q := New(db2, info.dialect)
+	bas.Name = "Basic"
+	bas.State = 3
+	q.Save(bas)
+	b.StartTimer()
+	for i:=0; i < b.N; i++ {
+		ba := new(basic)
+		ba.Id = 1
+		db3, _ := info.openDbFunc()
+		q := New(db3, info.dialect)
+		q.Find(ba)
+		q.Close()
+	}
+}
