@@ -8,7 +8,7 @@ import (
 
 import (
 	"fmt"
-	//	_ "github.com/bmizerany/pq"
+	//	_ "github.com/lib/pq"
 	//	_ "github.com/mattn/go-sqlite3"
 	"errors"
 	"github.com/coocood/assrt"
