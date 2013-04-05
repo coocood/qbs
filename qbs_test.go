@@ -8,8 +8,8 @@ import (
 
 import (
 	"fmt"
-	//	_ "github.com/lib/pq"
-	//	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 	"errors"
 	"github.com/coocood/assrt"
 	_ "github.com/ziutek/mymysql/godrv"
@@ -17,9 +17,9 @@ import (
 )
 
 var toRun = []dialectInfo{
-	// allDialectInfos[0],
+	allDialectInfos[0],
 	allDialectInfos[1],
-	// allDialectInfos[2],
+	allDialectInfos[2],
 }
 
 const (
