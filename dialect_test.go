@@ -222,7 +222,7 @@ func DoTestQuerySQL(assert *assrt.Assert, info dialectSyntax) {
 	subCondition := NewCondition("score <= ?", 60).Or("score >= ?", 80)
 	condition.AndCondition(subCondition)
 	criteria.condition = condition
-	criteria.orderBys = []order{order{info.dialect.Quote("name"),false},order{info.dialect.Quote("grade"),true}}
+	criteria.orderBys = []order{order{info.dialect.Quote("name"), false}, order{info.dialect.Quote("grade"), true}}
 	criteria.offset = 3
 	criteria.limit = 10
 	sql, _ := info.dialect.QuerySql(criteria)

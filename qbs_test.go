@@ -7,11 +7,11 @@ import (
 )
 
 import (
+	"errors"
 	"fmt"
+	"github.com/coocood/assrt"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
-	"errors"
-	"github.com/coocood/assrt"
 	_ "github.com/ziutek/mymysql/godrv"
 	"os"
 )
@@ -494,4 +494,3 @@ func DoTestStringPk(assert *assrt.Assert, info dialectInfo) {
 	q.Find(spk)
 	assert.Equal(10, spk.Count)
 }
-

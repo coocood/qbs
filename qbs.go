@@ -85,7 +85,7 @@ func (q *Qbs) Where(expr string, args ...interface{}) *Qbs {
 }
 
 //Snakecase column name
-func (q *Qbs) WhereEqual(column string, value interface {}) *Qbs{
+func (q *Qbs) WhereEqual(column string, value interface{}) *Qbs {
 	q.criteria.condition = NewEqualCondition(column, value)
 	return q
 }
@@ -109,12 +109,12 @@ func (q *Qbs) Offset(offset int) *Qbs {
 }
 
 func (q *Qbs) OrderBy(path string) *Qbs {
-	q.criteria.orderBys = append(q.criteria.orderBys,order{q.Dialect.Quote(path),false})
+	q.criteria.orderBys = append(q.criteria.orderBys, order{q.Dialect.Quote(path), false})
 	return q
 }
 
 func (q *Qbs) OrderByDesc(path string) *Qbs {
-	q.criteria.orderBys = append(q.criteria.orderBys,order{q.Dialect.Quote(path),true})
+	q.criteria.orderBys = append(q.criteria.orderBys, order{q.Dialect.Quote(path), true})
 	return q
 }
 
@@ -422,8 +422,8 @@ func (q *Qbs) ContainsValue(table interface{}, column string, value interface{})
 	return err == nil
 }
 
-func (q *Qbs) Close() error{
-	if q.Db != nil{
+func (q *Qbs) Close() error {
+	if q.Db != nil {
 		return q.Db.Close()
 	}
 	return nil
