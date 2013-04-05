@@ -7,19 +7,19 @@ import (
 )
 
 import (
-	"fmt"
-	//	_ "github.com/bmizerany/pq"
-	//	_ "github.com/mattn/go-sqlite3"
 	"errors"
+	"fmt"
 	"github.com/coocood/assrt"
+	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 	_ "github.com/ziutek/mymysql/godrv"
 	"os"
 )
 
 var toRun = []dialectInfo{
-	// allDialectInfos[0],
+	allDialectInfos[0],
 	allDialectInfos[1],
-	// allDialectInfos[2],
+	allDialectInfos[2],
 }
 
 const (
@@ -494,4 +494,3 @@ func DoTestStringPk(assert *assrt.Assert, info dialectInfo) {
 	q.Find(spk)
 	assert.Equal(10, spk.Count)
 }
-

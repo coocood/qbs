@@ -102,7 +102,7 @@ func (d *base) QuerySql(criteria *Criteria) (string, []interface{}) {
 			if order.desc {
 				query = append(query, "DESC")
 			}
-			if i < orderByLen -1 {
+			if i < orderByLen-1 {
 				query = append(query, ",")
 			}
 		}

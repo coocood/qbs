@@ -55,7 +55,7 @@ func (mg *Migration) dropTableIfExists(structPtr interface{}) {
 
 //Can only drop table on database which name has "test" suffix.
 //Used for testing
-func (mg *Migration) DropTable(strutPtr interface {}) {
+func (mg *Migration) DropTable(strutPtr interface{}) {
 	if !strings.HasSuffix(mg.DbName, "test") {
 		panic("Drop table can only be executed on database which name has 'test' suffix")
 	}
@@ -86,7 +86,7 @@ func (mg *Migration) CreateIndexIfNotExists(table interface{}, name string, uniq
 func (mg *Migration) Close() {
 	if mg.Db != nil {
 		err := mg.Db.Close()
-		if err != nil{
+		if err != nil {
 			panic(err)
 		}
 	}
