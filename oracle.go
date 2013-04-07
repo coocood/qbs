@@ -31,8 +31,10 @@ func (d *oracle) SqlType(f interface{}, size int) string {
 	switch f.(type) {
 	case time.Time:
 		return "DATE"
-	case bool:
+	/*
+        case bool:
 		return "boolean"
+        */
 	case int, int8, int16, int32, uint, uint8, uint16, uint32, int64, uint64:
 		return "NUMBER"
 	case float32, float64:
