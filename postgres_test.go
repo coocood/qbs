@@ -4,7 +4,42 @@ import (
 	"github.com/coocood/assrt"
 	"testing"
 	"time"
+	"database/sql"
+	"fmt"
+	_ "github.com/lib/pq"
 )
+
+const (
+	pgDriver       = "postgres"
+	pgDrvFormat    = "user=%v dbname=%v sslmode=disable"
+)
+
+var pgSyntax = dialectSyntax{
+	NewPostgres(),
+	`CREATE TABLE IF NOT EXISTS "without_pk" ( "first" text, "last" text, "amount" integer )`,
+	`CREATE TABLE "with_pk" ( "primary" bigserial PRIMARY KEY, "first" text, "last" text, "amount" integer )`,
+	`INSERT INTO "sql_gen_model" ("prim", "first", "last", "amount") VALUES ($1, $2, $3, $4) RETURNING "prim"`,
+	`UPDATE "sql_gen_model" SET "first" = $1, "last" = $2, "amount" = $3 WHERE "prim" = $4`,
+	`DELETE FROM "sql_gen_model" WHERE "prim" = $1`,
+	`SELECT "post"."id", "post"."author_id", "post"."content", "author"."id" AS author___id, "author"."name" AS author___name FROM "post" LEFT JOIN "user" AS "author" ON "post"."author_id" = "author"."id"`,
+	`SELECT "name", "grade", "score" FROM "student" WHERE (grade IN ($1, $2, $3)) AND ((score <= $4) OR (score >= $5)) ORDER BY "name" , "grade" DESC LIMIT $6 OFFSET $7`,
+	`DROP TABLE IF EXISTS "drop_table"`,
+	`ALTER TABLE "a" ADD COLUMN "c" varchar(100)`,
+	`CREATE UNIQUE INDEX "iname" ON "itable" ("a", "b", "c")`,
+	`CREATE INDEX "iname2" ON "itable2" ("d", "e")`,
+}
+
+func openPgDb() (*sql.DB, error) {
+	return sql.Open(pgDriver, fmt.Sprintf(pgDrvFormat, testDbUser, testDbName))
+}
+
+func setupPgDb() (*Migration, *Qbs) {
+	db1,_ := openPgDb()
+	mg := NewMigration(db1,testDbName, NewPostgres())
+	db2,_ := openPgDb()
+	q := New(db2,NewPostgres())
+	return mg, q
+}
 
 func TestSqlTypeForPgDialect(t *testing.T) {
 	assert := assrt.NewAssert(t)
@@ -20,4 +55,89 @@ func TestSqlTypeForPgDialect(t *testing.T) {
 	assert.Equal("varchar(255)", d.sqlType("a", 255))
 	assert.Equal("varchar(128)", d.sqlType("b", 128))
 	assert.Equal("timestamp with time zone", d.sqlType(time.Now(), 0))
+}
+
+func TestPgTransaction(t *testing.T) {
+	mg, q := setupPgDb()
+	doTestTransaction(t, mg,q)
+}
+
+func TestPgSaveAndDelete(t *testing.T){
+	mg,q := setupPgDb()
+	doTestSaveAndDelete(t,mg,q)
+}
+
+func TestPgForeignKey(t *testing.T) {
+	mg,q := setupPgDb()
+	doTestForeignKey(t,mg,q)
+}
+
+func TestPgFind(t *testing.T) {
+	mg,q := setupPgDb()
+	doTestFind(t,mg,q)
+}
+
+func TestPgCreateTable(t *testing.T) {
+	mg,_ := setupPgDb()
+	doTestCreateTable(t, mg)
+}
+
+func TestPgUpdate(t *testing.T) {
+	mg,q := setupPgDb()
+	doTestUpdate(t,mg,q)
+}
+
+func TestPgValidation(t *testing.T) {
+	mg,q := setupPgDb()
+	doTestValidation(t, mg, q)
+}
+
+func TestPgBoolType(t *testing.T) {
+	mg,q := setupPgDb()
+	doTestBoolType(t, mg, q)
+}
+
+func TestPgStringPk(t *testing.T) {
+	mg,q := setupPgDb()
+	doTestStringPk(t, mg, q)
+}
+
+func TestPgAddColumnSQL(t *testing.T) {
+	doTestAddColumSQL(t, pgSyntax)
+}
+
+func TestPgCreateTableSQL(t *testing.T){
+	doTestCreateTableSQL(t, pgSyntax)
+}
+
+func TestPgCreateIndexSQL(t *testing.T){
+	doTestCreateIndexSQL(t, pgSyntax)
+}
+
+func TestPgInsertSQL(t *testing.T){
+	doTestInsertSQL(t, pgSyntax)
+}
+
+func TestPgUpdateSQL(t *testing.T){
+	doTestUpdateSQL(t, pgSyntax)
+}
+
+func TestPgDeleteSQL(t *testing.T){
+	doTestDeleteSQL(t, pgSyntax)
+}
+
+func TestPgSelectionSQL(t *testing.T){
+	doTestSelectionSQL(t, pgSyntax)
+}
+
+func TestPgQuerySQL(t *testing.T){
+	doTestQuerySQL(t, pgSyntax)
+}
+
+func TestPgDropTableSQL(t *testing.T){
+	doTestDropTableSQL(t, pgSyntax)
+}
+
+func BenchmarkPgFind(b *testing.B){
+	doBenchmarkFind(b, setupPgDb, openPgDb, NewPostgres())
 }

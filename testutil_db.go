@@ -1,91 +1,33 @@
+
 package qbs
 
 import (
-	"database/sql"
-	"testing"
-	"time"
-)
-
-import (
-	"fmt"
-	// _ "github.com/lib/pq"
-	//	_ "github.com/mattn/go-sqlite3"
-	"errors"
 	"github.com/coocood/assrt"
-	_ "github.com/go-sql-driver/mysql"
-	"os"
+	"database/sql"
+	"time"
+	"errors"
+	"testing"
 )
 
-var toRun = []dialectInfo{
-	// allDialectInfos[0],
-	allDialectInfos[1],
-	// allDialectInfos[2],
+var testDbName = "qbs_test"
+var testDbUser = "qbs_test"
+
+
+
+type addColumn struct {
+	Prim   int64  `qbs:"pk"`
+	First  string `qbs:"size:64,notnull"`
+	Last   string `qbs:"size:128,default:'defaultValue'"`
+	Amount int
 }
 
-const (
-	dbName         = "qbs_test"
-	dbUser         = "qbs_test"
-	mysqlDriver    = "mysql"
-	mysqlDrvformat = "%v@/%v?charset=utf8&loc=Local"
-	pgDriver       = "postgres"
-	pgDrvFormat    = "user=%v dbname=%v sslmode=disable"
-	sqlite3Driver  = "sqlite3"
-)
-
-var allDialectInfos = []dialectInfo{
-	dialectInfo{
-		NewPostgres(),
-		openPgDb,
-	},
-	dialectInfo{
-		NewMysql(),
-		openMysqlDb,
-	},
-	dialectInfo{
-		NewSqlite3(),
-		openSqlite3Db,
-	},
+func (table *addColumn) Indexes(indexes *Indexes) {
+	indexes.AddUnique("first", "last")
 }
 
-type dialectInfo struct {
-	dialect    Dialect
-	openDbFunc func() (*sql.DB, error)
-}
-
-func setupDb(assert *assrt.Assert, info dialectInfo) (*Migration, *Qbs) {
-	db1, err := info.openDbFunc()
-	assert.MustNil(err)
-	mg := NewMigration(db1, dbName, info.dialect)
-	db2, err := info.openDbFunc()
-	assert.MustNil(err)
-	q := New(db2, info.dialect)
-	q.Log = true
-	return mg, q
-}
-
-func openPgDb() (*sql.DB, error) {
-	return sql.Open(pgDriver, fmt.Sprintf(pgDrvFormat, dbUser, dbName))
-}
-
-func openMysqlDb() (*sql.DB, error) {
-	return sql.Open(mysqlDriver, fmt.Sprintf(mysqlDrvformat, dbName, dbUser))
-}
-
-func openSqlite3Db() (*sql.DB, error) {
-	os.Remove("/tmp/foo.db")
-	return sql.Open(sqlite3Driver, "/tmp/foo.db")
-}
-
-func TestTransaction(t *testing.T) {
-	for _, info := range toRun {
-		doTestTransaction(assrt.NewAssert(t), info)
-	}
-}
-
-func doTestTransaction(assert *assrt.Assert, info dialectInfo) {
-	mg, q := setupDb(assert, info)
-	defer mg.Close()
-	defer q.Close()
+func doTestTransaction(t *testing.T,  mg *Migration, q *Qbs) {
+	defer closeMigrationAndQbs(mg,q)
+	assert := assrt.NewAssert(t)
 	type txModel struct {
 		Id int64
 		A  string
@@ -116,19 +58,12 @@ func doTestTransaction(assert *assrt.Assert, info dialectInfo) {
 	assert.Equal("A", out.A)
 }
 
-func TestSaveAndDelete(t *testing.T) {
-	for _, info := range toRun {
-		doTestSaveAndDelete(assrt.NewAssert(t), info)
-	}
-}
-
-func doTestSaveAndDelete(assert *assrt.Assert, info dialectInfo) {
+func doTestSaveAndDelete(t *testing.T, mg *Migration, q *Qbs) {
+	defer closeMigrationAndQbs(mg,q)
+	assert := assrt.NewAssert(t)
 	x := time.Now()
 	assert.MustZero(x.Sub(x.UTC()))
 	now := time.Now()
-	mg, q := setupDb(assert, info)
-	defer mg.Close()
-	defer q.Close()
 	type saveModel struct {
 		Id      int64
 		A       string
@@ -192,16 +127,9 @@ func doTestSaveAndDelete(assert *assrt.Assert, info dialectInfo) {
 	assert.Equal(1, affected)
 }
 
-func TestForeignKey(t *testing.T) {
-	for _, info := range toRun {
-		doTestForeignKey(assrt.NewAssert(t), info)
-	}
-}
-
-func doTestForeignKey(assert *assrt.Assert, info dialectInfo) {
-	mg, q := setupDb(assert, info)
-	defer mg.Close()
-	defer q.Close()
+func doTestForeignKey(t *testing.T, mg *Migration, q *Qbs) {
+	defer closeMigrationAndQbs(mg,q)
+	assert := assrt.NewAssert(t)
 	type user struct {
 		Id   int64
 		Name string
@@ -251,18 +179,10 @@ func doTestForeignKey(assert *assrt.Assert, info dialectInfo) {
 	assert.Equal("john", psts[0].Author.Name)
 }
 
-func TestFind(t *testing.T) {
-	for _, info := range toRun {
-		doTestFind(assrt.NewAssert(t), info)
-	}
-}
-
-func doTestFind(assert *assrt.Assert, info dialectInfo) {
-	mg, q := setupDb(assert, info)
-	defer mg.Close()
-	defer q.Close()
+func doTestFind(t *testing.T, mg *Migration, q *Qbs) {
+	defer closeMigrationAndQbs(mg,q)
+	assert := assrt.NewAssert(t)
 	now := time.Now()
-
 	type types struct {
 		Id    int64
 		Str   string
@@ -323,27 +243,9 @@ func doTestFind(assert *assrt.Assert, info dialectInfo) {
 	assert.Equal(2, len(allOut))
 }
 
-func TestCreateTable(t *testing.T) {
-	for _, info := range toRun {
-		doTestCreateTable(assrt.NewAssert(t), info)
-	}
-}
-
-type AddColumn struct {
-	Prim   int64  `qbs:"pk"`
-	First  string `qbs:"size:64,notnull"`
-	Last   string `qbs:"size:128,default:'defaultValue'"`
-	Amount int
-}
-
-func (table *AddColumn) Indexes(indexes *Indexes) {
-	indexes.AddUnique("first", "last")
-}
-
-func doTestCreateTable(assert *assrt.Assert, info dialectInfo) {
-	assert.Logf("Dialect %T\n", info.dialect)
-	mg, _ := setupDb(assert, info)
+func doTestCreateTable(t *testing.T, mg *Migration) {
 	defer mg.Close()
+	assert := assrt.NewAssert(t)
 	{
 		type AddColumn struct {
 			Prim int64 `qbs:"pk"`
@@ -355,7 +257,7 @@ func doTestCreateTable(assert *assrt.Assert, info dialectInfo) {
 		assert.OneLen(columns)
 		assert.True(columns["prim"])
 	}
-	table := &AddColumn{}
+	table := &addColumn{}
 	mg.CreateTableIfNotExists(table)
 	assert.True(mg.Dialect.indexExists(mg, "add_column", "add_column_first_last"))
 	columns := mg.Dialect.columnsInTable(mg, table)
@@ -368,16 +270,9 @@ type basic struct {
 	State int64
 }
 
-func TestUpdate(t *testing.T) {
-	for _, info := range toRun {
-		doTestUpdate(assrt.NewAssert(t), info)
-	}
-}
-
-func doTestUpdate(assert *assrt.Assert, info dialectInfo) {
-	mg, q := setupDb(assert, info)
-	defer mg.Close()
-	defer q.Close()
+func doTestUpdate(t *testing.T,  mg *Migration, q *Qbs) {
+	defer closeMigrationAndQbs(mg,q)
+	assert := assrt.NewAssert(t)
 	mg.dropTableIfExists(&basic{})
 	mg.CreateTableIfNotExists(&basic{})
 	_, err := q.Save(&basic{Name: "a", State: 1})
@@ -411,30 +306,22 @@ func doTestUpdate(assert *assrt.Assert, info dialectInfo) {
 	assert.MustEqual(0, len(datas))
 }
 
-func TestValidation(t *testing.T) {
-	for _, info := range toRun {
-		doTestValidation(assrt.NewAssert(t), info)
-	}
-}
-
-//
-type ValidatorTable struct {
+type validatorTable struct {
 	Id   int64
 	Name string
 }
 
-func (v *ValidatorTable) Validate(q *Qbs) error {
+func (v *validatorTable) Validate(q *Qbs) error {
 	if q.ContainsValue(v, "name", v.Name) {
 		return errors.New("name already taken")
 	}
 	return nil
 }
 
-func doTestValidation(assert *assrt.Assert, info dialectInfo) {
-	mg, q := setupDb(assert, info)
-	defer mg.Close()
-	defer q.Close()
-	valid := new(ValidatorTable)
+func doTestValidation(t *testing.T,  mg *Migration, q *Qbs) {
+	defer closeMigrationAndQbs(mg,q)
+	assert := assrt.NewAssert(t)
+	valid := new(validatorTable)
 	mg.dropTableIfExists(valid)
 	mg.CreateTableIfNotExists(valid)
 	valid.Name = "ok"
@@ -445,21 +332,14 @@ func doTestValidation(assert *assrt.Assert, info dialectInfo) {
 	assert.Equal("name already taken", err.Error())
 }
 
-func TestBoolType(t *testing.T) {
-	for _, info := range toRun {
-		doTestBoolType(assrt.NewAssert(t), info)
-	}
-}
-
-func doTestBoolType(assert *assrt.Assert, info dialectInfo) {
+func doTestBoolType(t *testing.T, mg *Migration, q *Qbs) {
+	defer closeMigrationAndQbs(mg,q)
+	assert := assrt.NewAssert(t)
 	type BoolType struct {
 		Id     int64
 		Active bool
 	}
 	bt := new(BoolType)
-	mg, q := setupDb(assert, info)
-	defer mg.Close()
-	defer q.Close()
 	mg.dropTableIfExists(bt)
 	mg.CreateTableIfNotExists(bt)
 	bt.Active = true
@@ -469,13 +349,9 @@ func doTestBoolType(assert *assrt.Assert, info dialectInfo) {
 	assert.True(bt.Active)
 }
 
-func TestStringPk(t *testing.T) {
-	for _, info := range toRun {
-		doTestStringPk(assrt.NewAssert(t), info)
-	}
-}
-
-func doTestStringPk(assert *assrt.Assert, info dialectInfo) {
+func doTestStringPk(t *testing.T, mg *Migration, q *Qbs) {
+	defer closeMigrationAndQbs(mg,q)
+	assert := assrt.NewAssert(t)
 	type StringPk struct {
 		Tag   string `qbs:"pk,size:16"`
 		Count int32
@@ -483,9 +359,6 @@ func doTestStringPk(assert *assrt.Assert, info dialectInfo) {
 	spk := new(StringPk)
 	spk.Tag = "health"
 	spk.Count = 10
-	mg, q := setupDb(assert, info)
-	defer mg.Close()
-	defer q.Close()
 	mg.dropTableIfExists(spk)
 	mg.CreateTableIfNotExists(spk)
 	affected, _ := q.Save(spk)
@@ -495,30 +368,10 @@ func doTestStringPk(assert *assrt.Assert, info dialectInfo) {
 	assert.Equal(10, spk.Count)
 }
 
-func BenchmarkMysql(b *testing.B){
-	b.StopTimer()
-	info := allDialectInfos[1]
-	db1, _ := info.openDbFunc()
-	mg := NewMigration(db1, dbName, info.dialect)
-	bas := new(basic)
-	mg.DropTable(bas)
-	mg.CreateTableIfNotExists(bas)
+
+func closeMigrationAndQbs(mg *Migration, q *Qbs) {
 	mg.Close()
-	db2, _ := info.openDbFunc()
-	q := New(db2, info.dialect)
-	bas.Name = "Basic"
-	bas.State = 3
-	q.Save(bas)
-	b.StartTimer()
-	for i:=0; i < b.N; i++ {
-		ba := new(basic)
-		ba.Id = 1
-		db3 := GetFreeDB()
-		if db3 == nil {
-			db3, _ = info.openDbFunc()
-		}
-		q := New(db3, info.dialect)
-		q.Find(ba)
-		q.Close()
-	}
+	q.Close()
 }
+
+
