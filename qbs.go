@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+var connectionPool chan *sql.DB = make(chan *sql.DB, 10)
+
 type Qbs struct {
 	Db           *sql.DB
 	Dialect      Dialect
@@ -29,6 +31,23 @@ func New(database *sql.DB, dialect Dialect) *Qbs {
 	}
 	q.Reset()
 	return q
+}
+
+//Try to get a free *sql.DB from the connection pool.
+//This function do not block, if the pool is empty, it returns nil
+//Then you should open a new one.
+func GetFreeDB() *sql.DB {
+	select {
+	case db := <-connectionPool:
+		return db
+	default:
+	}
+	return nil
+}
+
+//The default connection pool size is 10.
+func ChangePoolSize(size int){
+	connectionPool = make(chan *sql.DB, size)
 }
 
 // Create a new criteria for subsequent query
@@ -421,9 +440,16 @@ func (q *Qbs) ContainsValue(table interface{}, column string, value interface{})
 	err := row.Scan(&result)
 	return err == nil
 }
-
+// It is safe to call it even if *sql.DB is nil.
+// So it's better to call "defer q.Close()" right after qbs.New() to release resource.
+// If the connection pool is not full, the Db will be sent back into the pool, otherwise the Db will get closed.
 func (q *Qbs) Close() error{
 	if q.Db != nil{
+		select {
+		case connectionPool<-q.Db:
+			return nil
+		default:
+		}
 		return q.Db.Close()
 	}
 	return nil

@@ -513,7 +513,10 @@ func BenchmarkMysql(b *testing.B){
 	for i:=0; i < b.N; i++ {
 		ba := new(basic)
 		ba.Id = 1
-		db3, _ := info.openDbFunc()
+		db3 := GetFreeDB()
+		if db3 == nil {
+			db3, _ = info.openDbFunc()
+		}
 		q := New(db3, info.dialect)
 		q.Find(ba)
 		q.Close()
