@@ -22,6 +22,7 @@ Qbs stands for Query By Struct. A Go ORM.
 * "Created" column will be set to current time when insert, "Updated" column will be set to current time when insert and update.
 * Struct type can implement Validator interface to do validation before insert or update.
 * Support MySQL, PosgreSQL and SQLite3.
+* Support connection pool.
 
 ##Install
 
@@ -43,10 +44,17 @@ documentation.
 ##Examples
 
     func FindAuthorName(){
-        //create Qbs instance
-        db, _ = sql.Open("mymysql", "qbs_test/qbs_test/")
+
+        //Try to get a free DB connection from the pool
+        db := qbs.GetFreeDb()
+        if db == nil {// connection pool is empty
+            //open a new one.
+            db, _ = sql.Open("mymysql", "qbs_test/qbs_test/")
+        }
         q := qbs.New(db, qbs.NewMysql())
-        defer q.Db.Close()
+        // call q.Close() will recycle the DB connection automatically.
+        // If the pool is full, the DB will get closed.
+        defer q.Close()
 
         //define struct
         type User struct {
