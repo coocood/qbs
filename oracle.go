@@ -2,7 +2,7 @@ package qbs
 
 import (
   "fmt"
-  "strings"
+	"strings"
 	"time"
 	"database/sql"
 )
@@ -79,8 +79,8 @@ func (d *oracle) KeywordAutoIncrement() string {
 func (d *oracle) IndexExists(mg *Migration, tableName, indexName string) bool {
 	var row *sql.Row
 	var name string
-	query := "SELECT indexname FROM pg_indexes "
-	query += "WHERE tablename = ? AND indexname = ?"
+	query := "SELECT INDEX_NAME FROM USER_INDEXES "
+	query += "WHERE TABLE_NAME = ? AND INDEX_NAME = ?"
 	query = d.SubstituteMarkers(query)
 	row = mg.Db.QueryRow(query, tableName, indexName)
 	row.Scan(&name)
@@ -104,7 +104,7 @@ func (d *oracle) SubstituteMarkers(query string) string {
 func (d *oracle) ColumnsInTable(mg *Migration, table interface{}) map[string]bool {
 	tn := tableName(table)
 	columns := make(map[string]bool)
-	query := "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ?"
+	query := "SELECT COLUMN_NAME FROM USER_TAB_COLUMNS WHERE TABLE_NAME = ?"
 	query = mg.Dialect.SubstituteMarkers(query)
 	rows, err := mg.Db.Query(query, tn)
 	defer rows.Close()
