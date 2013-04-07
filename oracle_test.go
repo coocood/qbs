@@ -1,7 +1,7 @@
 package qbs
 
 import (
-  "github.com/coocood/assrt"
+	"github.com/coocood/assrt"
 	"testing"
 	"time"
 )
