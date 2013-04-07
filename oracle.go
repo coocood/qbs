@@ -17,7 +17,7 @@ func NewOracle() Dialect {
 	return d
 }
 
-func (d *oracle) Quote(s string) string {
+func (d oracle) quote(s string) string {
 	sep := "."
 	a := []string{}
 	c := strings.Split(s, sep)
@@ -27,7 +27,7 @@ func (d *oracle) Quote(s string) string {
 	return strings.Join(a, sep)
 }
 
-func (d *oracle) SqlType(f interface{}, size int) string {
+func (d oracle) sqlType(f interface{}, size int) string {
 	switch f.(type) {
 	case time.Time:
 		return "DATE"
@@ -52,7 +52,7 @@ func (d *oracle) SqlType(f interface{}, size int) string {
 	panic("invalid sql type")
 }
 
-func (d *oracle) Insert(q *Qbs) (int64, error) {
+func (d oracle) insert(q *Qbs) (int64, error) {
 	sql, args := d.Dialect.InsertSql(q.criteria)
 	row := q.QueryRow(sql, args...)
 	value := q.criteria.model.Pk.Value
@@ -67,29 +67,25 @@ func (d *oracle) Insert(q *Qbs) (int64, error) {
 	return id, err
 }
 
-func (d *oracle) InsertSql(criteria *Criteria) (string, []interface{}) {
+func (d oracle) insertSql(criteria *criteria) (string, []interface{}) {
 	sql, values := d.base.InsertSql(criteria)
 	sql += " RETURNING " + d.Dialect.Quote(criteria.model.Pk.Name)
 	return sql, values
 }
 
-func (d *oracle) KeywordAutoIncrement() string {
-	// oracle has not auto increment keyword, uses SERIAL type
-	return ""
-}
 
-func (d *oracle) IndexExists(mg *Migration, tableName, indexName string) bool {
+func (d oracle) indexExists(mg *Migration, tableName, indexName string) bool {
 	var row *sql.Row
 	var name string
 	query := "SELECT INDEX_NAME FROM USER_INDEXES "
 	query += "WHERE TABLE_NAME = ? AND INDEX_NAME = ?"
-	query = d.SubstituteMarkers(query)
+	query = d.substituteMarkers(query)
 	row = mg.Db.QueryRow(query, tableName, indexName)
 	row.Scan(&name)
 	return name != ""
 }
 
-func (d *oracle) SubstituteMarkers(query string) string {
+func (d oracle) substituteMarkers(query string) string {
 	position := 1
 	chunks := make([]string, 0, len(query)*2)
 	for _, v := range query {
@@ -103,7 +99,7 @@ func (d *oracle) SubstituteMarkers(query string) string {
 	return strings.Join(chunks, "")
 }
 
-func (d *oracle) ColumnsInTable(mg *Migration, table interface{}) map[string]bool {
+func (d oracle) columnsInTable(mg *Migration, table interface{}) map[string]bool {
 	tn := tableName(table)
 	columns := make(map[string]bool)
 	query := "SELECT COLUMN_NAME FROM USER_TAB_COLUMNS WHERE TABLE_NAME = ?"
@@ -123,7 +119,7 @@ func (d *oracle) ColumnsInTable(mg *Migration, table interface{}) map[string]boo
 	return columns
 }
 
-func (d *oracle) PrimaryKeySql(isString bool, size int) string {
+func (d oracle) primaryKeySql(isString bool, size int) string {
 	if isString {
 		return "text PRIMARY KEY"
 	}
