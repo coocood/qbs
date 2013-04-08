@@ -50,6 +50,7 @@ Qbs是一个Go语言的ORM
 - `Name`后面的标签`qbs:"size:32,index"`用来定义建表时的字段属性。属性在双引号中定义，多个不同的属性用逗号区分，中间没有空格。
 - 这里用到两个属性，一个是`size`，值是32，对应的SQL语句是`varchar(32)`。
 - 另一个属性是`index`，建立这个字段的索引。也可以用`unique`来定义唯一约束索引。
+- string类型的size属性很重要，如果加上size，而且size在数据库支持的范围内，会生成定长的varchar类型，不加size的话，对应的数据库类型是不定长的，有的数据库（MySQL)无法建立索引。
 
 
         type User struct {
