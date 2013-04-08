@@ -53,9 +53,9 @@ func (d oracle) sqlType(f interface{}, size int) string {
 }
 
 func (d oracle) insert(q *Qbs) (int64, error) {
-	sql, args := d.Dialect.InsertSql(q.criteria)
+	sql, args := d.Dialect.insertSql(q.criteria)
 	row := q.QueryRow(sql, args...)
-	value := q.criteria.model.Pk.Value
+	value := q.criteria.model.pk.value
 	var err error
 	var id int64
 	if _, ok := value.(int64); ok {
@@ -68,8 +68,8 @@ func (d oracle) insert(q *Qbs) (int64, error) {
 }
 
 func (d oracle) insertSql(criteria *criteria) (string, []interface{}) {
-	sql, values := d.base.InsertSql(criteria)
-	sql += " RETURNING " + d.Dialect.Quote(criteria.model.Pk.Name)
+	sql, values := d.base.insertSql(criteria)
+	sql += " RETURNING " + d.Dialect.quote(criteria.model.pk.name)
 	return sql, values
 }
 
@@ -103,7 +103,7 @@ func (d oracle) columnsInTable(mg *Migration, table interface{}) map[string]bool
 	tn := tableName(table)
 	columns := make(map[string]bool)
 	query := "SELECT COLUMN_NAME FROM USER_TAB_COLUMNS WHERE TABLE_NAME = ?"
-	query = mg.Dialect.SubstituteMarkers(query)
+	query = mg.Dialect.substituteMarkers(query)
 	rows, err := mg.Db.Query(query, tn)
 	defer rows.Close()
 	if err != nil {
