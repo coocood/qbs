@@ -38,10 +38,11 @@ Qbs是一个Go语言的ORM
 
 ### 首先写一个打开数据库的函数`OpenDb`：
 
-    func OpenDb() (*sql.DB, error){
-    	db, err := sql.Open("mysql", "qbs_test@/qbs_test?charset=utf8&loc=Local")
-    	return db, err
-    }
+
+        func OpenDb() (*sql.DB, error){
+            db, err := sql.Open("mysql", "qbs_test@/qbs_test?charset=utf8&loc=Local")
+            return db, err
+        }
 
 
 ### 定义一个`User`类型：
@@ -51,10 +52,10 @@ Qbs是一个Go语言的ORM
 - 另一个属性是`index`，建立这个字段的索引。也可以用`unique`来定义唯一约束索引。
 
 
-    type User struct {
-        Id   int64
-        Name string `qbs:"size:32,index"`
-    }
+        type User struct {
+            Id   int64
+            Name string `qbs:"size:32,index"`
+        }
 
 
 ### 新建表：
@@ -65,15 +66,15 @@ Qbs是一个Go语言的ORM
 - `CreateTableIfNotExists`方法的参数必须是struct指针，不然会panic。
 
 
-    func CreateUserTable() error{
-        db, err := OpenDb()
-        if err != nil {
-            return err
+        func CreateUserTable() error{
+            db, err := OpenDb()
+            if err != nil {
+                return err
+            }
+            migration := qbs.NewMigration(db,"qbs_test", qbs.NewMysql())
+            defer migration.Close()
+            return migration.CreateTableIfNotExists(new(User))
         }
-        migration := qbs.NewMigration(db,"qbs_test", qbs.NewMysql())
-        defer migration.Close()
-        return migration.CreateTableIfNotExists(new(User))
-    }
 
 
 ### 写一个获取`*qbs.Qbs`实例的函数：
@@ -82,17 +83,17 @@ Qbs是一个Go语言的ORM
 - 取得Qbs实例后，应该马上执行`defer q.Close()`来回收数据库连接，这个函数也是非阻塞的。如果连接池未满，连接会被回收，如果连接池已满，连接会被关闭。
 
 
-    func GetQbs() (q *qbs.Qbs, err error){
-    	db := qbs.GetFreeDB()
-    	if db == nil{
-    		db, err = OpenDb()
-    		if err != nil {
-    			return nil,err
-    		}
-    	}
-    	q = qbs.New(db, qbs.NewMysql())
-    	return q, nil
-    }
+        func GetQbs() (q *qbs.Qbs, err error){
+            db := qbs.GetFreeDB()
+            if db == nil{
+                db, err = OpenDb()
+                if err != nil {
+                    return nil,err
+                }
+            }
+            q = qbs.New(db, qbs.NewMysql())
+            return q, nil
+        }
 
 ### 插入数据：
 - 如果处理一个请求需要多次进行数据库操作，最好在函数间传递*Qbs参数，这样只需要执行一次获取关闭操作就可以了。
@@ -101,23 +102,23 @@ Qbs是一个Go语言的ORM
 - `Save`的参数必须是struct指针，不然会panic。
 
 
-    func CreateUser(q *qbs.Qbs) (*User,error){
-    	user := new(User)
-    	user.Name = "Green"
-    	_, err := q.Save(user)
-    	return user,err
-    }
+        func CreateUser(q *qbs.Qbs) (*User,error){
+            user := new(User)
+            user.Name = "Green"
+            _, err := q.Save(user)
+            return user,err
+        }
 
 ### 查询数据：
 - 如果需要根据Id主键查询，只要给user的Id赋值就可以了。
 
 
-    func FindUserById(q *qbs.Qbs, id int64) (*User, error) {
-    	user := new(User)
-    	user.Id = id
-    	err := q.Find(user)
-    	return user, err
-    }
+        func FindUserById(q *qbs.Qbs, id int64) (*User, error) {
+            user := new(User)
+            user.Id = id
+            err := q.Find(user)
+            return user, err
+        }
 
 - 其它的查询条件，需要调用`Where`方法。这里的`WhereEqual("name", name)`相当于`Where（"name = ?", name)`，只是一个简写形式。
 - `Where`/`WhereEqual`只有最后一次调用有效，之前调用的条件会被后面的覆盖掉，适用于简单的查询条件，。
@@ -125,11 +126,11 @@ Qbs是一个Go语言的ORM
 这样做的目的是为了符合go的命名规范，方便json序列化，同时避免大小写造成的数据库迁移错误。
 
 
-    func FindUserByName(q *qbs.Qbs, n string) (*User, error) {
-    	user := new(User)
-    	err := q.WhereEqual("name", n).Find(user)
-    	return user, err
-    }
+        func FindUserByName(q *qbs.Qbs, n string) (*User, error) {
+            user := new(User)
+            err := q.WhereEqual("name", n).Find(user)
+            return user, err
+        }
 
 
 - 如果需要定义复杂的查询条件，可以调用`Condition`方法。参数类型为`*Condition`，通过`NewCondition`或`NewEqualCondition`、`NewInCondition`函数来新建。
@@ -137,13 +138,13 @@ Qbs是一个Go语言的ORM
 - `Condition`方法同样也只能调用一次，而且不可以和`Where`同时使用。
 
 
-    func FindUserByCondition(q *qbs.Qbs) (*User, error) {
-    	user := new(User)
-    	condition1 := qbs.NewCondition("id > ?", 100).Or("id < ?", 50).OrEqual("id", 75)
-    	condition2 := qbs.NewCondition("name != ?", "Red").And("name != ?", "Black")
-    	condition1.AndCondition(condition2)
-    	err := q.Condition(condition1).Find(user)
-    	return user, err
-    }
+        func FindUserByCondition(q *qbs.Qbs) (*User, error) {
+            user := new(User)
+            condition1 := qbs.NewCondition("id > ?", 100).Or("id < ?", 50).OrEqual("id", 75)
+            condition2 := qbs.NewCondition("name != ?", "Red").And("name != ?", "Black")
+            condition1.AndCondition(condition2)
+            err := q.Condition(condition1).Find(user)
+            return user, err
+        }
 
 。。。未完待续
