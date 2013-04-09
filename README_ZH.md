@@ -37,6 +37,7 @@ Qbs是一个Go语言的ORM
 
 
 ### 首先写一个打开数据库的函数`OpenDb`：
+* 这里用的是`github.com/go-sql-driver/mysql`的`exp-time`分支，如果用master分支无法存取time.Time类型。
 
 
         func OpenDb() (*sql.DB, error){
