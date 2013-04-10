@@ -37,7 +37,6 @@ Qbs是一个Go语言的ORM
 
 
 ### 首先写一个打开数据库的函数`OpenDb`：
-* 这里用的是`github.com/go-sql-driver/mysql`的`exp-time`分支，如果用master分支无法存取time.Time类型。
 
 
         func OpenDb() (*sql.DB, error){
@@ -122,6 +121,17 @@ Qbs是一个Go语言的ORM
             return user, err
         }
 
+
+- 查询多行需要调用`FindAll`，参数必须是slice的指针，slice的元素必须是struct的指针。
+
+
+        func FindUsers(q *qbs.Qbs) ([]*User, error) {
+        	var users []*User
+        	err := q.Limit(10).Offset(10).FindAll(&users)
+        	return users, err
+        }
+
+
 - 其它的查询条件，需要调用`Where`方法。这里的`WhereEqual("name", name)`相当于`Where（"name = ?", name)`，只是一个简写形式。
 - `Where`/`WhereEqual`只有最后一次调用有效，之前调用的条件会被后面的覆盖掉，适用于简单的查询条件，。
 - 注意，这里第一个参数字段名是`"name"`，而不是struct里的`"Name"`。所有代码里的`AbCd`形式的字段名，或类型名，在储存到数据库时会被转化为`ab_cd`的形式。
@@ -149,4 +159,34 @@ Qbs是一个Go语言的ORM
             return user, err
         }
 
-。。。未完待续
+
+### 更新一行：
+- 更新一行数据需要先`Find`，再`Save`。
+
+
+        func UpdateOneUser(q *qbs.Qbs, id int64, name string) (affected int64, error){
+        	user, err := FindUserById(q, id)
+        	if err != nil {
+        		return 0, err
+        	}
+        	user.Name = name
+        	return q.Save(user)
+        }
+
+
+### 更新多行
+- 多行的更新需要调用`Update`，需要注意的是，如果使用包含所有字段的struct，会把所有的字段都更新，这不会是想要的结果。
+解决办法是在函数里定义临时的struct，只包含需要更新的字段。如果在函数里需要用到同名的struct，可以把冲突的部分放在block里`{...}`。
+
+
+        func UpdateMultipleUsers(q *qbs.Qbs)(affected int64, error) {
+        	type User struct {
+        		Name string
+        	}
+        	user := new(User)
+        	user.Name = "Blue"
+        	return q.WhereEqual("name", "Green").Update(user)
+        }
+
+
+。。。未完代续

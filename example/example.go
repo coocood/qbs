@@ -4,7 +4,6 @@ package example
 import (
 	"github.com/coocood/qbs"
 	"database/sql"
-	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -69,4 +68,29 @@ func FindUserByCondition(q *qbs.Qbs) (*User, error) {
 	condition1.AndCondition(condition2)
 	err := q.Condition(condition1).Find(user)
 	return user, err
+}
+
+func FindUsers(q *qbs.Qbs) ([]*User, error) {
+	var users []*User
+	err := q.Limit(10).Offset(10).FindAll(&users)
+	return users, err
+}
+
+func UpdateOneUser(q *qbs.Qbs, id int64, name string) (affected int64, err error){
+	user, err := FindUserById(q, id)
+	if err != nil {
+		return 0, err
+	}
+	user.Name = name
+	return q.Save(user)
+}
+
+
+func UpdateMultipleUsers(q *qbs.Qbs)(affected int64, err error) {
+	type User struct {
+		Name string
+	}
+	user := new(User)
+	user.Name = "Blue"
+	return q.WhereEqual("name", "Green").Update(user)
 }
