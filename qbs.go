@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 	"time"
+	"database/sql/driver"
 )
 
 var connectionPool chan *sql.DB = make(chan *sql.DB, 10)
@@ -445,10 +446,12 @@ func (q *Qbs) ContainsValue(table interface{}, column string, value interface{})
 // If the connection pool is not full, the Db will be sent back into the pool, otherwise the Db will get closed.
 func (q *Qbs) Close() error{
 	if q.Db != nil{
-		select {
-		case connectionPool<-q.Db:
-			return nil
-		default:
+		if q.firstTxError != driver.ErrBadConn {
+			select {
+			case connectionPool<-q.Db:
+				return nil
+			default:
+			}
 		}
 		return q.Db.Close()
 	}
