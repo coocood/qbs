@@ -174,7 +174,7 @@ Qbs是一个Go语言的ORM
         }
 
 
-### 更新多行
+### 更新多行：
 - 多行的更新需要调用`Update`，需要注意的是，如果使用包含所有字段的struct，会把所有的字段都更新，这不会是想要的结果。
 解决办法是在函数里定义临时的struct，只包含需要更新的字段。如果在函数里需要用到同名的struct，可以把冲突的部分放在block里`{...}`。
 
@@ -188,5 +188,60 @@ Qbs是一个Go语言的ORM
         	return q.WhereEqual("name", "Green").Update(user)
         }
 
+### 删除：
+- 删除时条件不可以为空，要么在Id字段定义，要么在Where或Condition里定义。
+
+
+        func DeleteUser(q *qbs.Qbs, id int64)(affected int64, err error) {
+        	user := new(User)
+        	user.Id = id
+        	return q.Delete(user)
+        }
+
+### 定义需要关联查询的表：
+- 这里`Post`里包含了一个名为`AuthorId`，类型为`int64`的字段，而且同时包含一个名为`Author`，类型为`*User`的字段。
+- 使用类似 `{xxx}Id int64`, `{xxx} *{yyy}` 这样的格式，就可以定义关联查询。
+- 这里`Author`这个字段因为是指针类型，所以在`Post`建表时不会被添加为column。
+- 建表时，因为检测到关联字段，所以会自动为`author_id`建立索引。关联字段不需要在tag里定义索引。
+- 关联字段名可以不符合以上格式，只要明确地在`AuthorId`的tag里加上`qbs:"join:Author"`，同样可以定义关联查询。
+- 定义外键约束需要明确地在`AuthorId`对应的tag里添加`qbs:"fk:Author"`。
+- 定义外键的同时，也就相当于定义了关联查询，同样会自动建立索引，区别仅仅是建表时添加了外键约束的语句。
+- `Created time.Time`字段会在插入时写入当前时间，`Updated time.Time`字段会在更新时自动更新为当前时间。
+- 如果想给自动赋值的时间字段用其它字段名，不想用"Created"，"Updated"，可以在tag里添加`qbs:"created"`，`qbs:"updated"`。
+
+
+        type Post struct {
+            Id int64
+            AuthorId int64
+            Author *User
+            Content string
+            Created time.Time
+            Updated time.Time
+        }
+
+
+### 查询时忽略某些字段：
+- 有时候，我们查询时并不需要某些字段，特别是关联查询的字段（比如`Author`字段），或数据很大的字段（比如`Content`字段）
+，如果忽略掉，会提高查询效率。
+
+
+        func FindPostsOmitContentAndCreated(q *qbs.Qbs) ([]*Post, error) {
+        	var posts []*Post
+        	err := q.OmitFields("Content","Created").Find(&posts)
+        	return posts, err
+        }
+
+
+### 查询时忽略关联字段：
+- 如果struct里定义了关联查询，每次Find都会自动JOIN，不需要特别指定，但有时候，我们在某一次查询时并不需要关联查询，
+这时忽略掉关联查询会提高查询效率。当然我们可以用`OmitFields`实现同样的效果，但是那样需要在参数里手写字段名，不够简洁。
+- 使用`OmitJoin`可以忽略所有关联查询，只返回单一表的数据，和`OmitFields`可以同时使用。
+
+
+        func FindPostsOmitJoin(q *qbs.Qbs) ([]*Post, error) {
+        	var posts []*Post
+        	err := q.OmitJoin().OmitFields("Content").Find(&posts)
+        	return posts, err
+        }
 
 。。。未完代续

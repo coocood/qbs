@@ -5,6 +5,7 @@ import (
 	"github.com/coocood/qbs"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
+	"time"
 )
 
 type User struct {
@@ -12,6 +13,14 @@ type User struct {
 	Name string `qbs:"size:50,index"`
 }
 
+type Post struct {
+	Id int64
+	AuthorId int64
+	Author *User
+	Content string
+	Created time.Time
+	Updated time.Time
+}
 
 func OpenDb() (*sql.DB, error){
 	db, err := sql.Open("mysql", "qbs_test@/qbs_test?charset=utf8&loc=Local")
@@ -93,4 +102,22 @@ func UpdateMultipleUsers(q *qbs.Qbs)(affected int64, err error) {
 	user := new(User)
 	user.Name = "Blue"
 	return q.WhereEqual("name", "Green").Update(user)
+}
+
+func DeleteUser(q *qbs.Qbs, id int64)(affected int64, err error) {
+	user := new(User)
+	user.Id = id
+	return q.Delete(user)
+}
+
+func FindPostsOmitContentAndCreated(q *qbs.Qbs) ([]*Post, error) {
+	var posts []*Post
+	err := q.OmitFields("Content","Created").Find(&posts)
+	return posts, err
+}
+
+func FindPostsOmitJoin(q *qbs.Qbs) ([]*Post, error) {
+	var posts []*Post
+	err := q.OmitJoin().OmitFields("Content").Find(&posts)
+	return posts, err
 }
