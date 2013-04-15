@@ -81,7 +81,7 @@ documentation.
 
     }
 
-More advanced examples can be found in test files.
+More advanced examples can be found [here](https://github.com/coocood/qbs/blob/master/example/example.go).
 
 A complete application can be found in a CMS system [toropress](https://github.com/insionng/toropress), specifically in [models.go](https://github.com/insionng/toropress/blob/master/models/models.go) file
 
@@ -89,7 +89,7 @@ A complete application can be found in a CMS system [toropress](https://github.c
 
 * Every table name and culumn name in the database must be lower case, must not have any trailing "_" or any preceding "___"
 
-* Define fields in camelcase to follow Go's nameing convention, Qbs will trasnlate them to snakecase in sql statement.
+* Define fields in camelcase to follow Go's nameing convention, Qbs will convert them to snakecase in sql statement.
 
 ##Field tag syntax
 
