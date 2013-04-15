@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"strings"
 	"time"
-	"database/sql/driver"
 )
 
 var connectionPool chan *sql.DB = make(chan *sql.DB, 10)
@@ -95,7 +94,7 @@ func (q *Qbs) Commit() error {
 func (q *Qbs) Rollback() error {
 	err := q.Tx.Rollback()
 	q.Tx = nil
-	return err
+	return q.updateTxError(err)
 }
 
 // Where is a shortcut method to call Condtion(NewCondtition(expr, args...)).
@@ -308,21 +307,27 @@ func (q *Qbs) QueryRow(query string, args ...interface{}) *sql.Row {
 }
 
 // Same as sql.Db.Query or sql.Tx.Query depends on if transaction has began
-func (q *Qbs) Query(query string, args ...interface{}) (*sql.Rows, error) {
+func (q *Qbs) Query(query string, args ...interface{}) (rows *sql.Rows,err error) {
 	q.log(query, args...)
 	query = q.Dialect.substituteMarkers(query)
 	if q.Tx != nil {
-		return q.Tx.Query(query, args...)
+		rows, err = q.Tx.Query(query, args...)
+	}else{
+		rows, err = q.Db.Query(query, args...)
 	}
-	return q.Db.Query(query, args...)
+	q.updateTxError(err)
+	return
 }
 
 // Same as sql.Db.Prepare or sql.Tx.Prepare depends on if transaction has began
-func (q *Qbs) Prepare(query string) (*sql.Stmt, error) {
+func (q *Qbs) Prepare(query string) (stmt *sql.Stmt, err error) {
 	if q.Tx != nil {
-		return q.Tx.Prepare(query + ";")
+		stmt, err = q.Tx.Prepare(query + ";")
+	}else{
+		stmt, err = q.Db.Prepare(query + ";")
 	}
-	return q.Db.Prepare(query + ";")
+	q.updateTxError(err)
+	return
 }
 
 // If Id value is not provided, save will insert the record, and the Id value will
@@ -439,6 +444,7 @@ func (q *Qbs) ContainsValue(table interface{}, column string, value interface{})
 	row := q.QueryRow(query, value)
 	var result interface{}
 	err := row.Scan(&result)
+	q.updateTxError(err)
 	return err == nil
 }
 // It is safe to call it even if *sql.DB is nil.
@@ -446,12 +452,10 @@ func (q *Qbs) ContainsValue(table interface{}, column string, value interface{})
 // If the connection pool is not full, the Db will be sent back into the pool, otherwise the Db will get closed.
 func (q *Qbs) Close() error{
 	if q.Db != nil{
-		if q.firstTxError != driver.ErrBadConn {
-			select {
-			case connectionPool<-q.Db:
-				return nil
-			default:
-			}
+		select {
+		case connectionPool<-q.Db:
+			return nil
+		default:
 		}
 		return q.Db.Close()
 	}
