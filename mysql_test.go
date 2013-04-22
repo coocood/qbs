@@ -9,7 +9,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 const (
-	mysqlDrvformat = "%v@/%v?charset=utf8&loc=Local"
+	mysqlDrvformat = "%v@/%v?charset=utf8&parseTime=true&loc=Local"
 	mysqlDriver    = "mysql"
 )
 
