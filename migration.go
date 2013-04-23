@@ -3,19 +3,25 @@ package qbs
 import (
 	"database/sql"
 	"strings"
+	"fmt"
 )
 
 type Migration struct {
 	Db      *sql.DB
 	DbName  string
 	Dialect Dialect
+	Log     bool
 }
 
 // CreateTableIfNotExists creates a new table and its indexes based on the table struct type
 // It will panic if table creation failed, and it will return error if the index creation failed.
 func (mg *Migration) CreateTableIfNotExists(structPtr interface{}) error {
 	model := structPtrToModel(structPtr, true, nil)
-	_, err := mg.Db.Exec(mg.Dialect.createTableSql(model, true))
+	sql := mg.Dialect.createTableSql(model, true)
+	if mg.Log {
+		fmt.Println(sql)
+	}
+	_, err := mg.Db.Exec(sql)
 	if err != nil {
 		panic(err)
 	}
@@ -63,7 +69,11 @@ func (mg *Migration) DropTable(strutPtr interface {}) {
 }
 
 func (mg *Migration) addColumn(table string, column *modelField) {
-	_, err := mg.Db.Exec(mg.Dialect.addColumnSql(table, column.name, column.value, column.size()))
+	sql := mg.Dialect.addColumnSql(table, column.name, column.value, column.size())
+	if mg.Log {
+		fmt.Println(sql)
+	}
+	_, err := mg.Db.Exec(sql)
 	if err != nil {
 		panic(err)
 	}
@@ -77,7 +87,11 @@ func (mg *Migration) CreateIndexIfNotExists(table interface{}, name string, uniq
 	tn := tableName(table)
 	name = tn + "_" + name
 	if !mg.Dialect.indexExists(mg, tn, name) {
-		_, err := mg.Db.Exec(mg.Dialect.createIndexSql(name, tn, unique, columns...))
+		sql := mg.Dialect.createIndexSql(name, tn, unique, columns...)
+		if mg.Log {
+			fmt.Println(sql)
+		}
+		_, err := mg.Db.Exec(sql)
 		return err
 	}
 	return nil
@@ -95,5 +109,5 @@ func (mg *Migration) Close() {
 // Migration only support incremental migrations like create table if not exists
 // create index if not exists, add columns, so it's safe to keep it in production environment.
 func NewMigration(db *sql.DB, dbName string, dialect Dialect) *Migration {
-	return &Migration{db, dbName, dialect}
+	return &Migration{db, dbName, dialect, false}
 }
