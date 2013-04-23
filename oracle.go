@@ -1,10 +1,10 @@
 package qbs
 
 import (
-  "fmt"
+	"database/sql"
+	"fmt"
 	"strings"
 	"time"
-	"database/sql"
 )
 
 type oracle struct {
@@ -32,17 +32,19 @@ func (d oracle) sqlType(f interface{}, size int) string {
 	case time.Time:
 		return "DATE"
 	/*
-        case bool:
-		return "boolean"
-        */
+	        case bool:
+			return "boolean"
+	*/
 	case int, int8, int16, int32, uint, uint8, uint16, uint32, int64, uint64:
+		if size > 0 {
+			return fmt.Sprintf("NUMBER(%d)", size)
+		}
 		return "NUMBER"
 	case float32, float64:
+		if size > 0 {
+			return fmt.Sprintf("NUMBER(%d,%d)", size/10, size%10)
+		}
 		return "NUMBER(16,2)"
-    /*
-	case []byte:
-		return "bytea"
-    */
 	case []byte, string:
 		if size > 0 && size < 4000 {
 			return fmt.Sprintf("VARCHAR2(%d)", size)
@@ -60,7 +62,7 @@ func (d oracle) insert(q *Qbs) (int64, error) {
 	var id int64
 	if _, ok := value.(int64); ok {
 		err = row.Scan(&id)
-	}else if _, ok := value.(string); ok {
+	} else if _, ok := value.(string); ok {
 		var str string
 		err = row.Scan(&str)
 	}
@@ -72,7 +74,6 @@ func (d oracle) insertSql(criteria *criteria) (string, []interface{}) {
 	sql += " RETURNING " + d.Dialect.quote(criteria.model.pk.name)
 	return sql, values
 }
-
 
 func (d oracle) indexExists(mg *Migration, tableName, indexName string) bool {
 	var row *sql.Row
@@ -121,8 +122,14 @@ func (d oracle) columnsInTable(mg *Migration, table interface{}) map[string]bool
 
 func (d oracle) primaryKeySql(isString bool, size int) string {
 	if isString {
-		return "text PRIMARY KEY"
+		return fmt.Sprintf("VARCHAR2(%d) PRIMARY KEY NOT NULL", size)
 	}
-	return "bigserial PRIMARY KEY"
+	return fmt.Sprintf("NUMBER(%d) PRIMARY KEY NOT NULL", size)
 }
 
+func (d oracle) createTableSql(model *model, ifNotExists bool) string {
+	baseSql := d.base.createTableSql(model, ifNotExists)
+	//sequence := "CREATE SEQENCE ....."
+	//trigger := "CREATE TRIGGER ....."
+	return baseSql //+ ":" + sequence + ";" + trigger
+}
