@@ -282,6 +282,6 @@ func (d base) columnsInTable(mg *Migration, table interface{}) map[string]bool {
 	return columns
 }
 
-func (d base) catchCreateTableError(err error) bool {
+func (d base) catchMigrationError(err error) bool {
 	return false
 }

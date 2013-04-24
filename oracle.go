@@ -146,6 +146,13 @@ func (d oracle) createTableSql(model *model, ifNotExists bool) string {
 	return baseSql + ";" + sequence + ";" + trigger
 }
 
-func (d oracle) catchCreateTableError(err error) bool {
-	return strings.Contains(err.Error(), "ORA-00955")
+func (d oracle) catchMigrationError(err error) bool {
+	errString := err.Error()
+	return strings.Contains(errString, "ORA-00955")|| strings.Contains(errString, "ORA-00942")
+}
+
+func (d oracle) dropTableSql(table string) string{
+	a := []string{"DROP TABLE"}
+	a = append(a, d.Dialect.quote(table))
+	return strings.Join(a, " ")
 }

@@ -46,5 +46,5 @@ type Dialect interface {
 
 	primaryKeySql(isString bool, size int) string
 
-	catchCreateTableError(err error) bool
+	catchMigrationError(err error) bool
 }
