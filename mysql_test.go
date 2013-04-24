@@ -1,13 +1,14 @@
 package qbs
 
 import (
-	"github.com/coocood/assrt"
-	"testing"
-	"time"
 	"database/sql"
 	"fmt"
+	"github.com/coocood/assrt"
 	_ "github.com/go-sql-driver/mysql"
+	"testing"
+	"time"
 )
+
 const (
 	mysqlDrvformat = "%v@/%v?charset=utf8&parseTime=true&loc=Local"
 	mysqlDriver    = "mysql"
@@ -33,10 +34,10 @@ func openMysqlDb() (*sql.DB, error) {
 }
 
 func setupMysqlDb() (*Migration, *Qbs) {
-	db1,_ := openMysqlDb()
-	mg := NewMigration(db1,testDbName, NewMysql())
-	db2,_ := openMysqlDb()
-	q := New(db2,NewMysql())
+	db1, _ := openMysqlDb()
+	mg := NewMigration(db1, testDbName, NewMysql())
+	db2, _ := openMysqlDb()
+	q := New(db2, NewMysql())
 	return mg, q
 }
 
@@ -58,46 +59,46 @@ func TestMysqlSqlType(t *testing.T) {
 
 func TestMysqlTransaction(t *testing.T) {
 	mg, q := setupMysqlDb()
-	doTestTransaction(t, mg,q)
+	doTestTransaction(t, mg, q)
 }
 
-func TestMysqlSaveAndDelete(t *testing.T){
-	mg,q := setupMysqlDb()
-	doTestSaveAndDelete(t,mg,q)
+func TestMysqlSaveAndDelete(t *testing.T) {
+	mg, q := setupMysqlDb()
+	doTestSaveAndDelete(t, mg, q)
 }
 
 func TestMysqlForeignKey(t *testing.T) {
-	mg,q := setupMysqlDb()
-	doTestForeignKey(t,mg,q)
+	mg, q := setupMysqlDb()
+	doTestForeignKey(t, mg, q)
 }
 
 func TestMysqlFind(t *testing.T) {
-	mg,q := setupMysqlDb()
-	doTestFind(t,mg,q)
+	mg, q := setupMysqlDb()
+	doTestFind(t, mg, q)
 }
 
 func TestMysqlCreateTable(t *testing.T) {
-	mg,_ := setupMysqlDb()
+	mg, _ := setupMysqlDb()
 	doTestCreateTable(t, mg)
 }
 
 func TestMysqlUpdate(t *testing.T) {
-	mg,q := setupMysqlDb()
-	doTestUpdate(t,mg,q)
+	mg, q := setupMysqlDb()
+	doTestUpdate(t, mg, q)
 }
 
 func TestMysqlValidation(t *testing.T) {
-	mg,q := setupMysqlDb()
+	mg, q := setupMysqlDb()
 	doTestValidation(t, mg, q)
 }
 
 func TestMysqlBoolType(t *testing.T) {
-	mg,q := setupMysqlDb()
+	mg, q := setupMysqlDb()
 	doTestBoolType(t, mg, q)
 }
 
 func TestMysqlStringPk(t *testing.T) {
-	mg,q := setupMysqlDb()
+	mg, q := setupMysqlDb()
 	doTestStringPk(t, mg, q)
 }
 
@@ -105,38 +106,38 @@ func TestMysqlAddColumnSQL(t *testing.T) {
 	doTestAddColumSQL(t, mysqlSyntax)
 }
 
-func TestMysqlCreateTableSQL(t *testing.T){
-	doTestCreateTableSQL(t, mysqlSyntax )
+func TestMysqlCreateTableSQL(t *testing.T) {
+	doTestCreateTableSQL(t, mysqlSyntax)
 }
 
-func TestMysqlCreateIndexSQL(t *testing.T){
+func TestMysqlCreateIndexSQL(t *testing.T) {
 	doTestCreateIndexSQL(t, mysqlSyntax)
 }
 
-func TestMysqlInsertSQL(t *testing.T){
+func TestMysqlInsertSQL(t *testing.T) {
 	doTestInsertSQL(t, mysqlSyntax)
 }
 
-func TestMysqlUpdateSQL(t *testing.T){
+func TestMysqlUpdateSQL(t *testing.T) {
 	doTestUpdateSQL(t, mysqlSyntax)
 }
 
-func TestMysqlDeleteSQL(t *testing.T){
+func TestMysqlDeleteSQL(t *testing.T) {
 	doTestDeleteSQL(t, mysqlSyntax)
 }
 
-func TestMysqlSelectionSQL(t *testing.T){
+func TestMysqlSelectionSQL(t *testing.T) {
 	doTestSelectionSQL(t, mysqlSyntax)
 }
 
-func TestMysqlQuerySQL(t *testing.T){
+func TestMysqlQuerySQL(t *testing.T) {
 	doTestQuerySQL(t, mysqlSyntax)
 }
 
-func TestMysqlDropTableSQL(t *testing.T){
+func TestMysqlDropTableSQL(t *testing.T) {
 	doTestDropTableSQL(t, mysqlSyntax)
 }
 
-func BenchmarkMysqlFind(b *testing.B){
+func BenchmarkMysqlFind(b *testing.B) {
 	doBenchmarkFind(b, setupMysqlDb, openMysqlDb, NewMysql())
 }

@@ -1,18 +1,15 @@
-
 package qbs
 
 import (
-	"github.com/coocood/assrt"
 	"database/sql"
-	"time"
 	"errors"
+	"github.com/coocood/assrt"
 	"testing"
+	"time"
 )
 
 var testDbName = "qbs_test"
 var testDbUser = "qbs_test"
-
-
 
 type addColumn struct {
 	Prim   int64  `qbs:"pk"`
@@ -25,8 +22,8 @@ func (table *addColumn) Indexes(indexes *Indexes) {
 	indexes.AddUnique("first", "last")
 }
 
-func doTestTransaction(t *testing.T,  mg *Migration, q *Qbs) {
-	defer closeMigrationAndQbs(mg,q)
+func doTestTransaction(t *testing.T, mg *Migration, q *Qbs) {
+	defer closeMigrationAndQbs(mg, q)
 	assert := assrt.NewAssert(t)
 	type txModel struct {
 		Id int64
@@ -59,10 +56,10 @@ func doTestTransaction(t *testing.T,  mg *Migration, q *Qbs) {
 }
 
 func doTestSaveAndDelete(t *testing.T, mg *Migration, q *Qbs) {
-	defer closeMigrationAndQbs(mg,q)
+	defer closeMigrationAndQbs(mg, q)
 	assert := assrt.NewAssert(t)
 	x := time.Now()
-	assert.MustZero(x.Sub(x.UTC()))
+	assert.Zero(x.Sub(x.UTC()))
 	now := time.Now()
 	type saveModel struct {
 		Id      int64
@@ -82,15 +79,16 @@ func doTestSaveAndDelete(t *testing.T, mg *Migration, q *Qbs) {
 
 	mg.dropTableIfExists(&model1)
 	mg.CreateTableIfNotExists(&model1)
+
 	affected, err := q.Save(&model1)
 	assert.MustNil(err)
 	assert.Equal(1, affected)
 	assert.True(model1.Created.Sub(now) > 0)
 	assert.True(model1.Updated.Sub(now) > 0)
-
 	// make sure created/updated values match the db
 	var model1r []*saveModel
 	err = q.WhereEqual("id", model1.Id).FindAll(&model1r)
+
 	assert.MustNil(err)
 	assert.MustOneLen(model1r)
 	assert.Equal(model1.Created.Unix(), model1r[0].Created.Unix())
@@ -102,7 +100,6 @@ func doTestSaveAndDelete(t *testing.T, mg *Migration, q *Qbs) {
 	model1.B = 9
 
 	time.Sleep(time.Second * 1) // sleep for 1 sec
-
 	affected, err = q.Save(&model1)
 	assert.MustNil(err)
 	assert.MustEqual(1, affected)
@@ -128,7 +125,7 @@ func doTestSaveAndDelete(t *testing.T, mg *Migration, q *Qbs) {
 }
 
 func doTestForeignKey(t *testing.T, mg *Migration, q *Qbs) {
-	defer closeMigrationAndQbs(mg,q)
+	defer closeMigrationAndQbs(mg, q)
 	assert := assrt.NewAssert(t)
 	type user struct {
 		Id   int64
@@ -180,7 +177,7 @@ func doTestForeignKey(t *testing.T, mg *Migration, q *Qbs) {
 }
 
 func doTestFind(t *testing.T, mg *Migration, q *Qbs) {
-	defer closeMigrationAndQbs(mg,q)
+	defer closeMigrationAndQbs(mg, q)
 	assert := assrt.NewAssert(t)
 	now := time.Now()
 	type types struct {
@@ -270,8 +267,8 @@ type basic struct {
 	State int64
 }
 
-func doTestUpdate(t *testing.T,  mg *Migration, q *Qbs) {
-	defer closeMigrationAndQbs(mg,q)
+func doTestUpdate(t *testing.T, mg *Migration, q *Qbs) {
+	defer closeMigrationAndQbs(mg, q)
 	assert := assrt.NewAssert(t)
 	mg.dropTableIfExists(&basic{})
 	mg.CreateTableIfNotExists(&basic{})
@@ -318,8 +315,8 @@ func (v *validatorTable) Validate(q *Qbs) error {
 	return nil
 }
 
-func doTestValidation(t *testing.T,  mg *Migration, q *Qbs) {
-	defer closeMigrationAndQbs(mg,q)
+func doTestValidation(t *testing.T, mg *Migration, q *Qbs) {
+	defer closeMigrationAndQbs(mg, q)
 	assert := assrt.NewAssert(t)
 	valid := new(validatorTable)
 	mg.dropTableIfExists(valid)
@@ -333,7 +330,7 @@ func doTestValidation(t *testing.T,  mg *Migration, q *Qbs) {
 }
 
 func doTestBoolType(t *testing.T, mg *Migration, q *Qbs) {
-	defer closeMigrationAndQbs(mg,q)
+	defer closeMigrationAndQbs(mg, q)
 	assert := assrt.NewAssert(t)
 	type BoolType struct {
 		Id     int64
@@ -350,7 +347,7 @@ func doTestBoolType(t *testing.T, mg *Migration, q *Qbs) {
 }
 
 func doTestStringPk(t *testing.T, mg *Migration, q *Qbs) {
-	defer closeMigrationAndQbs(mg,q)
+	defer closeMigrationAndQbs(mg, q)
 	assert := assrt.NewAssert(t)
 	type StringPk struct {
 		Tag   string `qbs:"pk,size:16"`
@@ -368,10 +365,7 @@ func doTestStringPk(t *testing.T, mg *Migration, q *Qbs) {
 	assert.Equal(10, spk.Count)
 }
 
-
 func closeMigrationAndQbs(mg *Migration, q *Qbs) {
 	mg.Close()
 	q.Close()
 }
-
-

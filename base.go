@@ -102,7 +102,7 @@ func (d base) querySql(criteria *criteria) (string, []interface{}) {
 			if order.desc {
 				query = append(query, "DESC")
 			}
-			if i < orderByLen -1 {
+			if i < orderByLen-1 {
 				query = append(query, ",")
 			}
 		}
@@ -280,4 +280,8 @@ func (d base) columnsInTable(mg *Migration, table interface{}) map[string]bool {
 		}
 	}
 	return columns
+}
+
+func (d base) catchCreateTableError(err error) bool {
+	return false
 }

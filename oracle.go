@@ -22,7 +22,7 @@ func (d oracle) quote(s string) string {
 	a := []string{}
 	c := strings.Split(s, sep)
 	for _, v := range c {
-		a = append(a, fmt.Sprintf(`'%s'`, v))
+		a = append(a, fmt.Sprintf(`"%s"`, v))
 	}
 	return strings.Join(a, sep)
 }
@@ -32,8 +32,8 @@ func (d oracle) sqlType(f interface{}, size int) string {
 	case time.Time:
 		return "DATE"
 	/*
-	        case bool:
-			return "boolean"
+		        case bool:
+				return "boolean"
 	*/
 	case int, int8, int16, int32, uint, uint8, uint16, uint32, int64, uint64:
 		if size > 0 {
@@ -124,12 +124,28 @@ func (d oracle) primaryKeySql(isString bool, size int) string {
 	if isString {
 		return fmt.Sprintf("VARCHAR2(%d) PRIMARY KEY NOT NULL", size)
 	}
+	if size == 0 {
+		size = 16
+	}
 	return fmt.Sprintf("NUMBER(%d) PRIMARY KEY NOT NULL", size)
 }
 
 func (d oracle) createTableSql(model *model, ifNotExists bool) string {
-	baseSql := d.base.createTableSql(model, ifNotExists)
-	//sequence := "CREATE SEQENCE ....."
-	//trigger := "CREATE TRIGGER ....."
-	return baseSql //+ ":" + sequence + ";" + trigger
+	baseSql := d.base.createTableSql(model, false)
+	if _, isString := model.pk.value.(string); isString {
+		return baseSql
+	}
+	table_pk := model.table + "_" + model.pk.name
+	sequence := " CREATE SEQUENCE " + table_pk + "_seq" +
+		" MINVALUE 1 NOMAXVALUE START WITH 1 INCREMENT BY 1 NOCACHE CYCLE"
+	trigger := " CREATE TRIGGER " + table_pk + "_triger BEFORE INSERT ON " + table_pk +
+		" FOR EACH ROW WHEN (new.id is null)" +
+		" begin" +
+		" select " + table_pk + "_seq.nextval into: new.id from dual " +
+		" end "
+	return baseSql + ";" + sequence + ";" + trigger
+}
+
+func (d oracle) catchCreateTableError(err error) bool {
+	return strings.Contains(err.Error(), "ORA-00955")
 }

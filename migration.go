@@ -24,7 +24,7 @@ func (mg *Migration) CreateTableIfNotExists(structPtr interface{}) error {
 	sqls := strings.Split(sql, ";")
 	for _, v := range sqls {
 		_, err := mg.Db.Exec(v)
-		if err != nil {
+		if err != nil && !mg.Dialect.catchCreateTableError(err) {
 			panic(err)
 		}
 	}

@@ -45,4 +45,6 @@ type Dialect interface {
 	columnsInTable(mg *Migration, tableName interface{}) map[string]bool
 
 	primaryKeySql(isString bool, size int) string
+
+	catchCreateTableError(err error) bool
 }
