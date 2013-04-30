@@ -179,6 +179,9 @@ func (d base) updateSql(criteria *criteria) (string, []interface{}) {
 func (d base) delete(q *Qbs) (int64, error) {
 	sql, args := d.Dialect.deleteSql(q.criteria)
 	result, err := q.Exec(sql, args...)
+	if err != nil {
+		return 0, err
+	}
 	affected, err := result.RowsAffected()
 	if err != nil {
 		return 0, err
