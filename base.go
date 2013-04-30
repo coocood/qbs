@@ -182,11 +182,7 @@ func (d base) delete(q *Qbs) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return 0, err
-	}
-	return affected, err
+	return result.RowsAffected()
 }
 
 func (d base) deleteSql(criteria *criteria) (string, []interface{}) {
