@@ -1,7 +1,7 @@
 Qbs
 ===
 
-Qbs stands for Query By Struct. A Go ORM.
+Qbs stands for Query By Struct. A Go ORM. [中文版 README](https://github.com/coocood/qbs/blob/master/README_ZH.md)
 
 ##ChangeLog
 
@@ -30,8 +30,7 @@ Qbs stands for Query By Struct. A Go ORM.
 
 ## API Documentation
 
-See [GoDoc](http://godoc.org/github.com/coocood/qbs) for automatic
-documentation.
+See [Gowalker](http://gowalker.org/github.com/coocood/qbs) for complete documentation.
 
 ##Warning
  
@@ -83,7 +82,6 @@ documentation.
 
 More advanced examples can be found [here](https://github.com/coocood/qbs/blob/master/example/example.go).
 
-A complete application can be found in a CMS system [toropress](https://github.com/insionng/toropress), specifically in [models.go](https://github.com/insionng/toropress/blob/master/models/models.go) file
 
 ##Restriction
 
@@ -168,6 +166,11 @@ It will perform a join query automatically.
 Its value will get updated when update. If the field name is "Created" and its type is "time.Time" it's value will be set when insert.
 So the previous example's tag can be omitted.
 
+
+##Projects use Qbs:
+
+- a CMS system [toropress](https://github.com/insionng/toropress)
+- Go documentation reference website [Gowalker](http://gowalker.org/)
 
 ##Contributors
 [Erik Aigner](https://github.com/eaigner)
