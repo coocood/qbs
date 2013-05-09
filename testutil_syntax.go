@@ -1,9 +1,8 @@
-
 package qbs
 
 import (
-	"testing"
 	"github.com/coocood/assrt"
+	"testing"
 )
 
 type dialectSyntax struct {
@@ -131,7 +130,7 @@ func doTestQuerySQL(t *testing.T, info dialectSyntax) {
 	subCondition := NewCondition("score <= ?", 60).Or("score >= ?", 80)
 	condition.AndCondition(subCondition)
 	criteria.condition = condition
-	criteria.orderBys = []order{order{info.dialect.quote("name"),false},order{info.dialect.quote("grade"),true}}
+	criteria.orderBys = []order{order{info.dialect.quote("name"), false}, order{info.dialect.quote("grade"), true}}
 	criteria.offset = 3
 	criteria.limit = 10
 	sql, _ := info.dialect.querySql(criteria)

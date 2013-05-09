@@ -1,16 +1,17 @@
-
 package qbs
 
 import (
+	"database/sql"
+	"github.com/coocood/assrt"
+	"os"
 	"testing"
 	"time"
-	"github.com/coocood/assrt"
-	"database/sql"
-	"os"
+
 //	_ "github.com/mattn/go-sqlite3"
 )
+
 const (
-	sqlite3Driver  = "sqlite3"
+	sqlite3Driver = "sqlite3"
 )
 
 var sqlite3Syntax = dialectSyntax{
@@ -34,10 +35,10 @@ func openSqlite3Db() (*sql.DB, error) {
 }
 
 func setupSqlite3Db() (*Migration, *Qbs) {
-	db1,_ := openSqlite3Db()
-	mg := NewMigration(db1,testDbName, NewSqlite3())
-	db2,_ := openSqlite3Db()
-	q := New(db2,NewSqlite3())
+	db1, _ := openSqlite3Db()
+	mg := NewMigration(db1, testDbName, NewSqlite3())
+	db2, _ := openSqlite3Db()
+	q := New(db2, NewSqlite3())
 	return mg, q
 }
 
@@ -59,87 +60,90 @@ func TestSqlite3SqlType(t *testing.T) {
 
 func TestSqlite3Transaction(t *testing.T) {
 	mg, q := setupSqlite3Db()
-	doTestTransaction(t, mg,q)
+	doTestTransaction(t, mg, q)
 }
 
-func TestSqlite3SaveAndDelete(t *testing.T){
-	mg,q := setupSqlite3Db()
-	doTestSaveAndDelete(t,mg,q)
+func TestSqlite3SaveAndDelete(t *testing.T) {
+	mg, q := setupSqlite3Db()
+	doTestSaveAndDelete(t, mg, q)
 }
 
 func TestSqlite3ForeignKey(t *testing.T) {
-	mg,q := setupSqlite3Db()
-	doTestForeignKey(t,mg,q)
+	mg, q := setupSqlite3Db()
+	doTestForeignKey(t, mg, q)
 }
 
 func TestSqlite3Find(t *testing.T) {
-	mg,q := setupSqlite3Db()
-	doTestFind(t,mg,q)
+	mg, q := setupSqlite3Db()
+	doTestFind(t, mg, q)
 }
 
 func TestSqlite3CreateTable(t *testing.T) {
-	mg,_ := setupSqlite3Db()
+	mg, _ := setupSqlite3Db()
 	doTestCreateTable(t, mg)
 }
 
 func TestSqlite3Update(t *testing.T) {
-	mg,q := setupSqlite3Db()
-	doTestUpdate(t,mg,q)
+	mg, q := setupSqlite3Db()
+	doTestUpdate(t, mg, q)
 }
 
 func TestSqlite3Validation(t *testing.T) {
-	mg,q := setupSqlite3Db()
+	mg, q := setupSqlite3Db()
 	doTestValidation(t, mg, q)
 }
 
 func TestSqlite3BoolType(t *testing.T) {
-	mg,q := setupSqlite3Db()
+	mg, q := setupSqlite3Db()
 	doTestBoolType(t, mg, q)
 }
 
 func TestSqlite3StringPk(t *testing.T) {
-	mg,q := setupSqlite3Db()
+	mg, q := setupSqlite3Db()
 	doTestStringPk(t, mg, q)
+}
+
+func TestSqlite3Count(t *testing.T) {
+	mg, q := setupSqlite3Db()
+	doTestCount(t, mg, q)
 }
 
 func TestSqlite3AddColumnSQL(t *testing.T) {
 	doTestAddColumSQL(t, sqlite3Syntax)
 }
 
-func TestSqlite3CreateTableSQL(t *testing.T){
+func TestSqlite3CreateTableSQL(t *testing.T) {
 	doTestCreateTableSQL(t, sqlite3Syntax)
 }
 
-func TestSqlite3CreateIndexSQL(t *testing.T){
+func TestSqlite3CreateIndexSQL(t *testing.T) {
 	doTestCreateIndexSQL(t, sqlite3Syntax)
 }
 
-func TestSqlite3InsertSQL(t *testing.T){
+func TestSqlite3InsertSQL(t *testing.T) {
 	doTestInsertSQL(t, sqlite3Syntax)
 }
 
-func TestSqlite3UpdateSQL(t *testing.T){
+func TestSqlite3UpdateSQL(t *testing.T) {
 	doTestUpdateSQL(t, sqlite3Syntax)
 }
 
-func TestSqlite3DeleteSQL(t *testing.T){
+func TestSqlite3DeleteSQL(t *testing.T) {
 	doTestDeleteSQL(t, sqlite3Syntax)
 }
 
-func TestSqlite3SelectionSQL(t *testing.T){
+func TestSqlite3SelectionSQL(t *testing.T) {
 	doTestSelectionSQL(t, sqlite3Syntax)
 }
 
-func TestSqlite3QuerySQL(t *testing.T){
+func TestSqlite3QuerySQL(t *testing.T) {
 	doTestQuerySQL(t, sqlite3Syntax)
 }
 
-func TestSqlite3DropTableSQL(t *testing.T){
+func TestSqlite3DropTableSQL(t *testing.T) {
 	doTestDropTableSQL(t, sqlite3Syntax)
 }
 
-
-func BenchmarkSqlite3Find(b *testing.B){
+func BenchmarkSqlite3Find(b *testing.B) {
 	doBenchmarkFind(b, setupSqlite3Db, openSqlite3Db, NewSqlite3())
 }
-

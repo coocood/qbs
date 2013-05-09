@@ -365,6 +365,26 @@ func doTestStringPk(t *testing.T, mg *Migration, q *Qbs) {
 	assert.Equal(10, spk.Count)
 }
 
+func doTestCount(t *testing.T, mg *Migration, q *Qbs) {
+	defer closeMigrationAndQbs(mg, q)
+	assert := assrt.NewAssert(t)
+	basic := new(basic)
+	mg.dropTableIfExists(basic)
+	mg.CreateTableIfNotExists(basic)
+	basic.Name = "name"
+	basic.State = 1
+	q.Save(basic)
+	for i := 0; i < 5; i++ {
+		basic.Id = 0
+		basic.State = 2
+		q.Save(basic)
+	}
+	count1 := q.Count("basic")
+	assert.Equal(6, count1)
+	count2 := q.WhereEqual("state", 2).Count(basic)
+	assert.Equal(5, count2)
+}
+
 func closeMigrationAndQbs(mg *Migration, q *Qbs) {
 	mg.Close()
 	q.Close()

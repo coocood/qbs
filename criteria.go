@@ -44,9 +44,9 @@ func NewCondition(expr string, args ...interface{}) *Condition {
 }
 
 //Snakecase column name
-func NewEqualCondition(column string, value interface {}) *Condition{
+func NewEqualCondition(column string, value interface{}) *Condition {
 	expr := column + " = ?"
-	return NewCondition(expr,value)
+	return NewCondition(expr, value)
 }
 
 func NewInCondition(column string, values []interface{}) *Condition {
@@ -72,9 +72,9 @@ func (c *Condition) And(expr string, args ...interface{}) *Condition {
 }
 
 //Snakecase column name
-func (c *Condition) AndEqual(column string, value interface {}) *Condition{
+func (c *Condition) AndEqual(column string, value interface{}) *Condition {
 	expr := column + " = ?"
-	c.And(expr,value)
+	c.And(expr, value)
 	return c
 }
 
@@ -97,9 +97,9 @@ func (c *Condition) Or(expr string, args ...interface{}) *Condition {
 }
 
 //Snakecase column name
-func (c *Condition) OrEqual(column string, value interface {}) *Condition{
+func (c *Condition) OrEqual(column string, value interface{}) *Condition {
 	expr := column + " = ?"
-	c.Or(expr,value)
+	c.Or(expr, value)
 	return c
 }
 

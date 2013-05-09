@@ -57,7 +57,7 @@ func (mg *Migration) CreateTableIfNotExists(structPtr interface{}) error {
 func (mg *Migration) dropTableIfExists(structPtr interface{}) {
 	tn := tableName(structPtr)
 	_, err := mg.Db.Exec(mg.Dialect.dropTableSql(tn))
-	if err != nil && !mg.Dialect.catchMigrationError(err){
+	if err != nil && !mg.Dialect.catchMigrationError(err) {
 		panic(err)
 	}
 }

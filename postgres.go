@@ -1,10 +1,10 @@
 package qbs
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
-	"database/sql"
 )
 
 type postgres struct {
@@ -58,7 +58,7 @@ func (d postgres) insert(q *Qbs) (int64, error) {
 	var id int64
 	if _, ok := value.(int64); ok {
 		err = row.Scan(&id)
-	}else if _, ok := value.(string); ok {
+	} else if _, ok := value.(string); ok {
 		var str string
 		err = row.Scan(&str)
 	}

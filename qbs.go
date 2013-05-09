@@ -46,7 +46,7 @@ func GetFreeDB() *sql.DB {
 }
 
 //The default connection pool size is 10.
-func ChangePoolSize(size int){
+func ChangePoolSize(size int) {
 	connectionPool = make(chan *sql.DB, size)
 }
 
@@ -104,7 +104,7 @@ func (q *Qbs) Where(expr string, args ...interface{}) *Qbs {
 }
 
 //Snakecase column name
-func (q *Qbs) WhereEqual(column string, value interface {}) *Qbs{
+func (q *Qbs) WhereEqual(column string, value interface{}) *Qbs {
 	q.criteria.condition = NewEqualCondition(column, value)
 	return q
 }
@@ -128,12 +128,12 @@ func (q *Qbs) Offset(offset int) *Qbs {
 }
 
 func (q *Qbs) OrderBy(path string) *Qbs {
-	q.criteria.orderBys = append(q.criteria.orderBys,order{q.Dialect.quote(path),false})
+	q.criteria.orderBys = append(q.criteria.orderBys, order{q.Dialect.quote(path), false})
 	return q
 }
 
 func (q *Qbs) OrderByDesc(path string) *Qbs {
-	q.criteria.orderBys = append(q.criteria.orderBys,order{q.Dialect.quote(path),true})
+	q.criteria.orderBys = append(q.criteria.orderBys, order{q.Dialect.quote(path), true})
 	return q
 }
 
@@ -307,12 +307,12 @@ func (q *Qbs) QueryRow(query string, args ...interface{}) *sql.Row {
 }
 
 // Same as sql.Db.Query or sql.Tx.Query depends on if transaction has began
-func (q *Qbs) Query(query string, args ...interface{}) (rows *sql.Rows,err error) {
+func (q *Qbs) Query(query string, args ...interface{}) (rows *sql.Rows, err error) {
 	q.log(query, args...)
 	query = q.Dialect.substituteMarkers(query)
 	if q.Tx != nil {
 		rows, err = q.Tx.Query(query, args...)
-	}else{
+	} else {
 		rows, err = q.Db.Query(query, args...)
 	}
 	q.updateTxError(err)
@@ -323,7 +323,7 @@ func (q *Qbs) Query(query string, args ...interface{}) (rows *sql.Rows,err error
 func (q *Qbs) Prepare(query string) (stmt *sql.Stmt, err error) {
 	if q.Tx != nil {
 		stmt, err = q.Tx.Prepare(query + ";")
-	}else{
+	} else {
 		stmt, err = q.Db.Prepare(query + ";")
 	}
 	q.updateTxError(err)
@@ -447,19 +447,43 @@ func (q *Qbs) ContainsValue(table interface{}, column string, value interface{})
 	q.updateTxError(err)
 	return err == nil
 }
+
 // It is safe to call it even if *sql.DB is nil.
 // So it's better to call "defer q.Close()" right after qbs.New() to release resource.
 // If the connection pool is not full, the Db will be sent back into the pool, otherwise the Db will get closed.
-func (q *Qbs) Close() error{
-	if q.Db != nil{
+func (q *Qbs) Close() error {
+	if q.Db != nil {
 		select {
-		case connectionPool<-q.Db:
+		case connectionPool <- q.Db:
 			return nil
 		default:
 		}
 		return q.Db.Close()
 	}
 	return nil
+}
+
+//Query the count of rows in a table the talbe parameter can be either a string or struct pointer.
+//If condition is given, the count will be the count of rows meet that condition.
+func (q *Qbs) Count(table interface{}) int64 {
+	quotedTable := q.Dialect.quote(tableName(table))
+	query := "SELECT COUNT(*) FROM " + quotedTable
+	var row *sql.Row
+	if q.criteria.condition != nil {
+		conditionSql, args := q.criteria.condition.Merge()
+		query += " WHERE " + conditionSql
+		row = q.QueryRow(query, args...)
+	} else {
+		row = q.QueryRow(query)
+	}
+	var count int64
+	err := row.Scan(&count)
+	if err == sql.ErrNoRows {
+		return 0
+	} else if err != nil {
+		q.updateTxError(err)
+	}
+	return count
 }
 
 func (q *Qbs) log(query string, args ...interface{}) {

@@ -88,12 +88,12 @@ func (model *model) columnsAndValues(forUpdate bool) ([]string, []interface{}) {
 			include = column.value != nil && !column.pk
 		} else {
 			include = true
-			if column.value == nil{
+			if column.value == nil {
 				include = false
-			}else if column.pk {
-				if intValue,ok := column.value.(int64); ok{
+			} else if column.pk {
+				if intValue, ok := column.value.(int64); ok {
 					include = intValue != 0
-				}else if strValue, ok := column.value.(string); ok{
+				} else if strValue, ok := column.value.(string); ok {
 					include = strValue != ""
 				}
 			}
@@ -324,12 +324,12 @@ func validateTag(tagMap map[string]string) {
 }
 
 var ValidTags = map[string]bool{
-	"pk":      true,//primary key
-	"fk":      true,//foreign key
+	"pk":      true, //primary key
+	"fk":      true, //foreign key
 	"size":    true,
 	"default": true,
 	"join":    true,
-	"-":       true,//ignore
+	"-":       true, //ignore
 	"index":   true,
 	"unique":  true,
 	"notnull": true,

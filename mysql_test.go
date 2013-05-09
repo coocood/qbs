@@ -102,6 +102,11 @@ func TestMysqlStringPk(t *testing.T) {
 	doTestStringPk(t, mg, q)
 }
 
+func TestMysqlCount(t *testing.T) {
+	mg, q := setupMysqlDb()
+	doTestCount(t, mg, q)
+}
+
 func TestMysqlAddColumnSQL(t *testing.T) {
 	doTestAddColumSQL(t, mysqlSyntax)
 }

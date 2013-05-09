@@ -1,17 +1,17 @@
 package qbs
 
 import (
-	"github.com/coocood/assrt"
-	"testing"
-	"time"
 	"database/sql"
 	"fmt"
+	"github.com/coocood/assrt"
 	_ "github.com/lib/pq"
+	"testing"
+	"time"
 )
 
 const (
-	pgDriver       = "postgres"
-	pgDrvFormat    = "user=%v dbname=%v sslmode=disable"
+	pgDriver    = "postgres"
+	pgDrvFormat = "user=%v password=%v dbname=%v sslmode=disable"
 )
 
 var pgSyntax = dialectSyntax{
@@ -30,14 +30,14 @@ var pgSyntax = dialectSyntax{
 }
 
 func openPgDb() (*sql.DB, error) {
-	return sql.Open(pgDriver, fmt.Sprintf(pgDrvFormat, testDbUser, testDbName))
+	return sql.Open(pgDriver, fmt.Sprintf(pgDrvFormat, testDbUser, testDbUser, testDbName))
 }
 
 func setupPgDb() (*Migration, *Qbs) {
-	db1,_ := openPgDb()
-	mg := NewMigration(db1,testDbName, NewPostgres())
-	db2,_ := openPgDb()
-	q := New(db2,NewPostgres())
+	db1, _ := openPgDb()
+	mg := NewMigration(db1, testDbName, NewPostgres())
+	db2, _ := openPgDb()
+	q := New(db2, NewPostgres())
 	return mg, q
 }
 
@@ -59,85 +59,90 @@ func TestSqlTypeForPgDialect(t *testing.T) {
 
 func TestPgTransaction(t *testing.T) {
 	mg, q := setupPgDb()
-	doTestTransaction(t, mg,q)
+	doTestTransaction(t, mg, q)
 }
 
-func TestPgSaveAndDelete(t *testing.T){
-	mg,q := setupPgDb()
-	doTestSaveAndDelete(t,mg,q)
+func TestPgSaveAndDelete(t *testing.T) {
+	mg, q := setupPgDb()
+	doTestSaveAndDelete(t, mg, q)
 }
 
 func TestPgForeignKey(t *testing.T) {
-	mg,q := setupPgDb()
-	doTestForeignKey(t,mg,q)
+	mg, q := setupPgDb()
+	doTestForeignKey(t, mg, q)
 }
 
 func TestPgFind(t *testing.T) {
-	mg,q := setupPgDb()
-	doTestFind(t,mg,q)
+	mg, q := setupPgDb()
+	doTestFind(t, mg, q)
 }
 
 func TestPgCreateTable(t *testing.T) {
-	mg,_ := setupPgDb()
+	mg, _ := setupPgDb()
 	doTestCreateTable(t, mg)
 }
 
 func TestPgUpdate(t *testing.T) {
-	mg,q := setupPgDb()
-	doTestUpdate(t,mg,q)
+	mg, q := setupPgDb()
+	doTestUpdate(t, mg, q)
 }
 
 func TestPgValidation(t *testing.T) {
-	mg,q := setupPgDb()
+	mg, q := setupPgDb()
 	doTestValidation(t, mg, q)
 }
 
 func TestPgBoolType(t *testing.T) {
-	mg,q := setupPgDb()
+	mg, q := setupPgDb()
 	doTestBoolType(t, mg, q)
 }
 
 func TestPgStringPk(t *testing.T) {
-	mg,q := setupPgDb()
+	mg, q := setupPgDb()
 	doTestStringPk(t, mg, q)
+}
+
+func TestPgCount(t *testing.T) {
+	mg, q := setupPgDb()
+	doTestCount(t, mg, q)
 }
 
 func TestPgAddColumnSQL(t *testing.T) {
 	doTestAddColumSQL(t, pgSyntax)
 }
 
-func TestPgCreateTableSQL(t *testing.T){
+func TestPgCreateTableSQL(t *testing.T) {
 	doTestCreateTableSQL(t, pgSyntax)
 }
 
-func TestPgCreateIndexSQL(t *testing.T){
+func TestPgCreateIndexSQL(t *testing.T) {
 	doTestCreateIndexSQL(t, pgSyntax)
 }
 
-func TestPgInsertSQL(t *testing.T){
+func TestPgInsertSQL(t *testing.T) {
 	doTestInsertSQL(t, pgSyntax)
 }
 
-func TestPgUpdateSQL(t *testing.T){
+func TestPgUpdateSQL(t *testing.T) {
 	doTestUpdateSQL(t, pgSyntax)
 }
 
-func TestPgDeleteSQL(t *testing.T){
+func TestPgDeleteSQL(t *testing.T) {
 	doTestDeleteSQL(t, pgSyntax)
 }
 
-func TestPgSelectionSQL(t *testing.T){
+func TestPgSelectionSQL(t *testing.T) {
 	doTestSelectionSQL(t, pgSyntax)
 }
 
-func TestPgQuerySQL(t *testing.T){
+func TestPgQuerySQL(t *testing.T) {
 	doTestQuerySQL(t, pgSyntax)
 }
 
-func TestPgDropTableSQL(t *testing.T){
+func TestPgDropTableSQL(t *testing.T) {
 	doTestDropTableSQL(t, pgSyntax)
 }
 
-func BenchmarkPgFind(b *testing.B){
+func BenchmarkPgFind(b *testing.B) {
 	doBenchmarkFind(b, setupPgDb, openPgDb, NewPostgres())
 }

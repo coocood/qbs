@@ -1,12 +1,11 @@
-
 package qbs
 
 import (
-	"testing"
 	"database/sql"
+	"testing"
 )
 
-func doBenchmarkFind(b *testing.B,setupDbFunc func()(*Migration,*Qbs), openDbFunc func()(*sql.DB,error), dialect Dialect){
+func doBenchmarkFind(b *testing.B, setupDbFunc func() (*Migration, *Qbs), openDbFunc func() (*sql.DB, error), dialect Dialect) {
 	b.StopTimer()
 	mg, q := setupDbFunc()
 	bas := new(basic)
@@ -15,9 +14,9 @@ func doBenchmarkFind(b *testing.B,setupDbFunc func()(*Migration,*Qbs), openDbFun
 	mg.DropTable(bas)
 	mg.CreateTableIfNotExists(bas)
 	q.Save(bas)
-	closeMigrationAndQbs(mg,q)
+	closeMigrationAndQbs(mg, q)
 	b.StartTimer()
-	for i:=0; i < b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		ba := new(basic)
 		ba.Id = 1
 		db := GetFreeDB()

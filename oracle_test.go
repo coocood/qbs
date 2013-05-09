@@ -17,4 +17,3 @@ func TestSqlTypeForOrDialect(t *testing.T) {
 	assert.Equal("varchar2(128)", d.sqlType("b", 128))
 	assert.Equal("DATE", d.sqlType(time.Now(), 0))
 }
-

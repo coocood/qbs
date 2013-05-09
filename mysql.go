@@ -47,7 +47,6 @@ func (d mysql) sqlType(f interface{}, size int) string {
 	panic("invalid sql type")
 }
 
-
 func (d mysql) indexExists(mg *Migration, tableName, indexName string) bool {
 	var row *sql.Row
 	var name string
