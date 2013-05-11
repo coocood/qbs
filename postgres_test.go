@@ -107,6 +107,12 @@ func TestPgCount(t *testing.T) {
 	doTestCount(t, mg, q)
 }
 
+func TestPgQueryMap(t *testing.T) {
+	mg, q := setupPgDb()
+	doTestQueryMap(t, mg, q)
+}
+
+
 func TestPgAddColumnSQL(t *testing.T) {
 	doTestAddColumSQL(t, pgSyntax)
 }

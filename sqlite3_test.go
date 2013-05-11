@@ -108,6 +108,11 @@ func TestSqlite3Count(t *testing.T) {
 	doTestCount(t, mg, q)
 }
 
+func TestSqlite3QueryMap(t *testing.T) {
+	mg, q := setupSqlite3Db()
+	doTestQueryMap(t, mg, q)
+}
+
 func TestSqlite3AddColumnSQL(t *testing.T) {
 	doTestAddColumSQL(t, sqlite3Syntax)
 }

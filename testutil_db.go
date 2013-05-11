@@ -385,6 +385,35 @@ func doTestCount(t *testing.T, mg *Migration, q *Qbs) {
 	assert.Equal(5, count2)
 }
 
+func doTestQueryMap(t *testing.T, mg *Migration, q *Qbs) {
+	defer closeMigrationAndQbs(mg, q)
+	assert := assrt.NewAssert(t)
+	type types struct {
+		Id int64
+		Name string `qbs:"size:64"`
+		Created time.Time
+	}
+	tp := new(types)
+	mg.dropTableIfExists(tp)
+	mg.CreateTableIfNotExists(tp)
+	result, err := q.QueryMap("SELECT * FROM types")
+	assert.Nil(result)
+	assert.Equal(sql.ErrNoRows, err)
+	for i := 0; i < 3; i++ {
+		tp.Id = 0
+		tp.Name = "abc"
+		q.Save(tp)
+	}
+	result, err = q.QueryMap("SELECT * FROM types")
+	assert.NotNil(result)
+	assert.Equal(1, result["id"])
+	assert.Equal("abc", result["name"])
+	_, ok  := result["created"].(time.Time)
+	assert.True(ok)
+	results, err := q.QueryMapSlice("SELECT * FROM types")
+	assert.Equal(3, len(results))
+}
+
 func closeMigrationAndQbs(mg *Migration, q *Qbs) {
 	mg.Close()
 	q.Close()

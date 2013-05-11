@@ -192,10 +192,10 @@ func (q *Qbs) doQueryRow(out interface{}, query string, args ...interface{}) err
 		return q.updateTxError(err)
 	}
 	rows, err := stmt.Query(args...)
-	defer rows.Close()
 	if err != nil {
 		return q.updateTxError(err)
 	}
+	defer rows.Close()
 	if rows.Next() {
 		err = q.scanRows(rowValue, rows)
 		if err != nil {
@@ -221,10 +221,10 @@ func (q *Qbs) doQueryRows(out interface{}, query string, args ...interface{}) er
 	}
 
 	rows, err := stmt.Query(args...)
-	defer rows.Close()
 	if err != nil {
 		return q.updateTxError(err)
 	}
+	defer rows.Close()
 	for rows.Next() {
 		rowValue := reflect.New(sliceType)
 		err = q.scanRows(rowValue, rows)
@@ -484,6 +484,84 @@ func (q *Qbs) Count(table interface{}) int64 {
 		q.updateTxError(err)
 	}
 	return count
+}
+
+//Query raw sql and return a map.
+func (q *Qbs) QueryMap(query string, args ...interface {}) (map[string]interface {}, error){
+	query = q.Dialect.substituteMarkers(query)
+	stmt, err := q.Prepare(query)
+	if err != nil {
+		if stmt != nil {
+			stmt.Close()
+		}
+		return nil, q.updateTxError(err)
+	}
+	rows, err := stmt.Query(args...)
+	if err != nil {
+		return nil, q.updateTxError(err)
+	}
+	defer rows.Close()
+	collumns, _ := rows.Columns()
+	if rows.Next() {
+		result, err := scanMap(rows, collumns)
+		if err != nil {
+			return nil, q.updateTxError(err)
+		}else{
+			return result, nil
+		}
+	}
+	return nil, sql.ErrNoRows
+}
+
+//Query raw sql and return a slice of map..
+func (q *Qbs) QueryMapSlice(query string, args ...interface {}) ([]map[string]interface {}, error){
+	query = q.Dialect.substituteMarkers(query)
+	stmt, err := q.Prepare(query)
+	if err != nil {
+		if stmt != nil {
+			stmt.Close()
+		}
+		return nil, q.updateTxError(err)
+	}
+	rows, err := stmt.Query(args...)
+	if err != nil {
+		return nil, q.updateTxError(err)
+	}
+	defer rows.Close()
+	var results []map[string]interface {}
+	collumns, _ := rows.Columns()
+	for rows.Next() {
+		result, err := scanMap(rows, collumns)
+		if err != nil {
+			return nil, q.updateTxError(err)
+		}
+		results = append(results, result)
+	}
+	return results, nil
+}
+
+func scanMap(rows *sql.Rows, columns []string) (map[string]interface {}, error){
+	containers := make([]interface{},len(columns))
+	for i := 0; i < len(columns); i++ {
+		var container interface{}
+		containers[i] = &container
+	}
+	if err := rows.Scan(containers...); err != nil {
+		return nil, err
+	}
+	result := make(map[string]interface {}, len(columns))
+	for i, key := range columns {
+		if containers[i] == nil {
+			continue
+		}
+		value := reflect.Indirect(reflect.ValueOf(containers[i]))
+		if value.Elem().Kind() == reflect.Slice {
+			result[key] = string(value.Interface().([]byte))
+		}else{
+			result[key] = value.Interface()
+		}
+	}
+	return result, nil
 }
 
 func (q *Qbs) log(query string, args ...interface{}) {

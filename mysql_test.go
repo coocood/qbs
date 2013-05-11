@@ -107,6 +107,11 @@ func TestMysqlCount(t *testing.T) {
 	doTestCount(t, mg, q)
 }
 
+func TestMysqlQueryMap(t *testing.T) {
+	mg, q := setupMysqlDb()
+	doTestQueryMap(t, mg, q)
+}
+
 func TestMysqlAddColumnSQL(t *testing.T) {
 	doTestAddColumSQL(t, mysqlSyntax)
 }
