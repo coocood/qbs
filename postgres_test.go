@@ -112,7 +112,6 @@ func TestPgQueryMap(t *testing.T) {
 	doTestQueryMap(t, mg, q)
 }
 
-
 func TestPgAddColumnSQL(t *testing.T) {
 	doTestAddColumSQL(t, pgSyntax)
 }

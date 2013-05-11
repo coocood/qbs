@@ -389,8 +389,8 @@ func doTestQueryMap(t *testing.T, mg *Migration, q *Qbs) {
 	defer closeMigrationAndQbs(mg, q)
 	assert := assrt.NewAssert(t)
 	type types struct {
-		Id int64
-		Name string `qbs:"size:64"`
+		Id      int64
+		Name    string `qbs:"size:64"`
 		Created time.Time
 	}
 	tp := new(types)
@@ -408,7 +408,7 @@ func doTestQueryMap(t *testing.T, mg *Migration, q *Qbs) {
 	assert.NotNil(result)
 	assert.Equal(1, result["id"])
 	assert.Equal("abc", result["name"])
-	_, ok  := result["created"].(time.Time)
+	_, ok := result["created"].(time.Time)
 	assert.True(ok)
 	results, err := q.QueryMapSlice("SELECT * FROM types")
 	assert.Equal(3, len(results))

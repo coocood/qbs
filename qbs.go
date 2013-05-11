@@ -59,14 +59,14 @@ func (q *Qbs) Reset() {
 // You can perform queries with the same Qbs object
 // no matter it is in transaction or not.
 // It panics if it's already in a transaction.
-func (q *Qbs) Begin() {
+func (q *Qbs) Begin() error {
 	if q.Tx != nil {
 		panic("cannot start nested transaction")
 	}
 	tx, err := q.Db.Begin()
 	q.Tx = tx
 	if err != nil {
-		panic(err)
+		return err
 	}
 }
 
@@ -487,7 +487,7 @@ func (q *Qbs) Count(table interface{}) int64 {
 }
 
 //Query raw sql and return a map.
-func (q *Qbs) QueryMap(query string, args ...interface {}) (map[string]interface {}, error){
+func (q *Qbs) QueryMap(query string, args ...interface{}) (map[string]interface{}, error) {
 	query = q.Dialect.substituteMarkers(query)
 	stmt, err := q.Prepare(query)
 	if err != nil {
@@ -506,7 +506,7 @@ func (q *Qbs) QueryMap(query string, args ...interface {}) (map[string]interface
 		result, err := scanMap(rows, collumns)
 		if err != nil {
 			return nil, q.updateTxError(err)
-		}else{
+		} else {
 			return result, nil
 		}
 	}
@@ -514,7 +514,7 @@ func (q *Qbs) QueryMap(query string, args ...interface {}) (map[string]interface
 }
 
 //Query raw sql and return a slice of map..
-func (q *Qbs) QueryMapSlice(query string, args ...interface {}) ([]map[string]interface {}, error){
+func (q *Qbs) QueryMapSlice(query string, args ...interface{}) ([]map[string]interface{}, error) {
 	query = q.Dialect.substituteMarkers(query)
 	stmt, err := q.Prepare(query)
 	if err != nil {
@@ -528,7 +528,7 @@ func (q *Qbs) QueryMapSlice(query string, args ...interface {}) ([]map[string]in
 		return nil, q.updateTxError(err)
 	}
 	defer rows.Close()
-	var results []map[string]interface {}
+	var results []map[string]interface{}
 	collumns, _ := rows.Columns()
 	for rows.Next() {
 		result, err := scanMap(rows, collumns)
@@ -540,8 +540,8 @@ func (q *Qbs) QueryMapSlice(query string, args ...interface {}) ([]map[string]in
 	return results, nil
 }
 
-func scanMap(rows *sql.Rows, columns []string) (map[string]interface {}, error){
-	containers := make([]interface{},len(columns))
+func scanMap(rows *sql.Rows, columns []string) (map[string]interface{}, error) {
+	containers := make([]interface{}, len(columns))
 	for i := 0; i < len(columns); i++ {
 		var container interface{}
 		containers[i] = &container
@@ -549,7 +549,7 @@ func scanMap(rows *sql.Rows, columns []string) (map[string]interface {}, error){
 	if err := rows.Scan(containers...); err != nil {
 		return nil, err
 	}
-	result := make(map[string]interface {}, len(columns))
+	result := make(map[string]interface{}, len(columns))
 	for i, key := range columns {
 		if containers[i] == nil {
 			continue
@@ -557,7 +557,7 @@ func scanMap(rows *sql.Rows, columns []string) (map[string]interface {}, error){
 		value := reflect.Indirect(reflect.ValueOf(containers[i]))
 		if value.Elem().Kind() == reflect.Slice {
 			result[key] = string(value.Interface().([]byte))
-		}else{
+		} else {
 			result[key] = value.Interface()
 		}
 	}
