@@ -36,12 +36,12 @@ Qbs是一个Go语言的ORM
 ##使用手册
 
 
-### 首先写一个打开数据库的函数`OpenDb`：
+### 首先要注册数据库：
+- 参数比打开数据库要多两个，分别是数据库名:"qbs_test"和Dialect:`qbs.NewMysql()`。
+- 一般只需要在应用启动是执行一次。
 
-
-        func OpenDb() (*sql.DB, error){
-            db, err := sql.Open("mysql", "qbs_test@/qbs_test?charset=utf8&loc=Local")
-            return db, err
+        func RegisterDb(){
+        	qbs.Register("mysql","qbs_test@/qbs_test?charset=utf8&loc=Local", "qbs_test", qbs.NewMysql())
         }
 
 
@@ -58,6 +58,13 @@ Qbs是一个Go语言的ORM
             Name string `qbs:"size:32,index"`
         }
 
+- 如果需要联合索引，需要实现Indexes方法。
+
+
+        func (*User) Indexes(indexes *qbs.Indexes){
+            //indexes.Add("column_a", "column_b") or indexes.AddUnique("column_a", "column_b")
+        }
+
 
 ### 新建表：
 - `qbs.NewMysql`函数创建数据库的Dialect(方言)，因为不同数据库的SQL语句和数据类型有差异，所以需要不同的Dialect来适配。每个Qbs支持的数据库都有相应的Dialect函数。
@@ -68,32 +75,31 @@ Qbs是一个Go语言的ORM
 
 
         func CreateUserTable() error{
-            db, err := OpenDb()
+            migration, err := qbs.GetMigration()
             if err != nil {
                 return err
             }
-            migration := qbs.NewMigration(db,"qbs_test", qbs.NewMysql())
             defer migration.Close()
             return migration.CreateTableIfNotExists(new(User))
         }
 
 
-### 写一个获取`*qbs.Qbs`实例的函数：
-- 这里的`qbs.GetFreeDb()`是从连接池里取出可重用的连接，是非阻塞的函数。如果连接池里有可用连接，就会取出一个，如果没有会返回`nil`。
-- 连接池在最初并不会初始化任何连接，是空的，这里我们就需要打开一个新的连接。
-- 取得Qbs实例后，应该马上执行`defer q.Close()`来回收数据库连接，这个函数也是非阻塞的。如果连接池未满，连接会被回收，如果连接池已满，连接会被关闭。
+### 获取和使用`*qbs.Qbs`实例：
+- 假设需要在一个http请求中获取和使用Qbs.
+- 取得Qbs实例后，应该马上执行`defer q.Close()`来回收数据库连接。
+- qbs使用连接池，默认大小为10，可以通过在应用启动时，调用`qbs.ChangePoolSize()`来修改。
 
-
-        func GetQbs() (q *qbs.Qbs, err error){
-            db := qbs.GetFreeDB()
-            if db == nil{
-                db, err = OpenDb()
-                if err != nil {
-                    return nil,err
-                }
-            }
-            q = qbs.New(db, qbs.NewMysql())
-            return q, nil
+        func GetUser(w http.ResponseWriter, r *http.Request){
+        	q, err := qbs.GetQbs()
+        	if err != nil {
+        		fmt.Println(err)
+        		w.WriteHeader(500)
+        		return
+        	}
+        	defer q.Close()
+        	u, err := FindUserById(q, 6)
+        	data, _ := json.Marshal(u)
+        	w.Write(data)
         }
 
 ### 插入数据：

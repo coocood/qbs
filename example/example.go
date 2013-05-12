@@ -3,14 +3,20 @@ package example
 
 import (
 	"github.com/coocood/qbs"
-	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"time"
+	"net/http"
+	"fmt"
+	"encoding/json"
 )
 
 type User struct {
 	Id   int64
 	Name string `qbs:"size:50,index"`
+}
+
+func (*User) Indexes(indexes *qbs.Indexes){
+	//indexes.Add("column_a", "column_b") or indexes.AddUnique("column_a", "column_b")
 }
 
 type Post struct {
@@ -22,31 +28,31 @@ type Post struct {
 	Updated time.Time
 }
 
-func OpenDb() (*sql.DB, error){
-	db, err := sql.Open("mysql", "qbs_test@/qbs_test?charset=utf8&loc=Local")
-	return db, err
+func RegisterDb(){
+	qbs.Register("mysql","qbs_test@/qbs_test?charset=utf8&loc=Local", "qbs_test", qbs.NewMysql())
 }
 
+func GetUser(w http.ResponseWriter, r *http.Request){
+	q, err := qbs.GetQbs()
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(500)
+		return
+	}
+	defer q.Close()
+	u, err := FindUserById(q, 6)
+	data, _ := json.Marshal(u)
+	w.Write(data)
+}
+
+
 func CreateUserTable() error{
-	db, err := OpenDb()
+	migration, err := qbs.GetMigration()
 	if err != nil {
 		return err
 	}
-	migration := qbs.NewMigration(db,"qbs_test", qbs.NewMysql())
 	defer migration.Close()
 	return migration.CreateTableIfNotExists(new(User))
-}
-
-func GetQbs() (q *qbs.Qbs, err error){
-	db := qbs.GetFreeDB()
-	if db == nil{
-		db, err = OpenDb()
-		if err != nil {
-			return nil,err
-		}
-	}
-	q = qbs.New(db, qbs.NewMysql())
-	return q, nil
 }
 
 
