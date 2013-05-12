@@ -9,6 +9,8 @@ import (
 )
 
 var connectionPool chan *sql.DB = make(chan *sql.DB, 10)
+var driver, driverSource string
+var dial Dialect
 
 type Qbs struct {
 	Db           *sql.DB
@@ -31,6 +33,30 @@ func New(database *sql.DB, dialect Dialect) *Qbs {
 	}
 	q.Reset()
 	return q
+}
+
+func Register(driverName, driverSourceName string, dialect Dialect) {
+	driver = driverName
+	driverSource = driverSourceName
+	dial = dialect
+}
+
+func GetQbs()(q *Qbs, err error) {
+	if driver == "" || dial == nil {
+		panic("database driver has not been registered, call Register first.")
+	}
+	db := GetFreeDB()
+	if db == nil {
+		db, err = sql.Open(driver, driverSource)
+		if err != nil {
+			return nil, err
+		}
+	}
+	q = new(Qbs)
+	q.Db = db
+	q.Dialect = dial
+	q.criteria = new(criteria)
+	return q, nil
 }
 
 //Try to get a free *sql.DB from the connection pool.
@@ -65,9 +91,7 @@ func (q *Qbs) Begin() error {
 	}
 	tx, err := q.Db.Begin()
 	q.Tx = tx
-	if err != nil {
-		return err
-	}
+	return err
 }
 
 func (q *Qbs) updateTxError(e error) error {
@@ -487,34 +511,21 @@ func (q *Qbs) Count(table interface{}) int64 {
 }
 
 //Query raw sql and return a map.
-func (q *Qbs) QueryMap(query string, args ...interface{}) (map[string]interface{}, error) {
-	query = q.Dialect.substituteMarkers(query)
-	stmt, err := q.Prepare(query)
-	if err != nil {
-		if stmt != nil {
-			stmt.Close()
-		}
-		return nil, q.updateTxError(err)
-	}
-	rows, err := stmt.Query(args...)
-	if err != nil {
-		return nil, q.updateTxError(err)
-	}
-	defer rows.Close()
-	collumns, _ := rows.Columns()
-	if rows.Next() {
-		result, err := scanMap(rows, collumns)
-		if err != nil {
-			return nil, q.updateTxError(err)
-		} else {
-			return result, nil
-		}
+func (q *Qbs) QueryMap(query string, args ...interface {}) (map[string]interface {}, error){
+	mapSlice, err := q.doQueryMap(query, true, args...)
+	if len(mapSlice) == 1 {
+		return mapSlice[0], err
 	}
 	return nil, sql.ErrNoRows
+
 }
 
 //Query raw sql and return a slice of map..
-func (q *Qbs) QueryMapSlice(query string, args ...interface{}) ([]map[string]interface{}, error) {
+func (q *Qbs) QueryMapSlice(query string, args ...interface {}) ([]map[string]interface {}, error){
+	return q.doQueryMap(query, false, args...)
+}
+
+func (q *Qbs) doQueryMap(query string, once bool, args ...interface {}) ([]map[string]interface {}, error) {
 	query = q.Dialect.substituteMarkers(query)
 	stmt, err := q.Prepare(query)
 	if err != nil {
@@ -528,40 +539,35 @@ func (q *Qbs) QueryMapSlice(query string, args ...interface{}) ([]map[string]int
 		return nil, q.updateTxError(err)
 	}
 	defer rows.Close()
-	var results []map[string]interface{}
-	collumns, _ := rows.Columns()
-	for rows.Next() {
-		result, err := scanMap(rows, collumns)
-		if err != nil {
-			return nil, q.updateTxError(err)
-		}
-		results = append(results, result)
-	}
-	return results, nil
-}
-
-func scanMap(rows *sql.Rows, columns []string) (map[string]interface{}, error) {
-	containers := make([]interface{}, len(columns))
+	var results []map[string]interface {}
+	columns, _ := rows.Columns()
+	containers := make([]interface{},len(columns))
 	for i := 0; i < len(columns); i++ {
 		var container interface{}
 		containers[i] = &container
 	}
-	if err := rows.Scan(containers...); err != nil {
-		return nil, err
-	}
-	result := make(map[string]interface{}, len(columns))
-	for i, key := range columns {
-		if containers[i] == nil {
-			continue
+	for rows.Next() {
+		if err := rows.Scan(containers...); err != nil {
+			return nil, q.updateTxError(err)
 		}
-		value := reflect.Indirect(reflect.ValueOf(containers[i]))
-		if value.Elem().Kind() == reflect.Slice {
-			result[key] = string(value.Interface().([]byte))
-		} else {
-			result[key] = value.Interface()
+		result := make(map[string]interface {}, len(columns))
+		for i, key := range columns {
+			if containers[i] == nil {
+				continue
+			}
+			value := reflect.Indirect(reflect.ValueOf(containers[i]))
+			if value.Elem().Kind() == reflect.Slice {
+				result[key] = string(value.Interface().([]byte))
+			}else{
+				result[key] = value.Interface()
+			}
+		}
+		results = append(results, result)
+		if once {
+			return  results, nil
 		}
 	}
-	return result, nil
+	return results, nil
 }
 
 func (q *Qbs) log(query string, args ...interface{}) {
