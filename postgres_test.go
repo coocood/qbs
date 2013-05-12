@@ -1,7 +1,6 @@
 package qbs
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/coocood/assrt"
 	_ "github.com/lib/pq"
@@ -29,15 +28,14 @@ var pgSyntax = dialectSyntax{
 	`CREATE INDEX "iname2" ON "itable2" ("d", "e")`,
 }
 
-func openPgDb() (*sql.DB, error) {
-	return sql.Open(pgDriver, fmt.Sprintf(pgDrvFormat, testDbUser, testDbUser, testDbName))
+func registerPgTest() {
+	Register(pgDriver, fmt.Sprintf(pgDrvFormat, testDbUser, testDbUser, testDbName), testDbName, NewPostgres())
 }
 
 func setupPgDb() (*Migration, *Qbs) {
-	db1, _ := openPgDb()
-	mg := NewMigration(db1, testDbName, NewPostgres())
-	db2, _ := openPgDb()
-	q := New(db2, NewPostgres())
+	registerPgTest()
+	mg, _ := GetMigration()
+	q, _ := GetQbs()
 	return mg, q
 }
 
@@ -149,5 +147,5 @@ func TestPgDropTableSQL(t *testing.T) {
 }
 
 func BenchmarkPgFind(b *testing.B) {
-	doBenchmarkFind(b, setupPgDb, openPgDb, NewPostgres())
+	doBenchmarkFind(b)
 }

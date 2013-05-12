@@ -109,8 +109,24 @@ func (mg *Migration) Close() {
 	}
 }
 
+// Deprecated, call Register and GetMigration instead.
 // Migration only support incremental migrations like create table if not exists
 // create index if not exists, add columns, so it's safe to keep it in production environment.
 func NewMigration(db *sql.DB, dbName string, dialect Dialect) *Migration {
 	return &Migration{db, dbName, dialect, false}
+}
+
+// Get a Migration instance should get closed like Qbs instance.
+func GetMigration() (mg *Migration, err error) {
+	if driver == "" || dial == nil {
+		panic("database driver has not been registered, should call Register first.")
+	}
+	db := GetFreeDB()
+	if db == nil {
+		db, err = sql.Open(driver, driverSource)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &Migration{db, dbName, dial, false}, nil
 }

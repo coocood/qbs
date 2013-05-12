@@ -1,7 +1,6 @@
 package qbs
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/coocood/assrt"
 	_ "github.com/go-sql-driver/mysql"
@@ -29,16 +28,15 @@ var mysqlSyntax = dialectSyntax{
 	"CREATE INDEX `iname2` ON `itable2` (`d`, `e`)",
 }
 
-func openMysqlDb() (*sql.DB, error) {
-	return sql.Open(mysqlDriver, fmt.Sprintf(mysqlDrvformat, testDbName, testDbUser))
+func setupMysqlDb() (*Migration, *Qbs) {
+	registerMysqlTest()
+	mg, _ := GetMigration()
+	q, _ := GetQbs()
+	return mg, q
 }
 
-func setupMysqlDb() (*Migration, *Qbs) {
-	db1, _ := openMysqlDb()
-	mg := NewMigration(db1, testDbName, NewMysql())
-	db2, _ := openMysqlDb()
-	q := New(db2, NewMysql())
-	return mg, q
+func registerMysqlTest() {
+	Register(mysqlDriver, fmt.Sprintf(mysqlDrvformat, testDbName, testDbUser), testDbName, NewMysql())
 }
 
 func TestMysqlSqlType(t *testing.T) {
@@ -149,5 +147,6 @@ func TestMysqlDropTableSQL(t *testing.T) {
 }
 
 func BenchmarkMysqlFind(b *testing.B) {
-	doBenchmarkFind(b, setupMysqlDb, openMysqlDb, NewMysql())
+	registerMysqlTest()
+	doBenchmarkFind(b)
 }

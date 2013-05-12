@@ -9,7 +9,7 @@ import (
 )
 
 var connectionPool chan *sql.DB = make(chan *sql.DB, 10)
-var driver, driverSource string
+var driver, driverSource, dbName string
 var dial Dialect
 
 type Qbs struct {
@@ -25,6 +25,7 @@ type Validator interface {
 	Validate(*Qbs) error
 }
 
+// Deprecated, call Register and GetQbs instead
 // New creates a new Qbs instance using the specified DB and dialect.
 func New(database *sql.DB, dialect Dialect) *Qbs {
 	q := &Qbs{
@@ -35,15 +36,27 @@ func New(database *sql.DB, dialect Dialect) *Qbs {
 	return q
 }
 
-func Register(driverName, driverSourceName string, dialect Dialect) {
+//Register a database, should be call at the beginning of the application
+func Register(driverName, driverSourceName, databaseName string, dialect Dialect) {
 	driver = driverName
 	driverSource = driverSourceName
 	dial = dialect
+	dbName = databaseName
 }
 
-func GetQbs()(q *Qbs, err error) {
+//Get an Qbs instance, should call `defer q.Close()` next, like:
+//
+//		q, err := qbs.GetQbs()
+//	  	if err != nil {
+//			fmt.Println(err)
+//			return
+//		}
+//		defer q.Close()
+//		...
+//
+func GetQbs() (q *Qbs, err error) {
 	if driver == "" || dial == nil {
-		panic("database driver has not been registered, call Register first.")
+		panic("database driver has not been registered, should call Register first.")
 	}
 	db := GetFreeDB()
 	if db == nil {
@@ -59,6 +72,7 @@ func GetQbs()(q *Qbs, err error) {
 	return q, nil
 }
 
+//Deprecated: call GetQbs instead.
 //Try to get a free *sql.DB from the connection pool.
 //This function do not block, if the pool is empty, it returns nil
 //Then you should open a new one.
@@ -511,7 +525,7 @@ func (q *Qbs) Count(table interface{}) int64 {
 }
 
 //Query raw sql and return a map.
-func (q *Qbs) QueryMap(query string, args ...interface {}) (map[string]interface {}, error){
+func (q *Qbs) QueryMap(query string, args ...interface{}) (map[string]interface{}, error) {
 	mapSlice, err := q.doQueryMap(query, true, args...)
 	if len(mapSlice) == 1 {
 		return mapSlice[0], err
@@ -521,11 +535,11 @@ func (q *Qbs) QueryMap(query string, args ...interface {}) (map[string]interface
 }
 
 //Query raw sql and return a slice of map..
-func (q *Qbs) QueryMapSlice(query string, args ...interface {}) ([]map[string]interface {}, error){
+func (q *Qbs) QueryMapSlice(query string, args ...interface{}) ([]map[string]interface{}, error) {
 	return q.doQueryMap(query, false, args...)
 }
 
-func (q *Qbs) doQueryMap(query string, once bool, args ...interface {}) ([]map[string]interface {}, error) {
+func (q *Qbs) doQueryMap(query string, once bool, args ...interface{}) ([]map[string]interface{}, error) {
 	query = q.Dialect.substituteMarkers(query)
 	stmt, err := q.Prepare(query)
 	if err != nil {
@@ -539,9 +553,9 @@ func (q *Qbs) doQueryMap(query string, once bool, args ...interface {}) ([]map[s
 		return nil, q.updateTxError(err)
 	}
 	defer rows.Close()
-	var results []map[string]interface {}
+	var results []map[string]interface{}
 	columns, _ := rows.Columns()
-	containers := make([]interface{},len(columns))
+	containers := make([]interface{}, len(columns))
 	for i := 0; i < len(columns); i++ {
 		var container interface{}
 		containers[i] = &container
@@ -550,7 +564,7 @@ func (q *Qbs) doQueryMap(query string, once bool, args ...interface {}) ([]map[s
 		if err := rows.Scan(containers...); err != nil {
 			return nil, q.updateTxError(err)
 		}
-		result := make(map[string]interface {}, len(columns))
+		result := make(map[string]interface{}, len(columns))
 		for i, key := range columns {
 			if containers[i] == nil {
 				continue
@@ -558,13 +572,13 @@ func (q *Qbs) doQueryMap(query string, once bool, args ...interface {}) ([]map[s
 			value := reflect.Indirect(reflect.ValueOf(containers[i]))
 			if value.Elem().Kind() == reflect.Slice {
 				result[key] = string(value.Interface().([]byte))
-			}else{
+			} else {
 				result[key] = value.Interface()
 			}
 		}
 		results = append(results, result)
 		if once {
-			return  results, nil
+			return results, nil
 		}
 	}
 	return results, nil

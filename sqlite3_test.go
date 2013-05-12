@@ -3,7 +3,6 @@ package qbs
 import (
 	"database/sql"
 	"github.com/coocood/assrt"
-	"os"
 	"testing"
 	"time"
 
@@ -30,15 +29,17 @@ var sqlite3Syntax = dialectSyntax{
 }
 
 func openSqlite3Db() (*sql.DB, error) {
-	os.Remove("/tmp/foo.db")
 	return sql.Open(sqlite3Driver, "/tmp/foo.db")
+}
+func registerSqlite3Test() {
+	//	os.Remove("/tmp/foo.db")
+	Register(sqlite3Driver, "/tmp/foo.db", testDbName, NewSqlite3())
 }
 
 func setupSqlite3Db() (*Migration, *Qbs) {
-	db1, _ := openSqlite3Db()
-	mg := NewMigration(db1, testDbName, NewSqlite3())
-	db2, _ := openSqlite3Db()
-	q := New(db2, NewSqlite3())
+	registerSqlite3Test()
+	mg, _ := GetMigration()
+	q, _ := GetQbs()
 	return mg, q
 }
 
@@ -150,5 +151,5 @@ func TestSqlite3DropTableSQL(t *testing.T) {
 }
 
 func BenchmarkSqlite3Find(b *testing.B) {
-	doBenchmarkFind(b, setupSqlite3Db, openSqlite3Db, NewSqlite3())
+	doBenchmarkFind(b)
 }
