@@ -41,7 +41,7 @@ Qbs是一个Go语言的ORM
 - 一般只需要在应用启动是执行一次。
 
         func RegisterDb(){
-        	qbs.Register("mysql","qbs_test@/qbs_test?charset=utf8&loc=Local", "qbs_test", qbs.NewMysql())
+        	qbs.Register("mysql","qbs_test@/qbs_test?charset=utf8&parseTime=true&loc=Local", "qbs_test", qbs.NewMysql())
         }
 
 

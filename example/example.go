@@ -29,7 +29,7 @@ type Post struct {
 }
 
 func RegisterDb(){
-	qbs.Register("mysql","qbs_test@/qbs_test?charset=utf8&loc=Local", "qbs_test", qbs.NewMysql())
+	qbs.Register("mysql","qbs_test@/qbs_test?charset=utf8&parseTime=true&loc=Local", "qbs_test", qbs.NewMysql())
 }
 
 func GetUser(w http.ResponseWriter, r *http.Request){
