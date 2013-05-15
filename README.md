@@ -40,132 +40,195 @@ See [Gowalker](http://gowalker.org/github.com/coocood/qbs) for complete document
 * Or you can simply fork this repo, so you won't get any suprise.
 * When new version break backwards compatiblity, a branch with the number of the date will be created to keep the legacy code.
 
-##Examples
+##Get Started
 
-    func FindAuthorName(){
+###First you need to register your database
 
-        //Try to get a free DB connection from the pool
-        db := qbs.GetFreeDb()
-        if db == nil {// connection pool is empty
-            //open a new one.
-            db, _ = sql.Open("mymysql", "qbs_test/qbs_test/")
+* The `qbs.Register` function has two more arguments than `sql.Open`, they are database name and dilect instance.
+* You only need to call it once at the start time..
+
+        func RegisterDb(){
+            qbs.Register("mysql","qbs_test@/qbs_test?charset=utf8&parseTime=true&loc=Local", "qbs_test", qbs.NewMysql())
         }
-        q := qbs.New(db, qbs.NewMysql())
-        // call q.Close() will recycle the DB connection automatically.
-        // If the pool is full, the DB will get closed.
-        defer q.Close()
 
-        //define struct
+### Define a model `User`
+- If the field name is `Id` and field type is `int64`, the field will be considered as the primary key of the table.
+if you want define a primary key with name other than `Id`, you can set the tag `qbs:"pk"` to explictly mark the field as primary key.
+- The tag of `Name` field `qbs:"size:32,index"` is used to define the column attributes when create the table, attributes are comma seperated, inside double quotes.
+- The `size:32` tag on a string field will be translated to SQL `varchar(32)`, add `index` attribute to create a index on the column, add `unique` attribute to create a unique index on the column
+- Some DB (MySQL) can not create a index on string column without `size` defined.
+
         type User struct {
             Id   int64
-            Name string
+            Name string `qbs:"size:32,index"`
         }
+
+- If you want to create multi column index, you should implement `Indexed` interface by define a `Indexes` method like the following.
+
+        func (*User) Indexes(indexes *qbs.Indexes){
+            //indexes.Add("column_a", "column_b") or indexes.AddUnique("column_a", "column_b")
+        }
+
+###Create a new table
+
+- call `qbs.GetMigration` function to get a Migration instance, and then use it to create a table.
+- When you create a table, if the table already exists, it will not recreate it, but looking for newly added columns or indexes in the model, and execute add column or add index operation.
+- It is better to do create table task at the start time, because the Migration only do incremental operation, it is safe to keep the table creation code in production enviroment.
+- `CreateTableIfNotExists` expect a struct pointer parameter.
+
+        func CreateUserTable() error{
+            migration, err := qbs.GetMigration()
+            if err != nil {
+                return err
+            }
+            defer migration.Close()
+            return migration.CreateTableIfNotExists(new(User))
+        }
+
+### Get and use `*qbs.Qbs` instance：
+- Suppose we are in a handle http function. call `qbs.GetQbs()` to get a instance.
+- Be sure to close it by calling `defer q.Close()` after get it.
+- qbs has connection pool, the default size is 10, you can call `qbs.ChangePoolSize()` to change the size.
+
+        func GetUser(w http.ResponseWriter, r *http.Request){
+        	q, err := qbs.GetQbs()
+        	if err != nil {
+        		fmt.Println(err)
+        		w.WriteHeader(500)
+        		return
+        	}
+        	defer q.Close()
+        	u, err := FindUserById(q, 6)
+        	data, _ := json.Marshal(u)
+        	w.Write(data)
+        }
+
+### Inset a row：
+- Call `Save` method to insert or update the row，if the primary key field `Id` has not been set, `Save` would execute insert stamtment.
+- If `Id` is set to a positive integer, `Save` would execute `UPDATE` statement first, if no rows are affected, then it will execute `INSERT` statement.
+- `Save` expects a struct pointer parameter.
+
+        func CreateUser(q *qbs.Qbs) (*User,error){
+            user := new(User)
+            user.Name = "Green"
+            _, err := q.Save(user)
+            return user,err
+        }
+
+### 查询数据：
+- If you want to get a row by `Id`, just assign the `Id` value to the model instance.
+
+        func FindUserById(q *qbs.Qbs, id int64) (*User, error) {
+            user := new(User)
+            user.Id = id
+            err := q.Find(user)
+            return user, err
+        }
+
+- Call `FindAll` to get multiple rows, it expects a pointer of slice, and the element of the slice must be a pointer of struct.
+
+        func FindUsers(q *qbs.Qbs) ([]*User, error) {
+        	var users []*User
+        	err := q.Limit(10).Offset(10).FindAll(&users)
+        	return users, err
+        }
+
+- If you want to add conditions other than `Id`, you should all `Where` method. `WhereEqual("name", name)` is equivalent to `Where（"name = ?", name)`, just a shorthand method.
+- Only the last call to `Where`/`WhereEqual` counts, so it is only applicable to define simple condition.
+- Notice that the column name passed to `WhereEqual` method is lower case, all the camel case field name and struct name will be converted to snake case in database storage,
+so whenever you pass a column name or table name parameter in string, it should be in snake case.
+
+        func FindUserByName(q *qbs.Qbs, n string) (*User, error) {
+            user := new(User)
+            err := q.WhereEqual("name", n).Find(user)
+            return user, err
+        }
+
+- If you need to define more complex condition, you should call `Condition` method, it expects a `*Condition` parameter.
+ you can get a new condition instance by calling `qbs.NewCondition`, `qbs.NewEqualCondition` or `qbs.NewInCondition` function.
+- `*Condition` instance has `And`, `Or` ... methods, can be called sequentially to construct a complex condition.
+- `Condition` method of Qbs instance should only be called once as well, it will replace previous condition defined by `Condition` or `Where` methods.
+
+        func FindUserByCondition(q *qbs.Qbs) (*User, error) {
+            user := new(User)
+            condition1 := qbs.NewCondition("id > ?", 100).Or("id < ?", 50).OrEqual("id", 75)
+            condition2 := qbs.NewCondition("name != ?", "Red").And("name != ?", "Black")
+            condition1.AndCondition(condition2)
+            err := q.Condition(condition1).Find(user)
+            return user, err
+        }
+
+### Update a single row
+- To update a single row, you should call `Find` first, then update the model, and `Save` it.
+
+        func UpdateOneUser(q *qbs.Qbs, id int64, name string) (affected int64, error){
+        	user, err := FindUserById(q, id)
+        	if err != nil {
+        		return 0, err
+        	}
+        	user.Name = name
+        	return q.Save(user)
+        }
+
+### Update multiple row
+- Call `Update` to update multiple rows at once, but you should call this method cautiously, if the the model struct contains all the columns, it will update every column, most of the time this is not what we want.
+- The right way to do it is to define a temporary model struct in method or block, that only contains the column we want to update.
+
+        func UpdateMultipleUsers(q *qbs.Qbs)(affected int64, error) {
+        	type User struct {
+        		Name string
+        	}
+        	user := new(User)
+        	user.Name = "Blue"
+        	return q.WhereEqual("name", "Green").Update(user)
+        }
+
+### Delete
+- call `Delete` method to delete a row, there must be at least one condition defined, either by `Id` value, or by `Where`/`Condition`.
+
+        func DeleteUser(q *qbs.Qbs, id int64)(affected int64, err error) {
+        	user := new(User)
+        	user.Id = id
+        	return q.Delete(user)
+        }
+
+### Define another table for join query
+- For join query to work, you should has a pair of fields to define the join relationship in the model struct.
+- Here the model `Post` has a `AuthorId` int64 field, and has a `Author` field of type `*User`.
+- The rule to define join relationship is like `{xxx}Id int64`, `{xxx} *{yyy}`.
+- As the `Author` field is pointer type, it will be ignored when creating table.
+- As `AuthorId` is a join column, a index of it will be created automatically when creating the table, so you don't have to add `qbs:"index"` tag on it.
+- You can also set the join column explicitly by add a tag `qbs:"join:Author"` to it for arbitrary field Name. here `Author` is the struct pointer field of the parent table model.
+- To define a foreign key constraint, you have to explicitly add a tag `qbs:"fk:Author"` to the foreign key column, and an index will be created as well when creating table.
+- `Created time.Time` field will be set to the current time when insert a row,`Updated time.Time` field will be set to current time when update the row.
+- You can explicitly set tag `qbs:"created"` or `qbs:"updated"` on `time.Time` field to get the functionality for arbitrary field name.
+
         type Post struct {
-            Id       int64
-            Title    string
+            Id int64
             AuthorId int64
-            Author   *User
+            Author *User
+            Content string
+            Created time.Time
+            Updated time.Time
         }
 
-        //find the post with Id 5.
-        aPost := new(Post)
-        aPost.Id = 5
+### Omit some column
+- Sometimes we do not need to get every field of a model, especially for joined field (like `Author` field) or large field (like `Content` field).
+- Omit them will get better performance.
 
-        //assume table "user", "post" already exists in database, and post table have row which id is 5 and author's name is "john"
-        q.Find(aPost)
+        func FindPostsOmitContentAndCreated(q *qbs.Qbs) ([]*Post, error) {
+        	var posts []*Post
+        	err := q.OmitFields("Content","Created").Find(&posts)
+        	return posts, err
+        }
 
-        // result would be "john"
-        fmt.Println(aPost.Author.Name)
+- With `OmitJoin`, you can omit every join fields, return only the columns in a single table, and it can be used along with `OmitFields`.
 
-
-    }
-
-More advanced examples can be found [here](https://github.com/coocood/qbs/blob/master/example/example.go).
-
-
-##Restriction
-
-* Every table name and culumn name in the database must be lower case, must not have any trailing "_" or any preceding "___"
-
-* Define fields in camelcase to follow Go's nameing convention, Qbs will convert them to snakecase in sql statement.
-
-##Field tag syntax
-
-###Ignore field:
-
-    `qbs:"-"`
-
-###Define primary key:
-
-- Primary key must be of type in64 or string, string type primary key must define column size.
-- If field name is "Id" and type is "int64" the field becomes a implicit primary key.
-
-
-    `qbs:"pk"`
-
-
-###Define not null column:
-
-    `qbs:"notnull"`
-
-###Define column size:
-
-    `qbs:"size:255"`
-
-###Define column default value:
-
-    `qbs:"default:'abc'"`
-
-###Define column index:
-
-    `qbs:"index"`
-
-###Define unique index:
-
-    `qbs:"unique"`
-
-###Define multiple attributes with comma separator
-
-    `qbs:"size:100,default:'abc'"`
-
-###Define foreign key:
-	
-	type User struct{
-		Id int64
-		Name string `qbs:"size:255"`
-	}
-
-    type Post struct{
-    	Id int64
-    	AuthorId int64 `qbs:"fk:Author"`
-    	Author *User
-    	Content string
-    }
-
-###Define Join without foreign key constraint:
-
-    `qbs:"join:Author"`
-
-- If a struct field's type is int64 and its suffix is "Id"(converted to "_id" in database), And the rest of the name can be found in the struct field,
-and that field is a pointer of struct type, then it become a implicit join, so in a find query, the previous example's `qbs:"join:Author"` tag can be omitted.
-It will perform a join query automatically.
-
-    type Post struct{
-    	Id int64
-    	AuthorId int64
-    	Author *User
-    	Content string
-    }
-
-###Define Updated and Created field:
-
-	Updated time.Time `qbs:"updated"`
-	Created time.Time `qbs:"created"`
-
-- If the field name is "Updated" and its type is "time.Time", then the field became the updated field automatically.
-Its value will get updated when update. If the field name is "Created" and its type is "time.Time" it's value will be set when insert.
-So the previous example's tag can be omitted.
-
+        func FindPostsOmitJoin(q *qbs.Qbs) ([]*Post, error) {
+        	var posts []*Post
+        	err := q.OmitJoin().OmitFields("Content").Find(&posts)
+        	return posts, err
+        }
 
 ##Projects use Qbs:
 
