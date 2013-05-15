@@ -3,7 +3,7 @@ package example
 
 import (
 	"github.com/coocood/qbs"
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/coocood/mysql"
 	"time"
 	"net/http"
 	"fmt"

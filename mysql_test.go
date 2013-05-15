@@ -3,7 +3,7 @@ package qbs
 import (
 	"fmt"
 	"github.com/coocood/assrt"
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/coocood/mysql"
 	"testing"
 	"time"
 )
