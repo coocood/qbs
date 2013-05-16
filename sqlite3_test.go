@@ -5,7 +5,6 @@ import (
 	"github.com/coocood/assrt"
 	"testing"
 	"time"
-
 //	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -46,17 +45,17 @@ func setupSqlite3Db() (*Migration, *Qbs) {
 func TestSqlite3SqlType(t *testing.T) {
 	assert := assrt.NewAssert(t)
 	d := NewSqlite3()
-	assert.Equal("boolean", d.sqlType(true, 0))
+	assert.Equal("integer", d.sqlType(true, 0))
 	var indirect interface{} = true
-	assert.Equal("boolean", d.sqlType(indirect, 0))
-	assert.Equal("int", d.sqlType(uint32(2), 0))
-	assert.Equal("bigint", d.sqlType(int64(1), 0))
-	assert.Equal("double", d.sqlType(1.8, 0))
-	assert.Equal("longblob", d.sqlType([]byte("asdf"), 0))
-	assert.Equal("longtext", d.sqlType("astring", 0))
-	assert.Equal("longtext", d.sqlType("a", 65536))
-	assert.Equal("varchar(128)", d.sqlType("b", 128))
-	assert.Equal("timestamp", d.sqlType(time.Now(), 0))
+	assert.Equal("integer", d.sqlType(indirect, 0))
+	assert.Equal("integer", d.sqlType(uint32(2), 0))
+	assert.Equal("integer", d.sqlType(int64(1), 0))
+	assert.Equal("real", d.sqlType(1.8, 0))
+	assert.Equal("text", d.sqlType([]byte("asdf"), 0))
+	assert.Equal("text", d.sqlType("astring", 0))
+	assert.Equal("text", d.sqlType("a", 65536))
+	assert.Equal("text", d.sqlType("b", 128))
+	assert.Equal("text", d.sqlType(time.Now(), 0))
 }
 
 func TestSqlite3Transaction(t *testing.T) {
