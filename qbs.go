@@ -370,8 +370,8 @@ func (q *Qbs) Prepare(query string) (stmt *sql.Stmt, err error) {
 
 // If Id value is not provided, save will insert the record, and the Id value will
 // be filled in the struct after insertion.
-// If Id value is provided, save will try to update the record first, if no row is affected,
-// It will insert the record.
+// If Id value is provided, save will do a query count first to see if the row exists, if not then insert it,
+// otherwise update it.
 // If struct implements Validator interface, it will be validated first
 func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 	if v, ok := structPtr.(Validator); ok {
@@ -385,7 +385,6 @@ func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 		panic("no primary key field")
 	}
 	q.criteria.model = model
-	preservedCriteria := q.criteria
 	now := time.Now()
 	var id int64 = 0
 	updateModelField := model.timeFiled("updated")
@@ -393,22 +392,9 @@ func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 		updateModelField.value = now
 	}
 	createdModelField := model.timeFiled("created")
-	canBeUpdate := !model.pkZero()
 	var isInsert bool
-	if canBeUpdate {
-		q.criteria.mergePkCondition(q.Dialect)
+	if !model.pkZero() && q.WhereEqual(model.pk.name, model.pk.value).Count(model.table) > 0 { //id is given, can be an update operation.
 		affected, err = q.Dialect.update(q)
-		if affected == 0 && err == nil {
-			if createdModelField != nil {
-				createdModelField.value = now
-			}
-			q.criteria = preservedCriteria
-			id, err = q.Dialect.insert(q)
-			isInsert = true
-			if err == nil {
-				affected = 1
-			}
-		}
 	} else {
 		if createdModelField != nil {
 			createdModelField.value = now

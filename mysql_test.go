@@ -65,6 +65,11 @@ func TestMysqlSaveAndDelete(t *testing.T) {
 	doTestSaveAndDelete(t, mg, q)
 }
 
+func TestMysqlSaveAgain(t *testing.T) {
+	mg, q := setupMysqlDb()
+	doTestSaveAgain(t, mg, q)
+}
+
 func TestMysqlForeignKey(t *testing.T) {
 	mg, q := setupMysqlDb()
 	doTestForeignKey(t, mg, q)

@@ -105,7 +105,8 @@ if you want define a primary key with name other than `Id`, you can set the tag 
 
 ### Inset a row：
 - Call `Save` method to insert or update the row，if the primary key field `Id` has not been set, `Save` would execute insert stamtment.
-- If `Id` is set to a positive integer, `Save` would execute `UPDATE` statement first, if no rows are affected, then it will execute `INSERT` statement.
+- If `Id` is set to a positive integer, `Save` would query the count of the row to find out if the row already exists, if not then execute `INSERT` statement.
+otherwise execute `UPDATE`.
 - `Save` expects a struct pointer parameter.
 
         func CreateUser(q *qbs.Qbs) (*User,error){

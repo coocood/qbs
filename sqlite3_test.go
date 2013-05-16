@@ -68,6 +68,11 @@ func TestSqlite3SaveAndDelete(t *testing.T) {
 	doTestSaveAndDelete(t, mg, q)
 }
 
+func TestSqlite3SaveAgain(t *testing.T) {
+	mg, q := setupSqlite3Db()
+	doTestSaveAgain(t, mg, q)
+}
+
 func TestSqlite3ForeignKey(t *testing.T) {
 	mg, q := setupSqlite3Db()
 	doTestForeignKey(t, mg, q)

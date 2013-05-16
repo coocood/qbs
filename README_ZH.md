@@ -105,7 +105,7 @@ Qbs是一个Go语言的ORM
 ### 插入数据：
 - 如果处理一个请求需要多次进行数据库操作，最好在函数间传递*Qbs参数，这样只需要执行一次获取关闭操作就可以了。
 - 插入数据时使用`Save`方法，如果`user`的主键Id没有赋值，`Save`会执行INSERT语句。
-- 如果`user`的`Id`是一个正整数，`Save`会首先执行一次UPDATE语句，如果发现影响的行数为0，会紧接着执行INSERT语句。
+- 如果`user`的`Id`是一个正整数，`Save`会首先执行一次SELECT COUNT操作，如果发现count为0，会执行INSERT语句，否则会执行UPDATE语句。
 - `Save`的参数必须是struct指针，不然会panic。
 
 

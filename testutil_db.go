@@ -124,6 +124,26 @@ func doTestSaveAndDelete(t *testing.T, mg *Migration, q *Qbs) {
 	assert.Equal(1, affected)
 }
 
+func doTestSaveAgain(t *testing.T, mg *Migration, q *Qbs) {
+	defer closeMigrationAndQbs(mg, q)
+	assert := assrt.NewAssert(t)
+	b := new(basic)
+	mg.dropTableIfExists(b)
+	mg.CreateTableIfNotExists(b)
+	b.Name = "a"
+	b.State = 2
+	affected, err := q.Save(b)
+	assert.Nil(err)
+	assert.Equal(1, affected)
+	affected, err = q.Save(b)
+	assert.Nil(err)
+	if _, ok := q.Dialect.(*mysql); ok {
+		assert.Equal(0, affected)
+	}else{
+		assert.Equal(1, affected)
+	}
+}
+
 func doTestForeignKey(t *testing.T, mg *Migration, q *Qbs) {
 	defer closeMigrationAndQbs(mg, q)
 	assert := assrt.NewAssert(t)
@@ -418,6 +438,7 @@ func doTestQueryMap(t *testing.T, mg *Migration, q *Qbs) {
 	results, err := q.QueryMapSlice("SELECT * FROM types")
 	assert.Equal(3, len(results))
 }
+
 
 func closeMigrationAndQbs(mg *Migration, q *Qbs) {
 	mg.Close()

@@ -65,6 +65,11 @@ func TestPgSaveAndDelete(t *testing.T) {
 	doTestSaveAndDelete(t, mg, q)
 }
 
+func TestPgSaveAgain(t *testing.T) {
+	mg, q := setupPgDb()
+	doTestSaveAgain(t, mg, q)
+}
+
 func TestPgForeignKey(t *testing.T) {
 	mg, q := setupPgDb()
 	doTestForeignKey(t, mg, q)
