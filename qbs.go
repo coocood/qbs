@@ -44,6 +44,16 @@ func Register(driverName, driverSourceName, databaseName string, dialect Dialect
 	dbName = databaseName
 }
 
+//A safe and easy way to work with *Qbs instance without the need to open and close it.
+func WithQbs(task func (*Qbs) error) error{
+	q, err := GetQbs()
+	if err != nil {
+		return err
+	}
+	defer q.Close()
+	return task(q)
+}
+
 //Get an Qbs instance, should call `defer q.Close()` next, like:
 //
 //		q, err := qbs.GetQbs()
@@ -476,13 +486,18 @@ func (q *Qbs) ContainsValue(table interface{}, column string, value interface{})
 // So it's better to call "defer q.Close()" right after qbs.New() to release resource.
 // If the connection pool is not full, the Db will be sent back into the pool, otherwise the Db will get closed.
 func (q *Qbs) Close() error {
+	if q.Tx != nil {
+		q.Tx.Rollback()
+	}
 	if q.Db != nil {
 		select {
 		case connectionPool <- q.Db:
 			return nil
 		default:
 		}
-		return q.Db.Close()
+		err := q.Db.Close()
+		q.Db = nil
+		return err
 	}
 	return nil
 }

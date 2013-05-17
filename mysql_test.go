@@ -76,8 +76,8 @@ func TestMysqlForeignKey(t *testing.T) {
 }
 
 func TestMysqlFind(t *testing.T) {
-	mg, q := setupMysqlDb()
-	doTestFind(t, mg, q)
+	registerMysqlTest()
+	doTestFind(t)
 }
 
 func TestMysqlCreateTable(t *testing.T) {

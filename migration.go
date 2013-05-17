@@ -130,3 +130,13 @@ func GetMigration() (mg *Migration, err error) {
 	}
 	return &Migration{db, dbName, dial, false}, nil
 }
+
+// A safe and easy way to work with Migration instance without the need to open and close it.
+func WithMigration(task func(mg *Migration) error) error {
+	mg, err := GetMigration()
+	if err != nil {
+		return err
+	}
+	defer mg.Close()
+	return task(mg)
+}

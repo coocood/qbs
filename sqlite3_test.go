@@ -79,8 +79,8 @@ func TestSqlite3ForeignKey(t *testing.T) {
 }
 
 func TestSqlite3Find(t *testing.T) {
-	mg, q := setupSqlite3Db()
-	doTestFind(t, mg, q)
+	registerSqlite3Test()
+	doTestFind(t)
 }
 
 func TestSqlite3CreateTable(t *testing.T) {

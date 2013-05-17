@@ -196,8 +196,7 @@ func doTestForeignKey(t *testing.T, mg *Migration, q *Qbs) {
 	assert.Equal("john", psts[0].Author.Name)
 }
 
-func doTestFind(t *testing.T, mg *Migration, q *Qbs) {
-	defer closeMigrationAndQbs(mg, q)
+func doTestFind(t *testing.T) {
 	assert := assrt.NewAssert(t)
 	now := time.Now()
 	type types struct {
@@ -215,49 +214,53 @@ func doTestFind(t *testing.T, mg *Migration, q *Qbs) {
 		Bytes: []byte("bytes!"),
 		Time:  now,
 	}
+	WithMigration(func(mg *Migration)error{
+		mg.dropTableIfExists(modelData)
+		mg.CreateTableIfNotExists(modelData)
+		return nil
+	})
+	WithQbs(func(q *Qbs)error{
+		out := new(types)
+		condition := NewCondition("str = ?", "string!").And("intgr = ?", -1)
+		err := q.Condition(condition).Find(out)
+		assert.Equal(sql.ErrNoRows, err)
 
-	mg.dropTableIfExists(modelData)
-	mg.CreateTableIfNotExists(modelData)
+		affected, err := q.Save(modelData)
+		assert.Nil(err)
+		assert.Equal(1, affected)
+		out.Id = modelData.Id
+		err = q.Condition(condition).Find(out)
+		assert.Nil(err)
+		assert.Equal(1, out.Id)
+		assert.Equal("string!", out.Str)
+		assert.Equal(-1, out.Intgr)
+		assert.Equal(3.8, out.Flt)
+		assert.Equal([]byte("bytes!"), out.Bytes)
+		diff := now.Sub(out.Time)
+		assert.True(diff < time.Second && diff > -time.Second)
 
-	out := new(types)
-	condition := NewCondition("str = ?", "string!").And("intgr = ?", -1)
-	err := q.Condition(condition).Find(out)
-	assert.Equal(sql.ErrNoRows, err)
+		modelData.Id = 5
+		modelData.Str = "New row"
+		_, err = q.Save(modelData)
+		assert.Nil(err)
 
-	affected, err := q.Save(modelData)
-	assert.Nil(err)
-	assert.Equal(1, affected)
-	out.Id = modelData.Id
-	err = q.Condition(condition).Find(out)
-	assert.Nil(err)
-	assert.Equal(1, out.Id)
-	assert.Equal("string!", out.Str)
-	assert.Equal(-1, out.Intgr)
-	assert.Equal(3.8, out.Flt)
-	assert.Equal([]byte("bytes!"), out.Bytes)
-	diff := now.Sub(out.Time)
-	assert.True(diff < time.Second && diff > -time.Second)
+		out = new(types)
+		condition = NewCondition("str = ?", "New row").And("flt = ?", 3.8)
+		err = q.Condition(condition).Find(out)
+		assert.Nil(err)
+		assert.Equal(5, out.Id)
 
-	modelData.Id = 5
-	modelData.Str = "New row"
-	_, err = q.Save(modelData)
-	assert.Nil(err)
+		out = new(types)
+		out.Id = 100
+		err = q.Find(out)
+		assert.NotNil(err)
 
-	out = new(types)
-	condition = NewCondition("str = ?", "New row").And("flt = ?", 3.8)
-	err = q.Condition(condition).Find(out)
-	assert.Nil(err)
-	assert.Equal(5, out.Id)
-
-	out = new(types)
-	out.Id = 100
-	err = q.Find(out)
-	assert.NotNil(err)
-
-	allOut := []*types{}
-	err = q.WhereEqual("intgr", -1).FindAll(&allOut)
-	assert.Nil(err)
-	assert.Equal(2, len(allOut))
+		allOut := []*types{}
+		err = q.WhereEqual("intgr", -1).FindAll(&allOut)
+		assert.Nil(err)
+		assert.Equal(2, len(allOut))
+		return nil
+	})
 }
 
 func doTestCreateTable(t *testing.T, mg *Migration) {
