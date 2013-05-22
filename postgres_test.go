@@ -152,5 +152,6 @@ func TestPgDropTableSQL(t *testing.T) {
 }
 
 func BenchmarkPgFind(b *testing.B) {
+	registerPgTest()
 	doBenchmarkFind(b)
 }

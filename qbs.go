@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"reflect"
-	"strings"
 	"time"
+	"strings"
 )
 
 var connectionPool chan *sql.DB = make(chan *sql.DB, 10)
@@ -234,11 +234,9 @@ func (q *Qbs) doQueryRow(out interface{}, query string, args ...interface{}) err
 	rowValue := reflect.ValueOf(out)
 	stmt, err := q.Prepare(query)
 	if err != nil {
-		if stmt != nil {
-			stmt.Close()
-		}
 		return q.updateTxError(err)
 	}
+	defer stmt.Close()
 	rows, err := stmt.Query(args...)
 	if err != nil {
 		return q.updateTxError(err)
@@ -262,12 +260,9 @@ func (q *Qbs) doQueryRows(out interface{}, query string, args ...interface{}) er
 	q.log(query, args...)
 	stmt, err := q.Prepare(query)
 	if err != nil {
-		if stmt != nil {
-			stmt.Close()
-		}
 		return q.updateTxError(err)
 	}
-
+	defer stmt.Close()
 	rows, err := stmt.Query(args...)
 	if err != nil {
 		return q.updateTxError(err)
@@ -544,11 +539,9 @@ func (q *Qbs) doQueryMap(query string, once bool, args ...interface{}) ([]map[st
 	query = q.Dialect.substituteMarkers(query)
 	stmt, err := q.Prepare(query)
 	if err != nil {
-		if stmt != nil {
-			stmt.Close()
-		}
 		return nil, q.updateTxError(err)
 	}
+	defer stmt.Close()
 	rows, err := stmt.Query(args...)
 	if err != nil {
 		return nil, q.updateTxError(err)
