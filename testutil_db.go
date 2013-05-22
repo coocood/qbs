@@ -447,7 +447,6 @@ func doTestBulkInsert(t *testing.T) {
 	WithMigration(func(mg *Migration)error{
 		b := new(basic)
 		mg.dropTableIfExists(b)
-		mg.Log = true
 		mg.CreateTableIfNotExists(b)
 		return nil
 	})
