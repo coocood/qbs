@@ -118,6 +118,11 @@ func TestSqlite3QueryMap(t *testing.T) {
 	doTestQueryMap(t, mg, q)
 }
 
+func TestSqlite3BulkInsert(t *testing.T) {
+	registerSqlite3Test()
+	doTestBulkInsert(t)
+}
+
 func TestSqlite3AddColumnSQL(t *testing.T) {
 	doTestAddColumSQL(t, sqlite3Syntax)
 }

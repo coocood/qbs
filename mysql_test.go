@@ -115,6 +115,11 @@ func TestMysqlQueryMap(t *testing.T) {
 	doTestQueryMap(t, mg, q)
 }
 
+func TestMysqlBulkInsert(t *testing.T) {
+	registerMysqlTest()
+	doTestBulkInsert(t)
+}
+
 func TestMysqlAddColumnSQL(t *testing.T) {
 	doTestAddColumSQL(t, mysqlSyntax)
 }

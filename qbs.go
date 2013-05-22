@@ -430,6 +430,41 @@ func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 	return affected, err
 }
 
+
+func (q *Qbs) BulkInsert(sliceOfStructPtr interface {}) error{
+	defer q.Reset()
+	var err error
+	if q.Tx == nil {
+		q.Begin()
+		defer func(){
+			if err != nil {
+				q.Rollback()
+			}else{
+				q.Commit()
+			}
+		}()
+	}
+	sliceValue := reflect.ValueOf(sliceOfStructPtr)
+	for i:= 0; i <sliceValue.Len(); i++ {
+		structPtr := sliceValue.Index(i)
+		model := structPtrToModel(structPtr.Interface(), false, nil)
+		if model.pk == nil {
+			panic("no primary key field")
+		}
+		q.criteria.model = model
+		var id int64
+		id, err = q.Dialect.insert(q)
+		if err != nil {
+			return err
+		}
+		if _, ok := model.pk.value.(int64); ok && id != 0 {
+			idField := structPtr.Elem().FieldByName(model.pk.camelName)
+			idField.SetInt(id)
+		}
+	}
+	return nil
+}
+
 // If the struct type implements Validator interface, values will be validated before update.
 // In order to avoid inadvertently update the struct field to zero value, it is better to define a
 // temporary struct in function, only define the fields that should be updated.
