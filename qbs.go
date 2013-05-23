@@ -2,6 +2,7 @@ package qbs
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -191,6 +192,11 @@ func (q *Qbs) OmitFields(fieldName ...string) *Qbs {
 	return q
 }
 
+func (q *Qbs) LoadM2mFields(fieldName ...string) *Qbs {
+	q.criteria.loadM2m = fieldName
+	return q
+}
+
 func (q *Qbs) OmitJoin() *Qbs {
 	q.criteria.omitJoin = true
 	return q
@@ -204,6 +210,7 @@ func (q *Qbs) OmitJoin() *Qbs {
 // the values obtained by the query.
 // If not found, "sql.ErrNoRows" will be returned.
 func (q *Qbs) Find(structPtr interface{}) error {
+	defer q.Reset()
 	q.criteria.model = structPtrToModel(structPtr, !q.criteria.omitJoin, q.criteria.omitFields)
 	q.criteria.limit = 1
 	if !q.criteria.model.pkZero() {
@@ -222,6 +229,7 @@ func (q *Qbs) Find(structPtr interface{}) error {
 // Similar to Find, except that FindAll accept pointer of slice of struct pointer,
 // rows will be appended to the slice.
 func (q *Qbs) FindAll(ptrOfSliceOfStructPtr interface{}) error {
+	defer q.Reset()
 	strucType := reflect.TypeOf(ptrOfSliceOfStructPtr).Elem().Elem().Elem()
 	strucPtr := reflect.New(strucType).Interface()
 	q.criteria.model = structPtrToModel(strucPtr, !q.criteria.omitJoin, q.criteria.omitFields)
@@ -229,10 +237,50 @@ func (q *Qbs) FindAll(ptrOfSliceOfStructPtr interface{}) error {
 	return q.doQueryRows(ptrOfSliceOfStructPtr, query, args...)
 }
 
-func (q *Qbs) doQueryRow(out interface{}, query string, args ...interface{}) error {
+func (q *Qbs) LoadM2m(structPtr interface{}) error {
 	defer q.Reset()
+	q.criteria.model = structPtrToModel(structPtr, !q.criteria.omitJoin, q.criteria.omitFields)
+	if q.criteria.model.pkZero() {
+		return errors.New("pk must be specified!")
+	}
+	rowValue := reflect.ValueOf(structPtr)
+	if err := q.loadM2m(rowValue); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (q *Qbs) loadM2m(rowValue reflect.Value) error {
+	for fieldname, m2m := range q.criteria.model.m2m {
+		if q.criteria.omitJoin {
+			continue
+		}
+		omit := true
+		// call LoadM2mFields("m2mfieldname", "field2"...), otherwise omit loading
+		for _, loadField := range q.criteria.loadM2m {
+			if loadField == fieldname {
+				omit = false
+				break
+			}
+		}
+		if omit {
+			continue
+		}
+		mquery := q.Dialect.queryM2m(q.criteria, fieldname)
+		m2mfield := rowValue.Elem().FieldByName(m2m.fieldName)
+		pkValue := rowValue.Elem().FieldByName(q.criteria.model.pk.camelName).Interface()
+		q.log("load many to many relation:" + q.criteria.model.table + "." + fieldname)
+		if err := q.doQueryRows(m2mfield.Addr().Interface(), mquery, pkValue); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (q *Qbs) doQueryRow(out interface{}, query string, args ...interface{}) error {
 	rowValue := reflect.ValueOf(out)
 	stmt, err := q.Prepare(query)
+	q.log(query, args...)
 	if err != nil {
 		if stmt != nil {
 			stmt.Close()
@@ -252,11 +300,15 @@ func (q *Qbs) doQueryRow(out interface{}, query string, args ...interface{}) err
 	} else {
 		return sql.ErrNoRows
 	}
+	// load many to many relation values
+	if err = q.loadM2m(rowValue); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (q *Qbs) doQueryRows(out interface{}, query string, args ...interface{}) error {
-	defer q.Reset()
 	sliceValue := reflect.Indirect(reflect.ValueOf(out))
 	sliceType := sliceValue.Type().Elem().Elem()
 	q.log(query, args...)
@@ -280,6 +332,14 @@ func (q *Qbs) doQueryRows(out interface{}, query string, args ...interface{}) er
 			return err
 		}
 		sliceValue.Set(reflect.Append(sliceValue, rowValue))
+	}
+	// if is root query
+	if toSnake(sliceType.Name()) == q.criteria.model.table {
+		for i := 0; i < sliceValue.Len(); i += 1 {
+			if err = q.loadM2m(sliceValue.Index(i)); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

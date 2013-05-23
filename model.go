@@ -70,7 +70,17 @@ type model struct {
 	table   string
 	fields  []*modelField
 	refs    map[string]*reference
+	m2m     map[string]*m2mRelation
 	indexes Indexes
+}
+
+type m2mRelation struct {
+	fieldName       string
+	model           *model
+	targetTable     string
+	targetPkRef     string
+	pkRef           string
+	interMediaTable string
 }
 
 type reference struct {
@@ -140,6 +150,7 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 		fields:  []*modelField{},
 		indexes: Indexes{},
 		refs:    make(map[string]*reference),
+		m2m:     make(map[string]*m2mRelation),
 	}
 	structType := reflect.TypeOf(f).Elem()
 	structValue := reflect.ValueOf(f).Elem()
@@ -159,16 +170,45 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 			continue
 		}
 		kind := structFiled.Type.Kind()
+		parsedSqlTags := parseTags(sqlTag)
 		switch kind {
 		case reflect.Ptr, reflect.Map:
 			continue
 		case reflect.Slice:
 			elemKind := structFiled.Type.Elem().Kind()
+			interMediaTable, isM2mRelation := parsedSqlTags["m2m"]
+			if isM2mRelation && root {
+				if elemKind != reflect.Ptr && structFiled.Type.Elem().Elem().Kind() != reflect.Struct {
+					panic("field type is not slice of ptr of struct")
+				}
+				targetValue := reflect.New(structFiled.Type.Elem().Elem())
+				m2mModel := structPtrToModel(targetValue.Interface(), false, nil)
+				m2m := new(m2mRelation)
+				m2m.model = m2mModel
+				m2m.fieldName = structFiled.Name
+				m2m.interMediaTable = toSnake(interMediaTable)
+				targetTable, ok := parsedSqlTags["target"]
+				if !ok {
+					targetTable = structFiled.Name[:len(structFiled.Name)-1]
+				}
+				m2m.targetTable = toSnake(targetTable)
+				targetPkRef, ok := parsedSqlTags["tPkRef"]
+				if !ok {
+					targetPkRef = m2m.targetTable
+				}
+				m2m.targetPkRef = targetPkRef
+				pkRef, ok := parsedSqlTags["pkRef"]
+				if !ok {
+					pkRef = model.table
+				}
+				m2m.pkRef = pkRef
+				model.m2m[m2m.fieldName] = m2m
+
+			}
 			if elemKind != reflect.Uint8 {
 				continue
 			}
 		}
-		parsedSqlTags := parseTags(sqlTag)
 		fd := new(modelField)
 		fd.camelName = structFiled.Name
 		fd.name = toSnake(structFiled.Name)
@@ -307,7 +347,7 @@ func validateTag(tagMap map[string]string) {
 			panic("invalid tag:" + k + v)
 		}
 		switch k {
-		case "fk", "join", "default":
+		case "fk", "join", "default", "m2m", "target", "pkRef", "tPkRef":
 			if len(v) == 0 {
 				panic(k + " tag syntax error")
 			}
@@ -335,4 +375,8 @@ var ValidTags = map[string]bool{
 	"notnull": true,
 	"updated": true,
 	"created": true,
+	"m2m":     true, // many to many relation tag
+	"target":  true, // specify target table of m2m
+	"tPkRef":  true, // targetPkRef
+	"pkRef":   true, // pkRef
 }

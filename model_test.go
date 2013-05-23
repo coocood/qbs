@@ -29,6 +29,32 @@ func TestFieldOmit(t *testing.T) {
 	assert.OneLen(m.fields)
 }
 
+// recognize many to many relation
+func TestInterfaceToModelWithManyToManyRelation(t *testing.T) {
+	assert := assrt.NewAssert(t)
+	type parent struct {
+		Id    int64
+		Name  string
+		Value string
+	}
+	type table struct {
+		ColPrimary int64     `qbs:"pk"`
+		FatherId   int64     `qbs:"fk:Father"`
+		Fathers    []*parent `qbs:"m2m:TableParent"`
+	}
+	table1 := &table{
+		6, 3, nil,
+	}
+	table1.Fathers = append(table1.Fathers, &parent{3, "Mrs. A", "infinite"})
+	m := structPtrToModel(table1, true, nil)
+	parents, ok := m.m2m["Fathers"]
+	assert.MustTrue(ok)
+	f := parents.model.fields[1]
+	assert.Equal("Name", f.camelName)
+	f = parents.model.fields[2]
+	assert.Equal("Value", f.camelName)
+}
+
 func TestInterfaceToModelWithReference(t *testing.T) {
 	assert := assrt.NewAssert(t)
 	type parent struct {

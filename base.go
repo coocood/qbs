@@ -119,6 +119,39 @@ func (d base) querySql(criteria *criteria) (string, []interface{}) {
 	return d.Dialect.substituteMarkers(strings.Join(query, " ")), args
 }
 
+func (d base) queryM2m(criteria *criteria, field string) string {
+	// many to many relation join
+	query := make([]string, 0, 20)
+
+	m2m, ok := criteria.model.m2m[field]
+	if !ok {
+		panic("no such field:" + field)
+	}
+	columns := []string{}
+
+	// tAlias := toSnake(field) // alias of target table
+	// qTAlias := d.Dialect.quote(tAlias)
+	target := m2m.model.table
+	qTarget := d.Dialect.quote(target) // name of target table
+	im := toSnake(m2m.interMediaTable) // intermedia table
+	qIm := d.Dialect.quote(im)
+	imAlias := im + "___" + target
+	qImAlias := d.Dialect.quote(imAlias)
+	imFk := qImAlias + "." + d.Dialect.quote(m2m.pkRef+"_"+criteria.model.pk.name)
+	imTargetFk := qImAlias + "." + d.Dialect.quote(m2m.targetPkRef+"_"+m2m.model.pk.name)
+	// imFk := qImAlias + "." + d.Dialect.quote(criteria.model.table+"_"+criteria.model.pk.name)
+	// imTargetFk := qImAlias + "." + d.Dialect.quote(target+"_"+m2m.model.pk.name)
+	tKey := qTarget + "." + d.Dialect.quote(m2m.model.pk.name)
+	joinClause := fmt.Sprintf("%v AS %v LEFT JOIN %v ON %v = %v",
+		qIm, qImAlias, qTarget, imTargetFk, tKey)
+	for _, f := range m2m.model.fields {
+		columns = append(columns, d.Dialect.quote(m2m.targetTable+"."+f.name))
+	}
+	query = append(query, "SELECT", strings.Join(columns, ", "), "FROM", joinClause,
+		"WHERE", imFk+" = ?")
+	return d.Dialect.substituteMarkers(strings.Join(query, " "))
+}
+
 func (d base) insert(q *Qbs) (int64, error) {
 	sql, args := d.Dialect.insertSql(q.criteria)
 	result, err := q.Exec(sql, args...)

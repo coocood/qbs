@@ -7,6 +7,7 @@ type criteria struct {
 	limit      int
 	offset     int
 	omitFields []string
+	loadM2m    []string
 	omitJoin   bool
 }
 
