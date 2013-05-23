@@ -39,13 +39,12 @@ func TestInterfaceToModelWithManyToManyRelation(t *testing.T) {
 	}
 	type table struct {
 		ColPrimary int64     `qbs:"pk"`
-		FatherId   int64     `qbs:"fk:Father"`
 		Fathers    []*parent `qbs:"m2m:TableParent"`
 	}
 	table1 := &table{
-		6, 3, nil,
+		6, nil,
 	}
-	table1.Fathers = append(table1.Fathers, &parent{3, "Mrs. A", "infinite"})
+	// table1.Fathers = append(table1.Fathers, &parent{3, "Mrs. A", "infinite"})
 	m := structPtrToModel(table1, true, nil)
 	parents, ok := m.m2m["Fathers"]
 	assert.MustTrue(ok)
