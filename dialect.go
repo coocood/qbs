@@ -20,7 +20,7 @@ type Dialect interface {
 
 	querySql(criteria *criteria) (sql string, args []interface{})
 
-	queryM2m(criteria *criteria, field string) (sql string)
+	queryM2m(criteria *criteria, field string, pk interface{}) (sql string, args []interface{})
 
 	insert(q *Qbs) (int64, error)
 

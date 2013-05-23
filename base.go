@@ -123,9 +123,9 @@ func (d base) querySql(criteria *criteria) (string, []interface{}) {
 	return d.Dialect.substituteMarkers(strings.Join(query, " ")), args
 }
 
-func (d base) queryM2m(criteria *criteria, field string) string {
-	// many to many relation join
+func (d base) queryM2m(criteria *criteria, field string, pk interface{}) (string, []interface{}) {
 	query := make([]string, 0, 20)
+	args := make([]interface{}, 0, 20)
 
 	m2m, ok := criteria.model.m2m[field]
 	if !ok {
@@ -133,8 +133,11 @@ func (d base) queryM2m(criteria *criteria, field string) string {
 	}
 	columns := []string{}
 
-	// tAlias := toSnake(field) // alias of target table
-	// qTAlias := d.Dialect.quote(tAlias)
+	// append fields of target table
+	for _, f := range m2m.model.fields {
+		columns = append(columns, d.Dialect.quote(m2m.targetTable+"."+f.name))
+	}
+	// calculate table join clause
 	target := m2m.model.table
 	qTarget := d.Dialect.quote(target) // name of target table
 	im := toSnake(m2m.interMediaTable) // intermedia table
@@ -143,17 +146,53 @@ func (d base) queryM2m(criteria *criteria, field string) string {
 	qImAlias := d.Dialect.quote(imAlias)
 	imFk := qImAlias + "." + d.Dialect.quote(m2m.pkRef+"_"+criteria.model.pk.name)
 	imTargetFk := qImAlias + "." + d.Dialect.quote(m2m.targetPkRef+"_"+m2m.model.pk.name)
-	// imFk := qImAlias + "." + d.Dialect.quote(criteria.model.table+"_"+criteria.model.pk.name)
-	// imTargetFk := qImAlias + "." + d.Dialect.quote(target+"_"+m2m.model.pk.name)
 	tKey := qTarget + "." + d.Dialect.quote(m2m.model.pk.name)
 	joinClause := fmt.Sprintf("%v AS %v LEFT JOIN %v ON %v = %v",
 		qIm, qImAlias, qTarget, imTargetFk, tKey)
-	for _, f := range m2m.model.fields {
-		columns = append(columns, d.Dialect.quote(m2m.targetTable+"."+f.name))
+	// append table join clause
+	query = append(query, "SELECT", strings.Join(columns, ", "), "FROM", joinClause)
+
+	if criteria.m2mUseCond {
+		// append pk condition
+		idCondition := NewCondition(imFk+" = ?", pk)
+		if criteria.condition == nil {
+			criteria.condition = idCondition
+		} else {
+			criteria.condition = idCondition.AndCondition(criteria.condition)
+		}
+		// append conditions
+		if criteria.condition != nil {
+			cexpr, cargs := criteria.condition.Merge()
+			query = append(query, "WHERE", cexpr)
+			args = append(args, cargs...)
+		}
+		orderByLen := len(criteria.orderBys)
+		if orderByLen > 0 {
+			query = append(query, "ORDER BY")
+			for i, order := range criteria.orderBys {
+				query = append(query, order.path)
+				if order.desc {
+					query = append(query, "DESC")
+				}
+				if i < orderByLen-1 {
+					query = append(query, ",")
+				}
+			}
+		}
+
+		if x := criteria.limit; x > 0 {
+			query = append(query, "LIMIT ?")
+			args = append(args, criteria.limit)
+		}
+		if x := criteria.offset; x > 0 {
+			query = append(query, "OFFSET ?")
+			args = append(args, criteria.offset)
+		}
+	} else {
+		query = append(query, "WHERE", imFk+" = ?")
+		args = append(args, pk)
 	}
-	query = append(query, "SELECT", strings.Join(columns, ", "), "FROM", joinClause,
-		"WHERE", imFk+" = ?")
-	return d.Dialect.substituteMarkers(strings.Join(query, " "))
+	return d.Dialect.substituteMarkers(strings.Join(query, " ")), args
 }
 
 func (d base) insert(q *Qbs) (int64, error) {

@@ -239,6 +239,7 @@ func (q *Qbs) FindAll(ptrOfSliceOfStructPtr interface{}) error {
 
 func (q *Qbs) LoadM2m(structPtr interface{}) error {
 	defer q.Reset()
+	q.criteria.m2mUseCond = true
 	q.criteria.model = structPtrToModel(structPtr, !q.criteria.omitJoin, q.criteria.omitFields)
 	if q.criteria.model.pkZero() {
 		return errors.New("pk must be specified!")
@@ -266,11 +267,11 @@ func (q *Qbs) loadM2m(rowValue reflect.Value) error {
 		if omit {
 			continue
 		}
-		mquery := q.Dialect.queryM2m(q.criteria, fieldname)
-		m2mfield := rowValue.Elem().FieldByName(m2m.fieldName)
 		pkValue := rowValue.Elem().FieldByName(q.criteria.model.pk.camelName).Interface()
+		mquery, margs := q.Dialect.queryM2m(q.criteria, fieldname, pkValue)
+		m2mfield := rowValue.Elem().FieldByName(m2m.fieldName)
 		q.log("load many to many relation:" + q.criteria.model.table + "." + fieldname)
-		if err := q.doQueryRows(m2mfield.Addr().Interface(), mquery, pkValue); err != nil {
+		if err := q.doQueryRows(m2mfield.Addr().Interface(), mquery, margs...); err != nil {
 			return err
 		}
 	}
