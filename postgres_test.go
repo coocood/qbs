@@ -1,156 +1,156 @@
 package qbs
 
 import (
-	"fmt"
-	"github.com/coocood/assrt"
-	_ "github.com/lib/pq"
-	"testing"
-	"time"
+    "fmt"
+    "github.com/coocood/assrt"
+    _ "github.com/lib/pq"
+    "testing"
+    "time"
 )
 
 const (
-	pgDriver    = "postgres"
-	pgDrvFormat = "user=%v password=%v dbname=%v sslmode=disable"
+    pgDriver    = "postgres"
+    pgDrvFormat = "user=%v password=%v dbname=%v sslmode=disable"
 )
 
 var pgSyntax = dialectSyntax{
-	NewPostgres(),
-	`CREATE TABLE IF NOT EXISTS "without_pk" ( "first" text, "last" text, "amount" integer )`,
-	`CREATE TABLE "with_pk" ( "primary" bigserial PRIMARY KEY, "first" text, "last" text, "amount" integer )`,
-	`INSERT INTO "sql_gen_model" ("prim", "first", "last", "amount") VALUES ($1, $2, $3, $4) RETURNING "prim"`,
-	`UPDATE "sql_gen_model" SET "first" = $1, "last" = $2, "amount" = $3 WHERE "prim" = $4`,
-	`DELETE FROM "sql_gen_model" WHERE "prim" = $1`,
-	`SELECT "post"."id", "post"."author_id", "post"."content", "author"."id" AS author___id, "author"."name" AS author___name FROM "post" LEFT JOIN "user" AS "author" ON "post"."author_id" = "author"."id"`,
-	`SELECT "name", "grade", "score" FROM "student" WHERE (grade IN ($1, $2, $3)) AND ((score <= $4) OR (score >= $5)) ORDER BY "name" , "grade" DESC LIMIT $6 OFFSET $7`,
-	`DROP TABLE IF EXISTS "drop_table"`,
-	`ALTER TABLE "a" ADD COLUMN "c" varchar(100)`,
-	`CREATE UNIQUE INDEX "iname" ON "itable" ("a", "b", "c")`,
-	`CREATE INDEX "iname2" ON "itable2" ("d", "e")`,
+    NewPostgres(),
+    `CREATE TABLE IF NOT EXISTS "without_pk" ( "first" text, "last" text, "amount" integer )`,
+    `CREATE TABLE "with_pk" ( "primary" bigserial PRIMARY KEY, "first" text, "last" text, "amount" integer )`,
+    `INSERT INTO "sql_gen_model" ("prim", "first", "last", "amount") VALUES ($1, $2, $3, $4) RETURNING "prim"`,
+    `UPDATE "sql_gen_model" SET "first" = $1, "last" = $2, "amount" = $3 WHERE "prim" = $4`,
+    `DELETE FROM "sql_gen_model" WHERE "prim" = $1`,
+    `SELECT "post"."id", "post"."author_id", "post"."content", "author"."id" AS author___id, "author"."name" AS author___name FROM "post" LEFT JOIN "user" AS "author" ON "post"."author_id" = "author"."id"`,
+    `SELECT "name", "grade", "score" FROM "student" WHERE (grade IN ($1, $2, $3)) AND ((score <= $4) OR (score >= $5)) ORDER BY "name" , "grade" DESC LIMIT $6 OFFSET $7`,
+    `DROP TABLE IF EXISTS "drop_table"`,
+    `ALTER TABLE "a" ADD COLUMN "c" varchar(100)`,
+    `CREATE UNIQUE INDEX "iname" ON "itable" ("a", "b", "c")`,
+    `CREATE INDEX "iname2" ON "itable2" ("d", "e")`,
 }
 
 func registerPgTest() {
-	Register(pgDriver, fmt.Sprintf(pgDrvFormat, testDbUser, testDbUser, testDbName), testDbName, NewPostgres())
+    Register(pgDriver, fmt.Sprintf(pgDrvFormat, testDbUser, testDbUser, testDbName), testDbName, NewPostgres())
 }
 
 func setupPgDb() (*Migration, *Qbs) {
-	registerPgTest()
-	mg, _ := GetMigration()
-	q, _ := GetQbs()
-	return mg, q
+    registerPgTest()
+    mg, _ := GetMigration()
+    q, _ := GetQbs()
+    return mg, q
 }
 
 func TestSqlTypeForPgDialect(t *testing.T) {
-	assert := assrt.NewAssert(t)
-	d := NewPostgres()
-	assert.Equal("boolean", d.sqlType(true, 0))
-	var indirect interface{} = true
-	assert.Equal("boolean", d.sqlType(indirect, 0))
-	assert.Equal("integer", d.sqlType(uint32(2), 0))
-	assert.Equal("bigint", d.sqlType(int64(1), 0))
-	assert.Equal("double precision", d.sqlType(1.8, 0))
-	assert.Equal("bytea", d.sqlType([]byte("asdf"), 0))
-	assert.Equal("text", d.sqlType("astring", 0))
-	assert.Equal("varchar(255)", d.sqlType("a", 255))
-	assert.Equal("varchar(128)", d.sqlType("b", 128))
-	assert.Equal("timestamp with time zone", d.sqlType(time.Now(), 0))
+    assert := assrt.NewAssert(t)
+    d := NewPostgres()
+    assert.Equal("boolean", d.sqlType(true, 0))
+    var indirect interface{} = true
+    assert.Equal("boolean", d.sqlType(indirect, 0))
+    assert.Equal("integer", d.sqlType(uint32(2), 0))
+    assert.Equal("bigint", d.sqlType(int64(1), 0))
+    assert.Equal("double precision", d.sqlType(1.8, 0))
+    assert.Equal("bytea", d.sqlType([]byte("asdf"), 0))
+    assert.Equal("text", d.sqlType("astring", 0))
+    assert.Equal("varchar(255)", d.sqlType("a", 255))
+    assert.Equal("varchar(128)", d.sqlType("b", 128))
+    assert.Equal("timestamp with time zone", d.sqlType(time.Now(), 0))
 }
 
 func TestPgTransaction(t *testing.T) {
-	mg, q := setupPgDb()
-	doTestTransaction(t, mg, q)
+    mg, q := setupPgDb()
+    doTestTransaction(t, mg, q)
 }
 
 func TestPgSaveAndDelete(t *testing.T) {
-	mg, q := setupPgDb()
-	doTestSaveAndDelete(t, mg, q)
+    mg, q := setupPgDb()
+    doTestSaveAndDelete(t, mg, q)
 }
 
 func TestPgSaveAgain(t *testing.T) {
-	mg, q := setupPgDb()
-	doTestSaveAgain(t, mg, q)
+    mg, q := setupPgDb()
+    doTestSaveAgain(t, mg, q)
 }
 
 func TestPgForeignKey(t *testing.T) {
-	mg, q := setupPgDb()
-	doTestForeignKey(t, mg, q)
+    mg, q := setupPgDb()
+    doTestForeignKey(t, mg, q)
 }
 
 func TestPgFind(t *testing.T) {
-	registerPgTest()
-	doTestFind(t)
+    registerPgTest()
+    doTestFind(t)
 }
 
 func TestPgCreateTable(t *testing.T) {
-	mg, _ := setupPgDb()
-	doTestCreateTable(t, mg)
+    mg, _ := setupPgDb()
+    doTestCreateTable(t, mg)
 }
 
 func TestPgUpdate(t *testing.T) {
-	mg, q := setupPgDb()
-	doTestUpdate(t, mg, q)
+    mg, q := setupPgDb()
+    doTestUpdate(t, mg, q)
 }
 
 func TestPgValidation(t *testing.T) {
-	mg, q := setupPgDb()
-	doTestValidation(t, mg, q)
+    mg, q := setupPgDb()
+    doTestValidation(t, mg, q)
 }
 
 func TestPgBoolType(t *testing.T) {
-	mg, q := setupPgDb()
-	doTestBoolType(t, mg, q)
+    mg, q := setupPgDb()
+    doTestBoolType(t, mg, q)
 }
 
 func TestPgStringPk(t *testing.T) {
-	mg, q := setupPgDb()
-	doTestStringPk(t, mg, q)
+    mg, q := setupPgDb()
+    doTestStringPk(t, mg, q)
 }
 
 func TestPgCount(t *testing.T) {
-	mg, q := setupPgDb()
-	doTestCount(t, mg, q)
+    mg, q := setupPgDb()
+    doTestCount(t, mg, q)
 }
 
 func TestPgQueryMap(t *testing.T) {
-	mg, q := setupPgDb()
-	doTestQueryMap(t, mg, q)
+    mg, q := setupPgDb()
+    doTestQueryMap(t, mg, q)
 }
 
 func TestPgAddColumnSQL(t *testing.T) {
-	doTestAddColumSQL(t, pgSyntax)
+    doTestAddColumSQL(t, pgSyntax)
 }
 
 func TestPgCreateTableSQL(t *testing.T) {
-	doTestCreateTableSQL(t, pgSyntax)
+    doTestCreateTableSQL(t, pgSyntax)
 }
 
 func TestPgCreateIndexSQL(t *testing.T) {
-	doTestCreateIndexSQL(t, pgSyntax)
+    doTestCreateIndexSQL(t, pgSyntax)
 }
 
 func TestPgInsertSQL(t *testing.T) {
-	doTestInsertSQL(t, pgSyntax)
+    doTestInsertSQL(t, pgSyntax)
 }
 
 func TestPgUpdateSQL(t *testing.T) {
-	doTestUpdateSQL(t, pgSyntax)
+    doTestUpdateSQL(t, pgSyntax)
 }
 
 func TestPgDeleteSQL(t *testing.T) {
-	doTestDeleteSQL(t, pgSyntax)
+    doTestDeleteSQL(t, pgSyntax)
 }
 
 func TestPgSelectionSQL(t *testing.T) {
-	doTestSelectionSQL(t, pgSyntax)
+    doTestSelectionSQL(t, pgSyntax)
 }
 
 func TestPgQuerySQL(t *testing.T) {
-	doTestQuerySQL(t, pgSyntax)
+    doTestQuerySQL(t, pgSyntax)
 }
 
 func TestPgDropTableSQL(t *testing.T) {
-	doTestDropTableSQL(t, pgSyntax)
+    doTestDropTableSQL(t, pgSyntax)
 }
 
 func BenchmarkPgFind(b *testing.B) {
-	doBenchmarkFind(b)
+    doBenchmarkFind(b)
 }
