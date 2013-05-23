@@ -1,9 +1,9 @@
 package qbs
 
 import (
-	"testing"
-	"runtime"
 	"fmt"
+	"runtime"
+	"testing"
 )
 
 func doBenchmarkFind(b *testing.B) {

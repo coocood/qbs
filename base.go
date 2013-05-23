@@ -1,11 +1,11 @@
 package qbs
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 	"strings"
 	"time"
-	"bytes"
 )
 
 type base struct {
@@ -21,7 +21,7 @@ func (d base) quote(s string) string {
 	buf.WriteByte('`')
 	segs := strings.Split(s, ".")
 	buf.WriteString(segs[0])
-	for i:=1; i<len(segs); i++ {
+	for i := 1; i < len(segs); i++ {
 		buf.WriteString("`.`")
 		buf.WriteString(segs[i])
 	}

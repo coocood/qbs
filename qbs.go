@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"reflect"
-	"time"
 	"strings"
+	"time"
 )
 
 var connectionPool chan *sql.DB = make(chan *sql.DB, 10)
@@ -45,7 +45,7 @@ func Register(driverName, driverSourceName, databaseName string, dialect Dialect
 }
 
 //A safe and easy way to work with *Qbs instance without the need to open and close it.
-func WithQbs(task func (*Qbs) error) error{
+func WithQbs(task func(*Qbs) error) error {
 	q, err := GetQbs()
 	if err != nil {
 		return err
@@ -430,24 +430,30 @@ func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 	return affected, err
 }
 
-
-func (q *Qbs) BulkInsert(sliceOfStructPtr interface {}) error{
+func (q *Qbs) BulkInsert(sliceOfStructPtr interface{}) error {
 	defer q.Reset()
 	var err error
 	if q.Tx == nil {
 		q.Begin()
-		defer func(){
+		defer func() {
 			if err != nil {
 				q.Rollback()
-			}else{
+			} else {
 				q.Commit()
 			}
 		}()
 	}
 	sliceValue := reflect.ValueOf(sliceOfStructPtr)
-	for i:= 0; i <sliceValue.Len(); i++ {
+	for i := 0; i < sliceValue.Len(); i++ {
 		structPtr := sliceValue.Index(i)
-		model := structPtrToModel(structPtr.Interface(), false, nil)
+		structPtrInter := structPtr.Interface()
+		if v, ok := structPtrInter.(Validator); ok {
+			err = v.Validate(q)
+			if err != nil {
+				return err
+			}
+		}
+		model := structPtrToModel(structPtrInter, false, nil)
 		if model.pk == nil {
 			panic("no primary key field")
 		}

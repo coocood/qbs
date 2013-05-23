@@ -1,12 +1,12 @@
 package qbs
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
-	"strconv"
-	"bytes"
 )
 
 type postgres struct {
@@ -24,7 +24,7 @@ func (d postgres) quote(s string) string {
 	buf.WriteByte('"')
 	segs := strings.Split(s, ".")
 	buf.WriteString(segs[0])
-	for i:=1; i<len(segs); i++ {
+	for i := 1; i < len(segs); i++ {
 		buf.WriteString(`"."`)
 		buf.WriteString(segs[i])
 	}
@@ -90,13 +90,13 @@ func (d postgres) indexExists(mg *Migration, tableName, indexName string) bool {
 func (d postgres) substituteMarkers(query string) string {
 	position := 1
 	buf := new(bytes.Buffer)
-	for i:=0; i < len(query); i++ {
+	for i := 0; i < len(query); i++ {
 		c := query[i]
 		if c == '?' {
 			buf.WriteByte('$')
 			buf.WriteString(strconv.Itoa(position))
 			position++
-		}else{
+		} else {
 			buf.WriteByte(c)
 		}
 	}

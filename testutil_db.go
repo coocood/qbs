@@ -139,7 +139,7 @@ func doTestSaveAgain(t *testing.T, mg *Migration, q *Qbs) {
 	assert.Nil(err)
 	if _, ok := q.Dialect.(*mysql); ok {
 		assert.Equal(0, affected)
-	}else{
+	} else {
 		assert.Equal(1, affected)
 	}
 }
@@ -214,12 +214,12 @@ func doTestFind(t *testing.T) {
 		Bytes: []byte("bytes!"),
 		Time:  now,
 	}
-	WithMigration(func(mg *Migration)error{
+	WithMigration(func(mg *Migration) error {
 		mg.dropTableIfExists(modelData)
 		mg.CreateTableIfNotExists(modelData)
 		return nil
 	})
-	WithQbs(func(q *Qbs)error{
+	WithQbs(func(q *Qbs) error {
 		out := new(types)
 		condition := NewCondition("str = ?", "string!").And("intgr = ?", -1)
 		err := q.Condition(condition).Find(out)
@@ -434,7 +434,7 @@ func doTestQueryMap(t *testing.T, mg *Migration, q *Qbs) {
 	if _, sql3 := q.Dialect.(*sqlite3); !sql3 {
 		_, ok := result["created"].(time.Time)
 		assert.True(ok)
-	}else{
+	} else {
 		_, ok := result["created"].(string)
 		assert.True(ok)
 	}
@@ -444,15 +444,15 @@ func doTestQueryMap(t *testing.T, mg *Migration, q *Qbs) {
 
 func doTestBulkInsert(t *testing.T) {
 	assert := assrt.NewAssert(t)
-	WithMigration(func(mg *Migration)error{
+	WithMigration(func(mg *Migration) error {
 		b := new(basic)
 		mg.dropTableIfExists(b)
 		mg.CreateTableIfNotExists(b)
 		return nil
 	})
-	WithQbs(func(q *Qbs)error{
+	WithQbs(func(q *Qbs) error {
 		var bulk []*basic
-		for i:=0; i < 10; i++{
+		for i := 0; i < 10; i++ {
 			b := new(basic)
 			b.Name = "basic"
 			b.State = int64(i)
@@ -460,7 +460,7 @@ func doTestBulkInsert(t *testing.T) {
 		}
 		err := q.BulkInsert(bulk)
 		assert.Nil(err)
-		for i:=0; i<10; i++{
+		for i := 0; i < 10; i++ {
 			assert.Equal(i+1, bulk[i].Id)
 		}
 		return nil
