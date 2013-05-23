@@ -282,9 +282,6 @@ func (q *Qbs) doQueryRow(out interface{}, query string, args ...interface{}) err
 	stmt, err := q.Prepare(query)
 	q.log(query, args...)
 	if err != nil {
-		if stmt != nil {
-			stmt.Close()
-		}
 		return q.updateTxError(err)
 	}
 	rows, err := stmt.Query(args...)
@@ -314,9 +311,6 @@ func (q *Qbs) doQueryRows(out interface{}, query string, args ...interface{}) er
 	q.log(query, args...)
 	stmt, err := q.Prepare(query)
 	if err != nil {
-		if stmt != nil {
-			stmt.Close()
-		}
 		return q.updateTxError(err)
 	}
 
@@ -495,6 +489,47 @@ func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 	return affected, err
 }
 
+func (q *Qbs) BulkInsert(sliceOfStructPtr interface{}) error {
+	defer q.Reset()
+	var err error
+	if q.Tx == nil {
+		q.Begin()
+		defer func() {
+			if err != nil {
+				q.Rollback()
+			} else {
+				q.Commit()
+			}
+		}()
+	}
+	sliceValue := reflect.ValueOf(sliceOfStructPtr)
+	for i := 0; i < sliceValue.Len(); i++ {
+		structPtr := sliceValue.Index(i)
+		structPtrInter := structPtr.Interface()
+		if v, ok := structPtrInter.(Validator); ok {
+			err = v.Validate(q)
+			if err != nil {
+				return err
+			}
+		}
+		model := structPtrToModel(structPtrInter, false, nil)
+		if model.pk == nil {
+			panic("no primary key field")
+		}
+		q.criteria.model = model
+		var id int64
+		id, err = q.Dialect.insert(q)
+		if err != nil {
+			return err
+		}
+		if _, ok := model.pk.value.(int64); ok && id != 0 {
+			idField := structPtr.Elem().FieldByName(model.pk.camelName)
+			idField.SetInt(id)
+		}
+	}
+	return nil
+}
+
 // If the struct type implements Validator interface, values will be validated before update.
 // In order to avoid inadvertently update the struct field to zero value, it is better to define a
 // temporary struct in function, only define the fields that should be updated.
@@ -604,9 +639,6 @@ func (q *Qbs) doQueryMap(query string, once bool, args ...interface{}) ([]map[st
 	query = q.Dialect.substituteMarkers(query)
 	stmt, err := q.Prepare(query)
 	if err != nil {
-		if stmt != nil {
-			stmt.Close()
-		}
 		return nil, q.updateTxError(err)
 	}
 	rows, err := stmt.Query(args...)

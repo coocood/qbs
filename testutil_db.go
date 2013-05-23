@@ -442,6 +442,31 @@ func doTestQueryMap(t *testing.T, mg *Migration, q *Qbs) {
 	assert.Equal(3, len(results))
 }
 
+func doTestBulkInsert(t *testing.T) {
+	assert := assrt.NewAssert(t)
+	WithMigration(func(mg *Migration) error {
+		b := new(basic)
+		mg.dropTableIfExists(b)
+		mg.CreateTableIfNotExists(b)
+		return nil
+	})
+	WithQbs(func(q *Qbs) error {
+		var bulk []*basic
+		for i := 0; i < 10; i++ {
+			b := new(basic)
+			b.Name = "basic"
+			b.State = int64(i)
+			bulk = append(bulk, b)
+		}
+		err := q.BulkInsert(bulk)
+		assert.Nil(err)
+		for i := 0; i < 10; i++ {
+			assert.Equal(i+1, bulk[i].Id)
+		}
+		return nil
+	})
+}
+
 func closeMigrationAndQbs(mg *Migration, q *Qbs) {
 	mg.Close()
 	q.Close()

@@ -320,22 +320,34 @@ func parseTags(s string) map[string]string {
 }
 
 func toSnake(s string) string {
-	buf := bytes.NewBufferString("")
-	for i, v := range s {
-		if i > 0 && v >= 'A' && v <= 'Z' {
-			buf.WriteRune('_')
+	buf := new(bytes.Buffer)
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c >= 'A' && c <= 'Z' {
+			if i > 0 {
+				buf.WriteByte('_')
+			}
+			buf.WriteByte(c + 32)
+		} else {
+			buf.WriteByte(c)
 		}
-		buf.WriteRune(v)
 	}
-	return strings.ToLower(buf.String())
+	return buf.String()
 }
 
 func snakeToUpperCamel(s string) string {
-	buf := bytes.NewBufferString("")
-	for _, v := range strings.Split(s, "_") {
-		if len(v) > 0 {
-			buf.WriteString(strings.ToUpper(v[:1]))
-			buf.WriteString(v[1:])
+	buf := new(bytes.Buffer)
+	first := true
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c >= 'a' && c <= 'z' && first {
+			buf.WriteByte(c - 32)
+			first = false
+		} else if c == '_' {
+			first = true
+			continue
+		} else {
+			buf.WriteByte(c)
 		}
 	}
 	return buf.String()

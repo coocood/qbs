@@ -115,6 +115,11 @@ func TestPgQueryMap(t *testing.T) {
 	doTestQueryMap(t, mg, q)
 }
 
+func TestPgBulkInsert(t *testing.T) {
+	registerPgTest()
+	doTestBulkInsert(t)
+}
+
 func TestPgAddColumnSQL(t *testing.T) {
 	doTestAddColumSQL(t, pgSyntax)
 }
@@ -152,5 +157,6 @@ func TestPgDropTableSQL(t *testing.T) {
 }
 
 func BenchmarkPgFind(b *testing.B) {
+	registerPgTest()
 	doBenchmarkFind(b)
 }

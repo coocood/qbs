@@ -1,6 +1,10 @@
 package qbs
 
-import "testing"
+import (
+	"fmt"
+	"runtime"
+	"testing"
+)
 
 func doBenchmarkFind(b *testing.B) {
 	b.StopTimer()
@@ -21,5 +25,9 @@ func doBenchmarkFind(b *testing.B) {
 		q.Find(ba)
 		q.Close()
 	}
-	ChangePoolSize(10)
+	b.StopTimer()
+	runtime.GC()
+	stats := new(runtime.MemStats)
+	runtime.ReadMemStats(stats)
+	fmt.Printf("alloc:%d, total:%d\n", stats.Alloc, stats.TotalAlloc)
 }

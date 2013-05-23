@@ -7,7 +7,8 @@ Qbs stands for Query By Struct. A Go ORM. [中文版 README](https://github.com/
 
 * 2013.03.14: index name has changed to `{table name}_{column name}`.
     - For existing application with existing database, update to this change may lead to creating redundant index, you may need to drop duplicated index manually.
-* 2013.03.14: make all internal structures unexported
+* 2013.03.14: make all internal structures unexported.
+* 2013.05.22: fixed memory leak issue.
 
 ##Features
 
@@ -26,19 +27,20 @@ Qbs stands for Query By Struct. A Go ORM. [中文版 README](https://github.com/
 
 ##Install
 
+Go get to get the most recent source code.
+
     go get github.com/coocood/qbs
+
+New version may break backwards compatibility, so for production project, it's better to 
+download the tagged version. The most recent release is [v0.1](https://github.com/coocood/qbs/tags).
+
+tags with same minor version would be backward compatible, e.g `v0.1` and `v0.1.1`.
+
+tags with different minor version would break compatibility, e.g `v0.1.1` and `v0.2`.
 
 ## API Documentation
 
 See [Gowalker](http://gowalker.org/github.com/coocood/qbs) for complete documentation.
-
-##Warning
-
-* New version may break backwards compatibility.
-* Once you installed it for the first time by "go get", do not "go get" again for your existing application.
-* You should copy local source code when you need to compile your application on another mechine.
-* Or you can simply fork this repo, so you won't get any suprise.
-* When new version break backwards compatiblity, a branch with the number of the date will be created to keep the legacy code.
 
 ##Get Started
 

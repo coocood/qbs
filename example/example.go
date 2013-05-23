@@ -1,12 +1,13 @@
+
 package example
 
 import (
-	"encoding/json"
-	"fmt"
-	_ "github.com/coocood/mysql"
 	"github.com/coocood/qbs"
-	"net/http"
+	_ "github.com/coocood/mysql"
 	"time"
+	"net/http"
+	"fmt"
+	"encoding/json"
 )
 
 type User struct {
@@ -14,24 +15,24 @@ type User struct {
 	Name string `qbs:"size:50,index"`
 }
 
-func (*User) Indexes(indexes *qbs.Indexes) {
+func (*User) Indexes(indexes *qbs.Indexes){
 	//indexes.Add("column_a", "column_b") or indexes.AddUnique("column_a", "column_b")
 }
 
 type Post struct {
-	Id       int64
+	Id int64
 	AuthorId int64
-	Author   *User
-	Content  string
-	Created  time.Time
-	Updated  time.Time
+	Author *User
+	Content string
+	Created time.Time
+	Updated time.Time
 }
 
-func RegisterDb() {
-	qbs.Register("mysql", "qbs_test@/qbs_test?charset=utf8&parseTime=true&loc=Local", "qbs_test", qbs.NewMysql())
+func RegisterDb(){
+	qbs.Register("mysql","qbs_test@/qbs_test?charset=utf8&parseTime=true&loc=Local", "qbs_test", qbs.NewMysql())
 }
 
-func GetUser(w http.ResponseWriter, r *http.Request) {
+func GetUser(w http.ResponseWriter, r *http.Request){
 	q, err := qbs.GetQbs()
 	if err != nil {
 		fmt.Println(err)
@@ -44,7 +45,8 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-func CreateUserTable() error {
+
+func CreateUserTable() error{
 	migration, err := qbs.GetMigration()
 	if err != nil {
 		return err
@@ -53,11 +55,12 @@ func CreateUserTable() error {
 	return migration.CreateTableIfNotExists(new(User))
 }
 
-func CreateUser(q *qbs.Qbs) (*User, error) {
+
+func CreateUser(q *qbs.Qbs) (*User,error){
 	user := new(User)
 	user.Name = "Green"
 	_, err := q.Save(user)
-	return user, err
+	return user,err
 }
 
 func FindUserById(q *qbs.Qbs, id int64) (*User, error) {
@@ -88,7 +91,7 @@ func FindUsers(q *qbs.Qbs) ([]*User, error) {
 	return users, err
 }
 
-func UpdateOneUser(q *qbs.Qbs, id int64, name string) (affected int64, err error) {
+func UpdateOneUser(q *qbs.Qbs, id int64, name string) (affected int64, err error){
 	user, err := FindUserById(q, id)
 	if err != nil {
 		return 0, err
@@ -97,7 +100,8 @@ func UpdateOneUser(q *qbs.Qbs, id int64, name string) (affected int64, err error
 	return q.Save(user)
 }
 
-func UpdateMultipleUsers(q *qbs.Qbs) (affected int64, err error) {
+
+func UpdateMultipleUsers(q *qbs.Qbs)(affected int64, err error) {
 	type User struct {
 		Name string
 	}
@@ -106,7 +110,7 @@ func UpdateMultipleUsers(q *qbs.Qbs) (affected int64, err error) {
 	return q.WhereEqual("name", "Green").Update(user)
 }
 
-func DeleteUser(q *qbs.Qbs, id int64) (affected int64, err error) {
+func DeleteUser(q *qbs.Qbs, id int64)(affected int64, err error) {
 	user := new(User)
 	user.Id = id
 	return q.Delete(user)
@@ -114,7 +118,7 @@ func DeleteUser(q *qbs.Qbs, id int64) (affected int64, err error) {
 
 func FindPostsOmitContentAndCreated(q *qbs.Qbs) ([]*Post, error) {
 	var posts []*Post
-	err := q.OmitFields("Content", "Created").Find(&posts)
+	err := q.OmitFields("Content","Created").Find(&posts)
 	return posts, err
 }
 
