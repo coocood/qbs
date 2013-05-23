@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"strconv"
+	"bytes"
 )
 
 type postgres struct {
@@ -18,13 +20,16 @@ func NewPostgres() Dialect {
 }
 
 func (d postgres) quote(s string) string {
-	sep := "."
-	a := []string{}
-	c := strings.Split(s, sep)
-	for _, v := range c {
-		a = append(a, fmt.Sprintf(`"%s"`, v))
+	buf := new(bytes.Buffer)
+	buf.WriteByte('"')
+	segs := strings.Split(s, ".")
+	buf.WriteString(segs[0])
+	for i:=1; i<len(segs); i++ {
+		buf.WriteString(`"."`)
+		buf.WriteString(segs[i])
 	}
-	return strings.Join(a, sep)
+	buf.WriteByte('"')
+	return buf.String()
 }
 
 func (d postgres) sqlType(f interface{}, size int) string {
@@ -84,16 +89,18 @@ func (d postgres) indexExists(mg *Migration, tableName, indexName string) bool {
 
 func (d postgres) substituteMarkers(query string) string {
 	position := 1
-	chunks := make([]string, 0, len(query)*2)
-	for _, v := range query {
-		if v == '?' {
-			chunks = append(chunks, fmt.Sprintf("$%d", position))
+	buf := new(bytes.Buffer)
+	for i:=0; i < len(query); i++ {
+		c := query[i]
+		if c == '?' {
+			buf.WriteByte('$')
+			buf.WriteString(strconv.Itoa(position))
 			position++
-		} else {
-			chunks = append(chunks, string(v))
+		}else{
+			buf.WriteByte(c)
 		}
 	}
-	return strings.Join(chunks, "")
+	return buf.String()
 }
 
 func (d postgres) columnsInTable(mg *Migration, table interface{}) map[string]bool {

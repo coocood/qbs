@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 	"time"
+	"bytes"
 )
 
 type base struct {
@@ -16,13 +17,16 @@ func (d base) substituteMarkers(query string) string {
 }
 
 func (d base) quote(s string) string {
-	sep := "."
-	a := []string{}
-	c := strings.Split(s, sep)
-	for _, v := range c {
-		a = append(a, fmt.Sprintf("`%s`", v))
+	buf := new(bytes.Buffer)
+	buf.WriteByte('`')
+	segs := strings.Split(s, ".")
+	buf.WriteString(segs[0])
+	for i:=1; i<len(segs); i++ {
+		buf.WriteString("`.`")
+		buf.WriteString(segs[i])
 	}
-	return strings.Join(a, sep)
+	buf.WriteByte('`')
+	return buf.String()
 }
 
 func (d base) parseBool(value reflect.Value) bool {
