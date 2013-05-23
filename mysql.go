@@ -13,7 +13,7 @@ type mysql struct {
 
 func NewMysql() Dialect {
 	d := new(mysql)
-	d.base.Dialect = d
+	d.base.dialect = d
 	return d
 }
 
@@ -50,8 +50,8 @@ func (d mysql) sqlType(f interface{}, size int) string {
 func (d mysql) indexExists(mg *Migration, tableName, indexName string) bool {
 	var row *sql.Row
 	var name string
-	row = mg.Db.QueryRow("SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS "+
-		"WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?", mg.DbName, tableName, indexName)
+	row = mg.db.QueryRow("SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS "+
+		"WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?", mg.dbName, tableName, indexName)
 	row.Scan(&name)
 	return name != ""
 }

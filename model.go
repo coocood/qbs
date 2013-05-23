@@ -139,7 +139,6 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 		table:   tableName(f),
 		fields:  []*modelField{},
 		indexes: Indexes{},
-		refs:    make(map[string]*reference),
 	}
 	structType := reflect.TypeOf(f).Elem()
 	structValue := reflect.ValueOf(f).Elem()
@@ -219,6 +218,9 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 						ref.foreignKey = fk
 						ref.model = refModel
 						ref.refKey = fd.name
+						if model.refs == nil {
+							model.refs = make(map[string]*reference)
+						}
 						model.refs[refName] = ref
 					} else if !implicitJoin {
 						panic("Referenced field is not pointer")

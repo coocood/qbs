@@ -35,7 +35,7 @@ func doTestTransaction(t *testing.T, mg *Migration, q *Qbs) {
 	mg.dropTableIfExists(&table)
 	mg.CreateTableIfNotExists(&table)
 	q.Begin()
-	assert.NotNil(q.Tx)
+	assert.NotNil(q.tx)
 	_, err := q.Save(&table)
 	assert.Nil(err)
 	err = q.Rollback()
@@ -273,14 +273,14 @@ func doTestCreateTable(t *testing.T, mg *Migration) {
 		table := &AddColumn{}
 		mg.dropTableIfExists(table)
 		mg.CreateTableIfNotExists(table)
-		columns := mg.Dialect.columnsInTable(mg, table)
+		columns := mg.dialect.columnsInTable(mg, table)
 		assert.OneLen(columns)
 		assert.True(columns["prim"])
 	}
 	table := &addColumn{}
 	mg.CreateTableIfNotExists(table)
-	assert.True(mg.Dialect.indexExists(mg, "add_column", "add_column_first_last"))
-	columns := mg.Dialect.columnsInTable(mg, table)
+	assert.True(mg.dialect.indexExists(mg, "add_column", "add_column_first_last"))
+	columns := mg.dialect.columnsInTable(mg, table)
 	assert.Equal(4, len(columns))
 }
 

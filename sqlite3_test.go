@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-//	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const (
@@ -21,7 +21,7 @@ var sqlite3Syntax = dialectSyntax{
 	"UPDATE `sql_gen_model` SET `first` = ?, `last` = ?, `amount` = ? WHERE `prim` = ?",
 	"DELETE FROM `sql_gen_model` WHERE `prim` = ?",
 	"SELECT `post`.`id`, `post`.`author_id`, `post`.`content`, `author`.`id` AS author___id, `author`.`name` AS author___name FROM `post` LEFT JOIN `user` AS `author` ON `post`.`author_id` = `author`.`id`",
-	"SELECT `name`, `grade`, `score` FROM `student` WHERE (grade IN (?, ?, ?)) AND ((score <= ?) OR (score >= ?)) ORDER BY `name` , `grade` DESC LIMIT ? OFFSET ?",
+	"SELECT `name`, `grade`, `score` FROM `student` WHERE (grade IN (?, ?, ?)) AND ((score <= ?) OR (score >= ?)) ORDER BY `name`, `grade` DESC LIMIT ? OFFSET ?",
 	"DROP TABLE IF EXISTS `drop_table`",
 	"ALTER TABLE `a` ADD COLUMN `c` text",
 	"CREATE UNIQUE INDEX `iname` ON `itable` (`a`, `b`, `c`)",

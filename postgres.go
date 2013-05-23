@@ -15,14 +15,14 @@ type postgres struct {
 
 func NewPostgres() Dialect {
 	d := new(postgres)
-	d.base.Dialect = d
+	d.base.dialect = d
 	return d
 }
 
 func (d postgres) quote(s string) string {
+	segs := strings.Split(s, ".")
 	buf := new(bytes.Buffer)
 	buf.WriteByte('"')
-	segs := strings.Split(s, ".")
 	buf.WriteString(segs[0])
 	for i := 1; i < len(segs); i++ {
 		buf.WriteString(`"."`)
@@ -56,7 +56,7 @@ func (d postgres) sqlType(f interface{}, size int) string {
 }
 
 func (d postgres) insert(q *Qbs) (int64, error) {
-	sql, args := d.Dialect.insertSql(q.criteria)
+	sql, args := d.dialect.insertSql(q.criteria)
 	row := q.QueryRow(sql, args...)
 	value := q.criteria.model.pk.value
 	var err error
@@ -72,7 +72,7 @@ func (d postgres) insert(q *Qbs) (int64, error) {
 
 func (d postgres) insertSql(criteria *criteria) (string, []interface{}) {
 	sql, values := d.base.insertSql(criteria)
-	sql += " RETURNING " + d.Dialect.quote(criteria.model.pk.name)
+	sql += " RETURNING " + d.dialect.quote(criteria.model.pk.name)
 	return sql, values
 }
 
@@ -82,7 +82,7 @@ func (d postgres) indexExists(mg *Migration, tableName, indexName string) bool {
 	query := "SELECT indexname FROM pg_indexes "
 	query += "WHERE tablename = ? AND indexname = ?"
 	query = d.substituteMarkers(query)
-	row = mg.Db.QueryRow(query, tableName, indexName)
+	row = mg.db.QueryRow(query, tableName, indexName)
 	row.Scan(&name)
 	return name != ""
 }
@@ -107,8 +107,8 @@ func (d postgres) columnsInTable(mg *Migration, table interface{}) map[string]bo
 	tn := tableName(table)
 	columns := make(map[string]bool)
 	query := "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ?"
-	query = mg.Dialect.substituteMarkers(query)
-	rows, err := mg.Db.Query(query, tn)
+	query = mg.dialect.substituteMarkers(query)
+	rows, err := mg.db.Query(query, tn)
 	defer rows.Close()
 	if err != nil {
 		panic(err)

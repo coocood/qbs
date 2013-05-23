@@ -13,7 +13,7 @@ type oracle struct {
 
 func NewOracle() Dialect {
 	d := &oracle{}
-	d.base.Dialect = d
+	d.base.dialect = d
 	return d
 }
 
@@ -55,7 +55,7 @@ func (d oracle) sqlType(f interface{}, size int) string {
 }
 
 func (d oracle) insert(q *Qbs) (int64, error) {
-	sql, args := d.Dialect.insertSql(q.criteria)
+	sql, args := d.dialect.insertSql(q.criteria)
 	row := q.QueryRow(sql, args...)
 	value := q.criteria.model.pk.value
 	var err error
@@ -71,7 +71,7 @@ func (d oracle) insert(q *Qbs) (int64, error) {
 
 func (d oracle) insertSql(criteria *criteria) (string, []interface{}) {
 	sql, values := d.base.insertSql(criteria)
-	sql += " RETURNING " + d.Dialect.quote(criteria.model.pk.name)
+	sql += " RETURNING " + d.dialect.quote(criteria.model.pk.name)
 	return sql, values
 }
 
@@ -81,7 +81,7 @@ func (d oracle) indexExists(mg *Migration, tableName, indexName string) bool {
 	query := "SELECT INDEX_NAME FROM USER_INDEXES "
 	query += "WHERE TABLE_NAME = ? AND INDEX_NAME = ?"
 	query = d.substituteMarkers(query)
-	row = mg.Db.QueryRow(query, tableName, indexName)
+	row = mg.db.QueryRow(query, tableName, indexName)
 	row.Scan(&name)
 	return name != ""
 }
@@ -104,8 +104,8 @@ func (d oracle) columnsInTable(mg *Migration, table interface{}) map[string]bool
 	tn := tableName(table)
 	columns := make(map[string]bool)
 	query := "SELECT COLUMN_NAME FROM USER_TAB_COLUMNS WHERE TABLE_NAME = ?"
-	query = mg.Dialect.substituteMarkers(query)
-	rows, err := mg.Db.Query(query, tn)
+	query = mg.dialect.substituteMarkers(query)
+	rows, err := mg.db.Query(query, tn)
 	defer rows.Close()
 	if err != nil {
 		panic(err)
@@ -153,6 +153,6 @@ func (d oracle) catchMigrationError(err error) bool {
 
 func (d oracle) dropTableSql(table string) string {
 	a := []string{"DROP TABLE"}
-	a = append(a, d.Dialect.quote(table))
+	a = append(a, d.dialect.quote(table))
 	return strings.Join(a, " ")
 }

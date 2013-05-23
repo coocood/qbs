@@ -9,7 +9,7 @@ import (
 )
 
 type base struct {
-	Dialect Dialect
+	dialect Dialect
 }
 
 func (d base) substituteMarkers(query string) string {
@@ -17,9 +17,9 @@ func (d base) substituteMarkers(query string) string {
 }
 
 func (d base) quote(s string) string {
+	segs := strings.Split(s, ".")
 	buf := new(bytes.Buffer)
 	buf.WriteByte('`')
-	segs := strings.Split(s, ".")
 	buf.WriteString(segs[0])
 	for i := 1; i < len(segs); i++ {
 		buf.WriteString("`.`")
@@ -36,7 +36,7 @@ func (d base) parseBool(value reflect.Value) bool {
 func (d base) setModelValue(driverValue, fieldValue reflect.Value) error {
 	switch fieldValue.Type().Kind() {
 	case reflect.Bool:
-		fieldValue.SetBool(d.Dialect.parseBool(driverValue.Elem()))
+		fieldValue.SetBool(d.dialect.parseBool(driverValue.Elem()))
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		fieldValue.SetInt(driverValue.Elem().Int())
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -64,67 +64,70 @@ func (d base) setModelValue(driverValue, fieldValue reflect.Value) error {
 }
 
 func (d base) querySql(criteria *criteria) (string, []interface{}) {
-	query := make([]string, 0, 20)
+	query := new(bytes.Buffer)
 	args := make([]interface{}, 0, 20)
-
-	table := d.Dialect.quote(criteria.model.table)
+	table := d.dialect.quote(criteria.model.table)
 	columns := []string{}
 	tables := []string{table}
 	hasJoin := len(criteria.model.refs) > 0
 	for _, v := range criteria.model.fields {
-		colName := d.Dialect.quote(v.name)
+		colName := d.dialect.quote(v.name)
 		if hasJoin {
-			colName = d.Dialect.quote(criteria.model.table) + "." + colName
+			colName = d.dialect.quote(criteria.model.table) + "." + colName
 		}
 		columns = append(columns, colName)
 	}
 	for k, v := range criteria.model.refs {
 		tableAlias := toSnake(k)
-		quotedTableAlias := d.Dialect.quote(tableAlias)
-		quotedParentTable := d.Dialect.quote(v.model.table)
-		leftKey := table + "." + d.Dialect.quote(v.refKey)
-		parentPrimary := quotedTableAlias + "." + d.Dialect.quote(v.model.pk.name)
+		quotedTableAlias := d.dialect.quote(tableAlias)
+		quotedParentTable := d.dialect.quote(v.model.table)
+		leftKey := table + "." + d.dialect.quote(v.refKey)
+		parentPrimary := quotedTableAlias + "." + d.dialect.quote(v.model.pk.name)
 		joinClause := fmt.Sprintf("LEFT JOIN %v AS %v ON %v = %v", quotedParentTable, quotedTableAlias, leftKey, parentPrimary)
 		tables = append(tables, joinClause)
 		for _, f := range v.model.fields {
 			alias := tableAlias + "___" + f.name
-			columns = append(columns, d.Dialect.quote(tableAlias+"."+f.name)+" AS "+alias)
+			columns = append(columns, d.dialect.quote(tableAlias+"."+f.name)+" AS "+alias)
 		}
 	}
-	query = append(query, "SELECT", strings.Join(columns, ", "), "FROM", strings.Join(tables, " "))
+	query.WriteString("SELECT ")
+	query.WriteString(strings.Join(columns, ", "))
+	query.WriteString(" FROM ")
+	query.WriteString(strings.Join(tables, " "))
 
 	if criteria.condition != nil {
 		cexpr, cargs := criteria.condition.Merge()
-		query = append(query, "WHERE", cexpr)
+		query.WriteString(" WHERE ")
+		query.WriteString(cexpr)
 		args = append(args, cargs...)
 	}
 	orderByLen := len(criteria.orderBys)
 	if orderByLen > 0 {
-		query = append(query, "ORDER BY")
+		query.WriteString(" ORDER BY ")
 		for i, order := range criteria.orderBys {
-			query = append(query, order.path)
+			query.WriteString(order.path)
 			if order.desc {
-				query = append(query, "DESC")
+				query.WriteString(" DESC")
 			}
 			if i < orderByLen-1 {
-				query = append(query, ",")
+				query.WriteString(", ")
 			}
 		}
 	}
 
 	if x := criteria.limit; x > 0 {
-		query = append(query, "LIMIT ?")
+		query.WriteString(" LIMIT ?")
 		args = append(args, criteria.limit)
 	}
 	if x := criteria.offset; x > 0 {
-		query = append(query, "OFFSET ?")
+		query.WriteString(" OFFSET ?")
 		args = append(args, criteria.offset)
 	}
-	return d.Dialect.substituteMarkers(strings.Join(query, " ")), args
+	return d.dialect.substituteMarkers(query.String()), args
 }
 
 func (d base) insert(q *Qbs) (int64, error) {
-	sql, args := d.Dialect.insertSql(q.criteria)
+	sql, args := d.dialect.insertSql(q.criteria)
 	result, err := q.Exec(sql, args...)
 	if err != nil {
 		return -1, err
@@ -141,12 +144,12 @@ func (d base) insertSql(criteria *criteria) (string, []interface{}) {
 	quotedColumns := make([]string, 0, len(columns))
 	markers := make([]string, 0, len(columns))
 	for _, c := range columns {
-		quotedColumns = append(quotedColumns, d.Dialect.quote(c))
+		quotedColumns = append(quotedColumns, d.dialect.quote(c))
 		markers = append(markers, "?")
 	}
 	sql := fmt.Sprintf(
 		"INSERT INTO %v (%v) VALUES (%v)",
-		d.Dialect.quote(criteria.model.table),
+		d.dialect.quote(criteria.model.table),
 		strings.Join(quotedColumns, ", "),
 		strings.Join(markers, ", "),
 	)
@@ -154,7 +157,7 @@ func (d base) insertSql(criteria *criteria) (string, []interface{}) {
 }
 
 func (d base) update(q *Qbs) (int64, error) {
-	sql, args := d.Dialect.updateSql(q.criteria)
+	sql, args := d.dialect.updateSql(q.criteria)
 	result, err := q.Exec(sql, args...)
 	if err != nil {
 		return 0, err
@@ -167,12 +170,12 @@ func (d base) updateSql(criteria *criteria) (string, []interface{}) {
 	columns, values := criteria.model.columnsAndValues(true)
 	pairs := make([]string, 0, len(columns))
 	for _, column := range columns {
-		pairs = append(pairs, fmt.Sprintf("%v = ?", d.Dialect.quote(column)))
+		pairs = append(pairs, fmt.Sprintf("%v = ?", d.dialect.quote(column)))
 	}
 	conditionSql, args := criteria.condition.Merge()
 	sql := fmt.Sprintf(
 		"UPDATE %v SET %v WHERE %v",
-		d.Dialect.quote(criteria.model.table),
+		d.dialect.quote(criteria.model.table),
 		strings.Join(pairs, ", "),
 		conditionSql,
 	)
@@ -181,7 +184,7 @@ func (d base) updateSql(criteria *criteria) (string, []interface{}) {
 }
 
 func (d base) delete(q *Qbs) (int64, error) {
-	sql, args := d.Dialect.deleteSql(q.criteria)
+	sql, args := d.dialect.deleteSql(q.criteria)
 	result, err := q.Exec(sql, args...)
 	if err != nil {
 		return 0, err
@@ -191,7 +194,7 @@ func (d base) delete(q *Qbs) (int64, error) {
 
 func (d base) deleteSql(criteria *criteria) (string, []interface{}) {
 	conditionSql, args := criteria.condition.Merge()
-	sql := "DELETE FROM " + d.Dialect.quote(criteria.model.table) + " WHERE " + conditionSql
+	sql := "DELETE FROM " + d.dialect.quote(criteria.model.table) + " WHERE " + conditionSql
 	return sql, args
 }
 
@@ -200,16 +203,16 @@ func (d base) createTableSql(model *model, ifNotExists bool) string {
 	if ifNotExists {
 		a = append(a, "IF NOT EXISTS ")
 	}
-	a = append(a, d.Dialect.quote(model.table), " ( ")
+	a = append(a, d.dialect.quote(model.table), " ( ")
 	for i, field := range model.fields {
 		b := []string{
-			d.Dialect.quote(field.name),
+			d.dialect.quote(field.name),
 		}
 		if field.pk {
 			_, ok := field.value.(string)
-			b = append(b, d.Dialect.primaryKeySql(ok, field.size()))
+			b = append(b, d.dialect.primaryKeySql(ok, field.size()))
 		} else {
-			b = append(b, d.Dialect.sqlType(field.value, field.size()))
+			b = append(b, d.dialect.sqlType(field.value, field.size()))
 			if field.notNull() {
 				b = append(b, "NOT NULL")
 			}
@@ -224,8 +227,8 @@ func (d base) createTableSql(model *model, ifNotExists bool) string {
 	}
 	for _, v := range model.refs {
 		if v.foreignKey {
-			a = append(a, ", FOREIGN KEY (", d.Dialect.quote(v.refKey), ") REFERENCES ")
-			a = append(a, d.Dialect.quote(v.model.table), " (", d.Dialect.quote(v.model.pk.name), ") ON DELETE CASCADE")
+			a = append(a, ", FOREIGN KEY (", d.dialect.quote(v.refKey), ") REFERENCES ")
+			a = append(a, d.dialect.quote(v.model.table), " (", d.dialect.quote(v.model.pk.name), ") ON DELETE CASCADE")
 		}
 	}
 	a = append(a, " )")
@@ -234,16 +237,16 @@ func (d base) createTableSql(model *model, ifNotExists bool) string {
 
 func (d base) dropTableSql(table string) string {
 	a := []string{"DROP TABLE IF EXISTS"}
-	a = append(a, d.Dialect.quote(table))
+	a = append(a, d.dialect.quote(table))
 	return strings.Join(a, " ")
 }
 
 func (d base) addColumnSql(table, column string, typ interface{}, size int) string {
 	return fmt.Sprintf(
 		"ALTER TABLE %v ADD COLUMN %v %v",
-		d.Dialect.quote(table),
-		d.Dialect.quote(column),
-		d.Dialect.sqlType(typ, size),
+		d.dialect.quote(table),
+		d.dialect.quote(column),
+		d.dialect.sqlType(typ, size),
 	)
 }
 
@@ -254,12 +257,12 @@ func (d base) createIndexSql(name, table string, unique bool, columns ...string)
 	}
 	quotedColumns := make([]string, 0, len(columns))
 	for _, c := range columns {
-		quotedColumns = append(quotedColumns, d.Dialect.quote(c))
+		quotedColumns = append(quotedColumns, d.dialect.quote(c))
 	}
 	a = append(a, fmt.Sprintf(
 		"INDEX %v ON %v (%v)",
-		d.Dialect.quote(name),
-		d.Dialect.quote(table),
+		d.dialect.quote(name),
+		d.dialect.quote(table),
 		strings.Join(quotedColumns, ", "),
 	))
 	return strings.Join(a, " ")
@@ -269,8 +272,8 @@ func (d base) columnsInTable(mg *Migration, table interface{}) map[string]bool {
 	tn := tableName(table)
 	columns := make(map[string]bool)
 	query := "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?"
-	query = mg.Dialect.substituteMarkers(query)
-	rows, err := mg.Db.Query(query, mg.DbName, tn)
+	query = mg.dialect.substituteMarkers(query)
+	rows, err := mg.db.Query(query, mg.dbName, tn)
 	defer rows.Close()
 	if err != nil {
 		panic(err)

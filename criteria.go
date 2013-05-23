@@ -129,3 +129,12 @@ func (c *Condition) Merge() (expr string, args []interface{}) {
 	args = append(args, subArgs...)
 	return expr, args
 }
+
+//Used for in condition.
+func StringsToInterfaces(strs ...string) []interface{} {
+	ret := make([]interface{}, len(strs))
+	for i := 0; i < len(strs); i++ {
+		ret[i] = strs[i]
+	}
+	return ret
+}

@@ -8,32 +8,23 @@ import (
 	"time"
 )
 
-var connectionPool chan *sql.DB = make(chan *sql.DB, 10)
+var connectionPool chan *Qbs = make(chan *Qbs, 100)
 var driver, driverSource, dbName string
 var dial Dialect
 
 type Qbs struct {
-	Db           *sql.DB
+	db           *sql.DB
 	Dialect      Dialect
 	Log          bool
-	Tx           *sql.Tx
+	tx           *sql.Tx
+	txStmtMap    map[string]*sql.Stmt
 	criteria     *criteria
 	firstTxError error
+	stmtMap      map[string]*sql.Stmt
 }
 
 type Validator interface {
 	Validate(*Qbs) error
-}
-
-// Deprecated, call Register and GetQbs instead
-// New creates a new Qbs instance using the specified DB and dialect.
-func New(database *sql.DB, dialect Dialect) *Qbs {
-	q := &Qbs{
-		Db:      database,
-		Dialect: dialect,
-	}
-	q.Reset()
-	return q
 }
 
 //Register a database, should be call at the beginning of the application
@@ -68,36 +59,27 @@ func GetQbs() (q *Qbs, err error) {
 	if driver == "" || dial == nil {
 		panic("database driver has not been registered, should call Register first.")
 	}
-	db := GetFreeDB()
-	if db == nil {
-		db, err = sql.Open(driver, driverSource)
-		if err != nil {
-			return nil, err
-		}
+	select {
+	case q := <-connectionPool:
+		return q, nil
+	default:
+	}
+	db, err := sql.Open(driver, driverSource)
+	if err != nil {
+		return nil, err
 	}
 	q = new(Qbs)
-	q.Db = db
+	q.db = db
 	q.Dialect = dial
 	q.criteria = new(criteria)
+	q.stmtMap = make(map[string]*sql.Stmt)
+	q.txStmtMap = make(map[string]*sql.Stmt)
 	return q, nil
 }
 
-//Deprecated: call GetQbs instead.
-//Try to get a free *sql.DB from the connection pool.
-//This function do not block, if the pool is empty, it returns nil
-//Then you should open a new one.
-func GetFreeDB() *sql.DB {
-	select {
-	case db := <-connectionPool:
-		return db
-	default:
-	}
-	return nil
-}
-
-//The default connection pool size is 10.
+//The default connection pool size is 100.
 func ChangePoolSize(size int) {
-	connectionPool = make(chan *sql.DB, size)
+	connectionPool = make(chan *Qbs, size)
 }
 
 // Create a new criteria for subsequent query
@@ -110,12 +92,16 @@ func (q *Qbs) Reset() {
 // no matter it is in transaction or not.
 // It panics if it's already in a transaction.
 func (q *Qbs) Begin() error {
-	if q.Tx != nil {
+	if q.tx != nil {
 		panic("cannot start nested transaction")
 	}
-	tx, err := q.Db.Begin()
-	q.Tx = tx
+	tx, err := q.db.Begin()
+	q.tx = tx
 	return err
+}
+
+func (q *Qbs) InTransaction() bool {
+	return q.tx != nil
 }
 
 func (q *Qbs) updateTxError(e error) error {
@@ -132,16 +118,22 @@ func (q *Qbs) updateTxError(e error) error {
 // Commit commits a started transaction and will report the first error that
 // occurred inside the transaction.
 func (q *Qbs) Commit() error {
-	err := q.Tx.Commit()
+	err := q.tx.Commit()
 	q.updateTxError(err)
-	q.Tx = nil
+	q.tx = nil
+	for key, _ := range q.txStmtMap {
+		delete(q.txStmtMap, key)
+	}
 	return q.firstTxError
 }
 
 // Rollback rolls back a started transaction.
 func (q *Qbs) Rollback() error {
-	err := q.Tx.Rollback()
-	q.Tx = nil
+	err := q.tx.Rollback()
+	q.tx = nil
+	for key, _ := range q.txStmtMap {
+		delete(q.txStmtMap, key)
+	}
 	return q.updateTxError(err)
 }
 
@@ -154,6 +146,11 @@ func (q *Qbs) Where(expr string, args ...interface{}) *Qbs {
 //Snakecase column name
 func (q *Qbs) WhereEqual(column string, value interface{}) *Qbs {
 	q.criteria.condition = NewEqualCondition(column, value)
+	return q
+}
+
+func (q *Qbs) WhereIn(column string, values []interface{}) *Qbs {
+	q.criteria.condition = NewInCondition(column, values)
 	return q
 }
 
@@ -232,11 +229,10 @@ func (q *Qbs) FindAll(ptrOfSliceOfStructPtr interface{}) error {
 func (q *Qbs) doQueryRow(out interface{}, query string, args ...interface{}) error {
 	defer q.Reset()
 	rowValue := reflect.ValueOf(out)
-	stmt, err := q.Prepare(query)
+	stmt, err := q.prepare(query)
 	if err != nil {
 		return q.updateTxError(err)
 	}
-	defer stmt.Close()
 	rows, err := stmt.Query(args...)
 	if err != nil {
 		return q.updateTxError(err)
@@ -258,11 +254,10 @@ func (q *Qbs) doQueryRows(out interface{}, query string, args ...interface{}) er
 	sliceValue := reflect.Indirect(reflect.ValueOf(out))
 	sliceType := sliceValue.Type().Elem().Elem()
 	q.log(query, args...)
-	stmt, err := q.Prepare(query)
+	stmt, err := q.prepare(query)
 	if err != nil {
 		return q.updateTxError(err)
 	}
-	defer stmt.Close()
 	rows, err := stmt.Query(args...)
 	if err != nil {
 		return q.updateTxError(err)
@@ -327,11 +322,10 @@ func (q *Qbs) Exec(query string, args ...interface{}) (sql.Result, error) {
 	defer q.Reset()
 	query = q.Dialect.substituteMarkers(query)
 	q.log(query, args...)
-	stmt, err := q.Prepare(query)
+	stmt, err := q.prepare(query)
 	if err != nil {
 		return nil, q.updateTxError(err)
 	}
-	defer stmt.Close()
 	result, err := stmt.Exec(args...)
 	if err != nil {
 		return nil, q.updateTxError(err)
@@ -343,33 +337,52 @@ func (q *Qbs) Exec(query string, args ...interface{}) (sql.Result, error) {
 func (q *Qbs) QueryRow(query string, args ...interface{}) *sql.Row {
 	q.log(query, args...)
 	query = q.Dialect.substituteMarkers(query)
-	if q.Tx != nil {
-		return q.Tx.QueryRow(query, args...)
+	stmt, err := q.prepare(query)
+	if err != nil {
+		q.updateTxError(err)
+		return nil
 	}
-	return q.Db.QueryRow(query, args...)
+	return stmt.QueryRow(args...)
 }
 
 // Same as sql.Db.Query or sql.Tx.Query depends on if transaction has began
 func (q *Qbs) Query(query string, args ...interface{}) (rows *sql.Rows, err error) {
 	q.log(query, args...)
 	query = q.Dialect.substituteMarkers(query)
-	if q.Tx != nil {
-		rows, err = q.Tx.Query(query, args...)
-	} else {
-		rows, err = q.Db.Query(query, args...)
+	stmt, err := q.prepare(query)
+	if err != nil {
+		q.updateTxError(err)
+		return
 	}
-	q.updateTxError(err)
-	return
+	return stmt.Query(args...)
 }
 
 // Same as sql.Db.Prepare or sql.Tx.Prepare depends on if transaction has began
-func (q *Qbs) Prepare(query string) (stmt *sql.Stmt, err error) {
-	if q.Tx != nil {
-		stmt, err = q.Tx.Prepare(query + ";")
+func (q *Qbs) prepare(query string) (stmt *sql.Stmt, err error) {
+	var ok bool
+	if q.tx != nil {
+		stmt, ok = q.txStmtMap[query]
+		if ok {
+			return
+		}
+		stmt, err = q.tx.Prepare(query)
+		if err != nil {
+			q.updateTxError(err)
+			return
+		}
+		q.txStmtMap[query] = stmt
 	} else {
-		stmt, err = q.Db.Prepare(query + ";")
+		stmt, ok = q.stmtMap[query]
+		if ok {
+			return
+		}
+		stmt, err = q.db.Prepare(query + ";")
+		if err != nil {
+			q.updateTxError(err)
+			return
+		}
+		q.stmtMap[query] = stmt
 	}
-	q.updateTxError(err)
 	return
 }
 
@@ -433,7 +446,7 @@ func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 func (q *Qbs) BulkInsert(sliceOfStructPtr interface{}) error {
 	defer q.Reset()
 	var err error
-	if q.Tx == nil {
+	if q.tx == nil {
 		q.Begin()
 		defer func() {
 			if err != nil {
@@ -450,7 +463,7 @@ func (q *Qbs) BulkInsert(sliceOfStructPtr interface{}) error {
 		if v, ok := structPtrInter.(Validator); ok {
 			err = v.Validate(q)
 			if err != nil {
-				return err
+				return q.updateTxError(err)
 			}
 		}
 		model := structPtrToModel(structPtrInter, false, nil)
@@ -461,7 +474,7 @@ func (q *Qbs) BulkInsert(sliceOfStructPtr interface{}) error {
 		var id int64
 		id, err = q.Dialect.insert(q)
 		if err != nil {
-			return err
+			return q.updateTxError(err)
 		}
 		if _, ok := model.pk.value.(int64); ok && id != 0 {
 			idField := structPtr.Elem().FieldByName(model.pk.camelName)
@@ -522,20 +535,15 @@ func (q *Qbs) ContainsValue(table interface{}, column string, value interface{})
 // So it's better to call "defer q.Close()" right after qbs.New() to release resource.
 // If the connection pool is not full, the Db will be sent back into the pool, otherwise the Db will get closed.
 func (q *Qbs) Close() error {
-	if q.Tx != nil {
-		q.Tx.Rollback()
+	if q.tx != nil {
+		q.Rollback()
 	}
-	if q.Db != nil {
-		select {
-		case connectionPool <- q.Db:
-			return nil
-		default:
-		}
-		err := q.Db.Close()
-		q.Db = nil
-		return err
+	select {
+	case connectionPool <- q:
+		return nil
+	default:
 	}
-	return nil
+	return q.db.Close()
 }
 
 //Query the count of rows in a table the talbe parameter can be either a string or struct pointer.
@@ -578,11 +586,10 @@ func (q *Qbs) QueryMapSlice(query string, args ...interface{}) ([]map[string]int
 
 func (q *Qbs) doQueryMap(query string, once bool, args ...interface{}) ([]map[string]interface{}, error) {
 	query = q.Dialect.substituteMarkers(query)
-	stmt, err := q.Prepare(query)
+	stmt, err := q.prepare(query)
 	if err != nil {
 		return nil, q.updateTxError(err)
 	}
-	defer stmt.Close()
 	rows, err := stmt.Query(args...)
 	if err != nil {
 		return nil, q.updateTxError(err)

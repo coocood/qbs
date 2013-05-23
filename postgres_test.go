@@ -21,7 +21,7 @@ var pgSyntax = dialectSyntax{
 	`UPDATE "sql_gen_model" SET "first" = $1, "last" = $2, "amount" = $3 WHERE "prim" = $4`,
 	`DELETE FROM "sql_gen_model" WHERE "prim" = $1`,
 	`SELECT "post"."id", "post"."author_id", "post"."content", "author"."id" AS author___id, "author"."name" AS author___name FROM "post" LEFT JOIN "user" AS "author" ON "post"."author_id" = "author"."id"`,
-	`SELECT "name", "grade", "score" FROM "student" WHERE (grade IN ($1, $2, $3)) AND ((score <= $4) OR (score >= $5)) ORDER BY "name" , "grade" DESC LIMIT $6 OFFSET $7`,
+	`SELECT "name", "grade", "score" FROM "student" WHERE (grade IN ($1, $2, $3)) AND ((score <= $4) OR (score >= $5)) ORDER BY "name", "grade" DESC LIMIT $6 OFFSET $7`,
 	`DROP TABLE IF EXISTS "drop_table"`,
 	`ALTER TABLE "a" ADD COLUMN "c" varchar(100)`,
 	`CREATE UNIQUE INDEX "iname" ON "itable" ("a", "b", "c")`,
@@ -159,4 +159,9 @@ func TestPgDropTableSQL(t *testing.T) {
 func BenchmarkPgFind(b *testing.B) {
 	registerPgTest()
 	doBenchmarkFind(b)
+}
+
+func BenchmarkPgTransaction(b *testing.B) {
+	registerPgTest()
+	doBenchmarkTransaction(b)
 }
