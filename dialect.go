@@ -1,50 +1,50 @@
 package qbs
 
 import (
-    "reflect"
+	"reflect"
 )
 
 type Dialect interface {
 
-    //Substitute "?" marker if database use other symbol as marker
-    substituteMarkers(query string) string
+	//Substitute "?" marker if database use other symbol as marker
+	substituteMarkers(query string) string
 
-    // Quote will quote identifiers in a SQL statement.
-    quote(s string) string
+	// Quote will quote identifiers in a SQL statement.
+	quote(s string) string
 
-    sqlType(f interface{}, size int) string
+	sqlType(f interface{}, size int) string
 
-    parseBool(value reflect.Value) bool
+	parseBool(value reflect.Value) bool
 
-    setModelValue(value reflect.Value, field reflect.Value) error
+	setModelValue(value reflect.Value, field reflect.Value) error
 
-    querySql(criteria *criteria) (sql string, args []interface{})
+	querySql(criteria *criteria) (sql string, args []interface{})
 
-    insert(q *Qbs) (int64, error)
+	insert(q *Qbs) (int64, error)
 
-    insertSql(criteria *criteria) (sql string, args []interface{})
+	insertSql(criteria *criteria) (sql string, args []interface{})
 
-    update(q *Qbs) (int64, error)
+	update(q *Qbs) (int64, error)
 
-    updateSql(criteria *criteria) (string, []interface{})
+	updateSql(criteria *criteria) (string, []interface{})
 
-    delete(q *Qbs) (int64, error)
+	delete(q *Qbs) (int64, error)
 
-    deleteSql(criteria *criteria) (string, []interface{})
+	deleteSql(criteria *criteria) (string, []interface{})
 
-    createTableSql(model *model, ifNotExists bool) string
+	createTableSql(model *model, ifNotExists bool) string
 
-    dropTableSql(table string) string
+	dropTableSql(table string) string
 
-    addColumnSql(table, column string, typ interface{}, size int) string
+	addColumnSql(table, column string, typ interface{}, size int) string
 
-    createIndexSql(name, table string, unique bool, columns ...string) string
+	createIndexSql(name, table string, unique bool, columns ...string) string
 
-    indexExists(mg *Migration, tableName string, indexName string) bool
+	indexExists(mg *Migration, tableName string, indexName string) bool
 
-    columnsInTable(mg *Migration, tableName interface{}) map[string]bool
+	columnsInTable(mg *Migration, tableName interface{}) map[string]bool
 
-    primaryKeySql(isString bool, size int) string
+	primaryKeySql(isString bool, size int) string
 
-    catchMigrationError(err error) bool
+	catchMigrationError(err error) bool
 }
