@@ -234,7 +234,7 @@ so whenever you pass a column name or table name parameter in string, it should 
         }
 
 ### Many to Many relation
-- example:
+- example(full example in example/m2m):
 
         var ts []*Task
         // load directly
