@@ -33,7 +33,7 @@ Qbs stands for Query By Struct. A Go ORM. [中文版 README](https://github.com/
 See [Gowalker](http://gowalker.org/github.com/coocood/qbs) for complete documentation.
 
 ##Warning
- 
+
 * New version may break backwards compatibility.
 * Once you installed it for the first time by "go get", do not "go get" again for your existing application.
 * You should copy local source code when you need to compile your application on another mechine.
@@ -231,6 +231,94 @@ so whenever you pass a column name or table name parameter in string, it should 
         	return posts, err
         }
 
+### Many to Many relation
+- example:
+
+        package main
+
+        import (
+            f "fmt"
+            "github.com/lizijian/qbs"
+            _ "github.com/mattn/go-sqlite3"
+            "time"
+        )
+
+        type Task struct {
+            Id          int64
+            Name        string `qbs:"size:100"`
+            Content     string `qbs:"size:256"`
+            State       string `qbs:"size:10"`
+            Created     time.Time
+            InitiatorId int64 `qbs:"fk:User"`
+            Initiator   *User
+            Users       []*User `qbs:"m2m:TaskUser"`
+        }
+
+        type TaskUser struct {
+            Id     int64
+            UserId int64 `qbs:"fk:User"`
+            User   *User
+            TaskId int64 `qbs:"fk:Usergroup"`
+            Task   *Task
+        }
+
+        type User struct {
+            Id       int64
+            Email    string `qbs:"index"`
+            Password string `qbs:"size:100"`
+            Username string `qbs:"size:100,index"`
+        }
+
+        func main() {
+            qbs.Register("sqlite3", "test.db", "", qbs.NewSqlite3())
+            q, err := qbs.GetQbs()
+            if err != nil {
+                panic(err)
+            }
+            q.Begin()
+            defer q.Close()
+            q.Log = true
+            var ts []*Task
+            // eg: load m2m directly
+            if err = q.LoadM2mFields("Users").FindAll(&ts); err != nil {
+                panic(err)
+            }
+            f.Println("tasks:", ts)
+            for _, v := range ts {
+                f.Println("tasks id ", v.Id, ":", v)
+                for _, user := range v.Users {
+                    f.Println("task id=", v.Id, ", users ", user.Id, ":", user)
+                }
+            }
+            // eg: lazy load m2m
+            ts = nil
+            if err = q.FindAll(&ts); err != nil {
+                panic(err)
+            }
+            // before lazy loading
+            f.Println("tasks without load m2m:", ts)
+            for _, v := range ts {
+                f.Println("tasks id ", v.Id, ":", v)
+                for _, user := range v.Users {
+                    f.Println("task id=", v.Id, ", users ", user.Id, ":", user)
+                }
+            }
+            // lazy loading
+            for _, v := range ts {
+                if err = q.LoadM2mFields("Users").LoadM2m(v); err != nil {
+                    panic(err)
+                }
+            }
+            // display lazy loaded m2m
+            f.Println("tasks lazy load m2m:", ts)
+            for _, v := range ts {
+                f.Println("tasks id ", v.Id, ":", v)
+                for _, user := range v.Users {
+                    f.Println("task id=", v.Id, ", users ", user.Id, ":", user)
+                }
+            }
+        }
+
 ##Projects use Qbs:
 
 - a CMS system [toropress](https://github.com/insionng/toropress)
@@ -238,7 +326,7 @@ so whenever you pass a column name or table name parameter in string, it should 
 
 ##Contributors
 [Erik Aigner](https://github.com/eaigner)
-Qbs was originally a fork from [hood](https://github.com/eaigner/hood) by [Erik Aigner](https://github.com/eaigner), 
+Qbs was originally a fork from [hood](https://github.com/eaigner/hood) by [Erik Aigner](https://github.com/eaigner),
 but I changed more than 80% of the code, then it ended up become a totally different ORM.
 
 [NuVivo314](https://github.com/NuVivo314),  [Jason McVetta](https://github.com/jmcvetta)
