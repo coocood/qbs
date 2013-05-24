@@ -132,6 +132,7 @@ func (d base) queryM2m(criteria *criteria, field string, pk interface{}) (string
 		panic("no such field:" + field)
 	}
 	columns := []string{}
+	tables := []string{}
 
 	// append fields of target table
 	for _, f := range m2m.model.fields {
@@ -149,10 +150,25 @@ func (d base) queryM2m(criteria *criteria, field string, pk interface{}) (string
 	tKey := qTarget + "." + d.Dialect.quote(m2m.model.pk.name)
 	joinClause := fmt.Sprintf("%v AS %v LEFT JOIN %v ON %v = %v",
 		qIm, qImAlias, qTarget, imTargetFk, tKey)
-	// append table join clause
-	query = append(query, "SELECT", strings.Join(columns, ", "), "FROM", joinClause)
+	tables = append(tables, joinClause)
 
-	if criteria.m2mUseCond {
+	for k, v := range m2m.model.refs {
+		tableAlias := toSnake(k)
+		quotedTableAlias := d.Dialect.quote(tableAlias)
+		quotedParentTable := d.Dialect.quote(v.model.table)
+		leftKey := target + "." + d.Dialect.quote(v.refKey)
+		parentPrimary := quotedTableAlias + "." + d.Dialect.quote(v.model.pk.name)
+		joinClause := fmt.Sprintf("LEFT JOIN %v AS %v ON %v = %v", quotedParentTable, quotedTableAlias, leftKey, parentPrimary)
+		tables = append(tables, joinClause)
+		for _, f := range v.model.fields {
+			alias := tableAlias + "___" + f.name
+			columns = append(columns, d.Dialect.quote(tableAlias+"."+f.name)+" AS "+alias)
+		}
+	}
+	// append table join clause
+	query = append(query, "SELECT", strings.Join(columns, ", "), "FROM", strings.Join(tables, " "))
+
+	if criteria.m2mLazy {
 		// append pk condition
 		idCondition := NewCondition(imFk+" = ?", pk)
 		if criteria.condition == nil {

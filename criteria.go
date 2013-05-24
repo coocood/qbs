@@ -8,7 +8,7 @@ type criteria struct {
 	offset     int
 	omitFields []string
 	loadM2m    []string
-	m2mUseCond bool
+	m2mLazy    bool
 	omitJoin   bool
 }
 

@@ -181,10 +181,10 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 				if elemKind != reflect.Ptr && structFiled.Type.Elem().Elem().Kind() != reflect.Struct {
 					panic("field type is not slice of ptr of struct")
 				}
-				targetValue := reflect.New(structFiled.Type.Elem().Elem())
-				m2mModel := structPtrToModel(targetValue.Interface(), false, nil)
+				// targetValue := reflect.New(structFiled.Type.Elem().Elem())
+				// m2mModel := structPtrToModel(targetValue.Interface(), false, nil)
 				m2m := new(m2mRelation)
-				m2m.model = m2mModel
+				// m2m.model = m2mModel
 				m2m.fieldName = structFiled.Name
 				m2m.interMediaTable = toSnake(interMediaTable)
 				targetTable, ok := parsedSqlTags["target"]
