@@ -87,7 +87,7 @@ Qbs是一个Go语言的ORM
 ### 获取和使用`*qbs.Qbs`实例：
 - 假设需要在一个http请求中获取和使用Qbs.
 - 取得Qbs实例后，应该马上执行`defer q.Close()`来回收数据库连接。
-- qbs使用连接池，默认大小为10，可以通过在应用启动时，调用`qbs.ChangePoolSize()`来修改。
+- qbs使用连接池，默认大小为100，可以通过在应用启动时，调用`qbs.ChangePoolSize()`来修改。
 
         func GetUser(w http.ResponseWriter, r *http.Request){
         	q, err := qbs.GetQbs()

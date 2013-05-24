@@ -96,7 +96,7 @@ if you want define a primary key with name other than `Id`, you can set the tag 
 ### Get and use `*qbs.Qbs` instance：
 - Suppose we are in a handle http function. call `qbs.GetQbs()` to get a instance.
 - Be sure to close it by calling `defer q.Close()` after get it.
-- qbs has connection pool, the default size is 10, you can call `qbs.ChangePoolSize()` to change the size.
+- qbs has connection pool, the default size is 100, you can call `qbs.ChangePoolSize()` to change the size.
 
         func GetUser(w http.ResponseWriter, r *http.Request){
         	q, err := qbs.GetQbs()
