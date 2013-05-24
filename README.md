@@ -124,7 +124,7 @@ otherwise execute `UPDATE`.
             return user,err
         }
 
-### 查询数据：
+### Find：
 - If you want to get a row by `Id`, just assign the `Id` value to the model instance.
 
         func FindUserById(q *qbs.Qbs, id int64) (*User, error) {
