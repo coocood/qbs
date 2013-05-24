@@ -9,7 +9,7 @@ Qbs stands for Query By Struct. A Go ORM. [中文版 README](https://github.com/
     - For existing application with existing database, update to this change may lead to creating redundant index, you may need to drop duplicated index manually.
 * 2013.03.14: make all internal structures unexported.
 * 2013.05.22: fixed memory leak issue.
-* 2013.05.23: Breaking change, improved performance up to 100%, removed deprecated methods, make Db  and Tx field unexported.
+* 2013.05.23: Breaking change, improved performance up to 100%, removed deprecated methods, make Db and Tx field unexported.
 
 ##Features
 
@@ -25,6 +25,11 @@ Qbs stands for Query By Struct. A Go ORM. [中文版 README](https://github.com/
 * Struct type can implement Validator interface to do validation before insert or update.
 * Support MySQL, PosgreSQL and SQLite3.
 * Support connection pool.
+
+## Performance
+
+`Qbs.Find` is about 60% faster on mysql, 130% faster on postgreSQL than raw `Db.Query`, about 20% slower than raw `Stmt.Query`. (benchmarked on windows).
+The reason why it is faster than `Db.Query` is because all prepared Statements are cached in map.
 
 ##Install
 

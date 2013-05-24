@@ -161,5 +161,21 @@ func TestSqlite3DropTableSQL(t *testing.T) {
 }
 
 func BenchmarkSqlite3Find(b *testing.B) {
+	registerSqlite3Test()
 	doBenchmarkFind(b)
+}
+
+func BenchmarkSqlite3DbQuery(b *testing.B) {
+	registerSqlite3Test()
+	doBenchmarkDbQuery(b)
+}
+
+func BenchmarkSqlite3StmtQuery(b *testing.B) {
+	registerSqlite3Test()
+	doBenchmarkStmtQuery(b)
+}
+
+func BenchmarkSqlite3Transaction(b *testing.B) {
+	registerSqlite3Test()
+	doBenchmarkTransaction(b)
 }

@@ -160,6 +160,15 @@ func BenchmarkMysqlFind(b *testing.B) {
 	registerMysqlTest()
 	doBenchmarkFind(b)
 }
+func BenchmarkMysqlDbQuery(b *testing.B) {
+	registerMysqlTest()
+	doBenchmarkDbQuery(b)
+}
+
+func BenchmarkMysqlStmtQuery(b *testing.B) {
+	registerMysqlTest()
+	doBenchmarkStmtQuery(b)
+}
 
 func BenchmarkMysqlTransaction(b *testing.B) {
 	registerMysqlTest()

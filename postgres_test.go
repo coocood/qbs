@@ -161,6 +161,16 @@ func BenchmarkPgFind(b *testing.B) {
 	doBenchmarkFind(b)
 }
 
+func BenchmarkPgDbQuery(b *testing.B) {
+	registerPgTest()
+	doBenchmarkDbQuery(b)
+}
+
+func BenchmarkPgStmtQuery(b *testing.B) {
+	registerPgTest()
+	doBenchmarkStmtQuery(b)
+}
+
 func BenchmarkPgTransaction(b *testing.B) {
 	registerPgTest()
 	doBenchmarkTransaction(b)
