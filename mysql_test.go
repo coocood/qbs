@@ -71,8 +71,8 @@ func TestMysqlSaveAgain(t *testing.T) {
 }
 
 func TestMysqlForeignKey(t *testing.T) {
-	mg, q := setupMysqlDb()
-	doTestForeignKey(t, mg, q)
+	registerMysqlTest()
+	doTestForeignKey(t)
 }
 
 func TestMysqlFind(t *testing.T) {
@@ -123,6 +123,19 @@ func TestMysqlBulkInsert(t *testing.T) {
 func TestMysqlQueryStruct(t *testing.T) {
 	registerMysqlTest()
 	doTestQueryStruct(t)
+}
+
+func TestMysqlCustomNameConvertion(t *testing.T) {
+	registerMysqlTest()
+	ColumnNameToFieldName = noConvert
+	FieldNameToColumnName = noConvert
+	TableNameToStructName = noConvert
+	StructNameToTableName = noConvert
+	doTestForeignKey(t)
+	ColumnNameToFieldName = snakeToUpperCamel
+	FieldNameToColumnName = toSnake
+	TableNameToStructName = snakeToUpperCamel
+	StructNameToTableName = toSnake
 }
 
 func TestMysqlAddColumnSQL(t *testing.T) {

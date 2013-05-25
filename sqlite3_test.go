@@ -75,8 +75,8 @@ func TestSqlite3SaveAgain(t *testing.T) {
 }
 
 func TestSqlite3ForeignKey(t *testing.T) {
-	mg, q := setupSqlite3Db()
-	doTestForeignKey(t, mg, q)
+	registerSqlite3Test()
+	doTestForeignKey(t)
 }
 
 func TestSqlite3Find(t *testing.T) {
@@ -127,6 +127,19 @@ func TestSqlite3BulkInsert(t *testing.T) {
 func TestSqlite3QueryStruct(t *testing.T) {
 	registerSqlite3Test()
 	doTestQueryStruct(t)
+}
+
+func TestSqlite3CustomNameConvertion(t *testing.T) {
+	registerSqlite3Test()
+	ColumnNameToFieldName = noConvert
+	FieldNameToColumnName = noConvert
+	TableNameToStructName = noConvert
+	StructNameToTableName = noConvert
+	doTestForeignKey(t)
+	ColumnNameToFieldName = snakeToUpperCamel
+	FieldNameToColumnName = toSnake
+	TableNameToStructName = snakeToUpperCamel
+	StructNameToTableName = toSnake
 }
 
 func TestSqlite3AddColumnSQL(t *testing.T) {

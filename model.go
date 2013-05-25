@@ -7,6 +7,17 @@ import (
 	"strings"
 	"time"
 )
+//convert struct field name to column name.
+var FieldNameToColumnName func(string) string = toSnake
+
+//convert struct name to table name.
+var StructNameToTableName func(string) string = toSnake
+
+//onvert column name to struct field name.
+var ColumnNameToFieldName func(string) string = snakeToUpperCamel
+
+//convert table name to struct name.
+var TableNameToStructName func(string) string = snakeToUpperCamel
 
 // Index represents a table index and is returned via the Indexed interface.
 type index struct {
@@ -170,13 +181,13 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 		parsedSqlTags := parseTags(sqlTag)
 		fd := new(modelField)
 		fd.camelName = structFiled.Name
-		fd.name = toSnake(structFiled.Name)
+		fd.name = FieldNameToColumnName(structFiled.Name)
 		fd.sqlTags = parsedSqlTags
 		fd.value = structValue.FieldByName(structFiled.Name).Interface()
 		if _, ok := fd.sqlTags["pk"]; ok {
 			fd.pk = true
 		}
-		if _, ok := fd.value.(int64); ok && fd.name == "id" {
+		if _, ok := fd.value.(int64); ok && fd.camelName == "Id" {
 			fd.pk = true
 		}
 		if fd.pk {
@@ -191,11 +202,11 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 			if !fk {
 				refName, explicitJoin = parsedSqlTags["join"]
 			}
-			if len(fd.name) > 3 && strings.HasSuffix(fd.name, "_id") {
+			if len(fd.camelName) > 3 && strings.HasSuffix(fd.camelName, "Id") {
 				fdValue := reflect.ValueOf(fd.value)
 				if fdValue.Kind() == reflect.Int64 {
-					i := strings.LastIndex(fd.name, "_id")
-					refName = snakeToUpperCamel(fd.name[:i])
+					i := strings.LastIndex(fd.camelName, "Id")
+					refName = fd.camelName[:i]
 					implicitJoin = true
 				}
 			}
@@ -260,7 +271,7 @@ func tableName(talbe interface{}) string {
 			break
 		}
 	}
-	return toSnake(t.Name())
+	return StructNameToTableName(t.Name())
 }
 
 func parseTags(s string) map[string]string {

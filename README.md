@@ -10,6 +10,8 @@ Qbs stands for Query By Struct. A Go ORM. [中文版 README](https://github.com/
 * 2013.03.14: make all internal structures unexported.
 * 2013.05.22: fixed memory leak issue.
 * 2013.05.23: Breaking change, improved performance up to 100%, removed deprecated methods, make Db and Tx field unexported.
+* 2013.05.25: Added `QueryStruct` method to do raw SQL query and fill the result into struct or slice of struct.
+ Added support for define custom table/struct and column/filed name convertion function, so you are not forced to use snake case in database.
 
 ##Features
 
@@ -144,8 +146,9 @@ otherwise execute `UPDATE`.
 
 - If you want to add conditions other than `Id`, you should all `Where` method. `WhereEqual("name", name)` is equivalent to `Where（"name = ?", name)`, just a shorthand method.
 - Only the last call to `Where`/`WhereEqual` counts, so it is only applicable to define simple condition.
-- Notice that the column name passed to `WhereEqual` method is lower case, all the camel case field name and struct name will be converted to snake case in database storage,
+- Notice that the column name passed to `WhereEqual` method is lower case, by default, all the camel case field name and struct name will be converted to snake case in database storage,
 so whenever you pass a column name or table name parameter in string, it should be in snake case.
+- You can change the convertion behavior by setting the 4 convertion function variable: `FieldNameToColumnName`,`StructNameToTableName`,`ColumnNameToFieldName`,`TableNameToStructName` to your own function.
 
         func FindUserByName(q *qbs.Qbs, n string) (*User, error) {
             user := new(User)

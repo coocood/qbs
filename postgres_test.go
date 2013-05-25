@@ -71,8 +71,8 @@ func TestPgSaveAgain(t *testing.T) {
 }
 
 func TestPgForeignKey(t *testing.T) {
-	mg, q := setupPgDb()
-	doTestForeignKey(t, mg, q)
+	registerPgTest()
+	doTestForeignKey(t)
 }
 
 func TestPgFind(t *testing.T) {

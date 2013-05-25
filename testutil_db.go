@@ -3,7 +3,6 @@ package qbs
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"github.com/coocood/assrt"
 	"testing"
 	"time"
@@ -145,56 +144,60 @@ func doTestSaveAgain(t *testing.T, mg *Migration, q *Qbs) {
 	}
 }
 
-func doTestForeignKey(t *testing.T, mg *Migration, q *Qbs) {
-	defer closeMigrationAndQbs(mg, q)
+func doTestForeignKey(t *testing.T) {
 	assert := assrt.NewAssert(t)
-	type user struct {
+	type User struct {
 		Id   int64
 		Name string
 	}
-	type post struct {
+	type Post struct {
 		Id       int64
 		Title    string
 		AuthorId int64
-		Author   *user
+		Author   *User
 	}
-	aUser := &user{
+	aUser := &User{
 		Name: "john",
 	}
-	aPost := &post{
+	aPost := &Post{
 		Title: "A Title",
 	}
-	mg.dropTableIfExists(aPost)
-	mg.dropTableIfExists(aUser)
-	mg.CreateTableIfNotExists(aUser)
-	mg.CreateTableIfNotExists(aPost)
+	WithMigration(func(mg *Migration) error {
+		mg.dropTableIfExists(aPost)
+		mg.dropTableIfExists(aUser)
+		mg.CreateTableIfNotExists(aUser)
+		mg.CreateTableIfNotExists(aPost)
+		return nil
+	})
+	WithQbs(func(q *Qbs) error {
+		affected, err := q.Save(aUser)
+		assert.Nil(err)
+		aPost.AuthorId = int64(aUser.Id)
+		affected, err = q.Save(aPost)
+		assert.Equal(1, affected)
+		pst := new(Post)
+		pst.Id = aPost.Id
+		err = q.Find(pst)
+		assert.MustNil(err)
+		assert.Equal(aPost.Id, pst.Id)
+		assert.Equal("john", pst.Author.Name)
 
-	affected, err := q.Save(aUser)
-	assert.Nil(err)
-	aPost.AuthorId = int64(aUser.Id)
-	affected, err = q.Save(aPost)
-	assert.Equal(1, affected)
-	pst := new(post)
-	pst.Id = aPost.Id
-	err = q.Find(pst)
-	assert.MustNil(err)
-	assert.Equal(aPost.Id, pst.Id)
-	assert.Equal("john", pst.Author.Name)
+		pst.Author = nil
+		err = q.OmitFields("Author").Find(pst)
+		assert.MustNil(err)
+		assert.MustNil(pst.Author)
 
-	pst.Author = nil
-	err = q.OmitFields("Author").Find(pst)
-	assert.MustNil(err)
-	assert.MustNil(pst.Author)
+		err = q.OmitJoin().Find(pst)
+		assert.MustNil(err)
+		assert.MustNil(pst.Author)
 
-	err = q.OmitJoin().Find(pst)
-	assert.MustNil(err)
-	assert.MustNil(pst.Author)
-
-	var psts []*post
-	err = q.FindAll(&psts)
-	assert.MustNil(err)
-	assert.OneLen(psts)
-	assert.Equal("john", psts[0].Author.Name)
+		var psts []*Post
+		err = q.FindAll(&psts)
+		assert.MustNil(err)
+		assert.OneLen(psts)
+		assert.Equal("john", psts[0].Author.Name)
+		return nil
+	})
 }
 
 func doTestFind(t *testing.T) {
@@ -474,7 +477,7 @@ func doTestQueryStruct(t *testing.T) {
 		q.Save(b)
 		b = new(basic)
 		err := q.QueryStruct(b, "SELECT * FROM basic")
-		fmt.Println(err)
+		assert.Nil(err)
 		assert.Equal(1, b.Id)
 		assert.Equal("abc", b.Name)
 		assert.Equal(2, b.State)
@@ -498,4 +501,8 @@ func setupBasicDb() {
 func closeMigrationAndQbs(mg *Migration, q *Qbs) {
 	mg.Close()
 	q.Close()
+}
+
+func noConvert(s string) string {
+	return s
 }

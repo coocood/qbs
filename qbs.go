@@ -293,11 +293,11 @@ func (q *Qbs) scanRows(rowValue reflect.Value, rows *sql.Rows) (err error) {
 		key := cols[i]
 		paths := strings.Split(key, "___")
 		if len(paths) == 2 {
-			subStruct := rowValue.Elem().FieldByName(snakeToUpperCamel(paths[0]))
+			subStruct := rowValue.Elem().FieldByName(TableNameToStructName(paths[0]))
 			if subStruct.IsNil() {
 				subStruct.Set(reflect.New(subStruct.Type().Elem()))
 			}
-			subField := subStruct.Elem().FieldByName(snakeToUpperCamel(paths[1]))
+			subField := subStruct.Elem().FieldByName(ColumnNameToFieldName(paths[1]))
 			if subField.IsValid() {
 				err = q.Dialect.setModelValue(value, subField)
 				if err != nil {
@@ -305,7 +305,7 @@ func (q *Qbs) scanRows(rowValue reflect.Value, rows *sql.Rows) (err error) {
 				}
 			}
 		} else {
-			field := rowValue.Elem().FieldByName(snakeToUpperCamel(key))
+			field := rowValue.Elem().FieldByName(ColumnNameToFieldName(key))
 			if field.IsValid() {
 				err = q.Dialect.setModelValue(value, field)
 				if err != nil {
