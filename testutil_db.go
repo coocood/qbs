@@ -3,6 +3,7 @@ package qbs
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/coocood/assrt"
 	"testing"
 	"time"
@@ -388,24 +389,25 @@ func doTestStringPk(t *testing.T, mg *Migration, q *Qbs) {
 	assert.Equal(10, spk.Count)
 }
 
-func doTestCount(t *testing.T, mg *Migration, q *Qbs) {
-	defer closeMigrationAndQbs(mg, q)
+func doTestCount(t *testing.T) {
 	assert := assrt.NewAssert(t)
-	basic := new(basic)
-	mg.dropTableIfExists(basic)
-	mg.CreateTableIfNotExists(basic)
-	basic.Name = "name"
-	basic.State = 1
-	q.Save(basic)
-	for i := 0; i < 5; i++ {
-		basic.Id = 0
-		basic.State = 2
+	setupBasicDb()
+	WithQbs(func(q *Qbs) error {
+		basic := new(basic)
+		basic.Name = "name"
+		basic.State = 1
 		q.Save(basic)
-	}
-	count1 := q.Count("basic")
-	assert.Equal(6, count1)
-	count2 := q.WhereEqual("state", 2).Count(basic)
-	assert.Equal(5, count2)
+		for i := 0; i < 5; i++ {
+			basic.Id = 0
+			basic.State = 2
+			q.Save(basic)
+		}
+		count1 := q.Count("basic")
+		assert.Equal(6, count1)
+		count2 := q.WhereEqual("state", 2).Count(basic)
+		assert.Equal(5, count2)
+		return nil
+	})
 }
 
 func doTestQueryMap(t *testing.T, mg *Migration, q *Qbs) {
@@ -444,12 +446,7 @@ func doTestQueryMap(t *testing.T, mg *Migration, q *Qbs) {
 
 func doTestBulkInsert(t *testing.T) {
 	assert := assrt.NewAssert(t)
-	WithMigration(func(mg *Migration) error {
-		b := new(basic)
-		mg.dropTableIfExists(b)
-		mg.CreateTableIfNotExists(b)
-		return nil
-	})
+	setupBasicDb()
 	WithQbs(func(q *Qbs) error {
 		var bulk []*basic
 		for i := 0; i < 10; i++ {
@@ -463,6 +460,37 @@ func doTestBulkInsert(t *testing.T) {
 		for i := 0; i < 10; i++ {
 			assert.Equal(i+1, bulk[i].Id)
 		}
+		return nil
+	})
+}
+
+func doTestQueryStruct(t *testing.T) {
+	assert := assrt.NewAssert(t)
+	setupBasicDb()
+	WithQbs(func(q *Qbs) error {
+		b := new(basic)
+		b.Name = "abc"
+		b.State = 2
+		q.Save(b)
+		b = new(basic)
+		err := q.QueryStruct(b, "SELECT * FROM basic")
+		fmt.Println(err)
+		assert.Equal(1, b.Id)
+		assert.Equal("abc", b.Name)
+		assert.Equal(2, b.State)
+		var slice []*basic
+		q.QueryStruct(&slice, "SELECT * FROM basic")
+		assert.OneLen(slice)
+		assert.Equal("abc", slice[0].Name)
+		return nil
+	})
+}
+
+func setupBasicDb() {
+	WithMigration(func(mg *Migration) error {
+		b := new(basic)
+		mg.dropTableIfExists(b)
+		mg.CreateTableIfNotExists(b)
 		return nil
 	})
 }

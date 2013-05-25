@@ -106,8 +106,8 @@ func TestMysqlStringPk(t *testing.T) {
 }
 
 func TestMysqlCount(t *testing.T) {
-	mg, q := setupMysqlDb()
-	doTestCount(t, mg, q)
+	registerMysqlTest()
+	doTestCount(t)
 }
 
 func TestMysqlQueryMap(t *testing.T) {
@@ -118,6 +118,11 @@ func TestMysqlQueryMap(t *testing.T) {
 func TestMysqlBulkInsert(t *testing.T) {
 	registerMysqlTest()
 	doTestBulkInsert(t)
+}
+
+func TestMysqlQueryStruct(t *testing.T) {
+	registerMysqlTest()
+	doTestQueryStruct(t)
 }
 
 func TestMysqlAddColumnSQL(t *testing.T) {
@@ -151,7 +156,6 @@ func TestMysqlSelectionSQL(t *testing.T) {
 func TestMysqlQuerySQL(t *testing.T) {
 	doTestQuerySQL(t, mysqlSyntax)
 }
-
 func TestMysqlDropTableSQL(t *testing.T) {
 	doTestDropTableSQL(t, mysqlSyntax)
 }

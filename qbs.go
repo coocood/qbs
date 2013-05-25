@@ -252,7 +252,7 @@ func (q *Qbs) doQueryRow(out interface{}, query string, args ...interface{}) err
 func (q *Qbs) doQueryRows(out interface{}, query string, args ...interface{}) error {
 	defer q.Reset()
 	sliceValue := reflect.Indirect(reflect.ValueOf(out))
-	sliceType := sliceValue.Type().Elem().Elem()
+	structType := sliceValue.Type().Elem().Elem()
 	q.log(query, args...)
 	stmt, err := q.prepare(query)
 	if err != nil {
@@ -264,7 +264,7 @@ func (q *Qbs) doQueryRows(out interface{}, query string, args ...interface{}) er
 	}
 	defer rows.Close()
 	for rows.Next() {
-		rowValue := reflect.New(sliceType)
+		rowValue := reflect.New(structType)
 		err = q.scanRows(rowValue, rows)
 		if err != nil {
 			return err
@@ -624,6 +624,71 @@ func (q *Qbs) doQueryMap(query string, once bool, args ...interface{}) ([]map[st
 		}
 	}
 	return results, nil
+}
+
+//Do a raw sql query and set the result values in dest parameter.
+//The dest parameter can be either a struct pointer or a pointer of struct pointer.slice
+//This method do not support pointer field in the struct.
+func (q *Qbs) QueryStruct(dest interface{}, query string, args ...interface{}) error {
+	query = q.Dialect.substituteMarkers(query)
+	stmt, err := q.prepare(query)
+	if err != nil {
+		return q.updateTxError(err)
+	}
+	rows, err := stmt.Query(args...)
+	if err != nil {
+		return q.updateTxError(err)
+	}
+	defer rows.Close()
+	outPtr := reflect.ValueOf(dest)
+	outValue := outPtr.Elem()
+	var structType reflect.Type
+	var single bool
+	if outValue.Kind() == reflect.Slice {
+		structType = outValue.Type().Elem().Elem()
+	} else {
+		structType = outValue.Type()
+		single = true
+	}
+	columns, _ := rows.Columns()
+	fieldNames := make([]string, len(columns))
+	for i, v := range columns {
+		upper := snakeToUpperCamel(v)
+		_, ok := structType.FieldByName(upper)
+		if ok {
+			fieldNames[i] = upper
+		} else {
+			fieldNames[i] = "-"
+		}
+	}
+	for rows.Next() {
+		var rowStructPointer reflect.Value
+		if single { //query row
+			rowStructPointer = outPtr
+		} else { //query rows
+			rowStructPointer = reflect.New(structType)
+		}
+		dests := make([]interface{}, len(columns))
+		for i := 0; i < len(dests); i++ {
+			fieldName := fieldNames[i]
+			if fieldName == "-" {
+				var placeholder interface{}
+				dests[i] = &placeholder
+			} else {
+				field := rowStructPointer.Elem().FieldByName(fieldName)
+				dests[i] = field.Addr().Interface()
+			}
+		}
+		err = rows.Scan(dests...)
+		if err != nil {
+			return err
+		}
+		if single {
+			return nil
+		}
+		outValue.Set(reflect.Append(outValue, rowStructPointer))
+	}
+	return nil
 }
 
 func (q *Qbs) log(query string, args ...interface{}) {

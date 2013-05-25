@@ -1,10 +1,10 @@
 package qbs
 
 import (
+	"database/sql"
 	"fmt"
 	"runtime"
 	"testing"
-	"database/sql"
 )
 
 func doBenchmarkFind(b *testing.B) {
@@ -48,7 +48,7 @@ func doBenchmarkStmtQuery(b *testing.B) {
 	q.Save(bas)
 	closeMigrationAndQbs(mg, q)
 	b.StartTimer()
-	db, _ := sql.Open(driver,driverSource)
+	db, _ := sql.Open(driver, driverSource)
 	query := q.Dialect.substituteMarkers("SELECT * FROM basic WHERE id = ?")
 	stmt, _ := db.Prepare(query)
 	for i := 0; i < b.N; i++ {
@@ -85,7 +85,7 @@ func doBenchmarkDbQuery(b *testing.B) {
 	q.Save(bas)
 	closeMigrationAndQbs(mg, q)
 	b.StartTimer()
-	db, _ := sql.Open(driver,driverSource)
+	db, _ := sql.Open(driver, driverSource)
 	query := q.Dialect.substituteMarkers("SELECT * FROM basic WHERE id = ?")
 	for i := 0; i < b.N; i++ {
 		ba := new(basic)

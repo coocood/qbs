@@ -106,8 +106,8 @@ func TestPgStringPk(t *testing.T) {
 }
 
 func TestPgCount(t *testing.T) {
-	mg, q := setupPgDb()
-	doTestCount(t, mg, q)
+	registerPgTest()
+	doTestCount(t)
 }
 
 func TestPgQueryMap(t *testing.T) {
@@ -118,6 +118,11 @@ func TestPgQueryMap(t *testing.T) {
 func TestPgBulkInsert(t *testing.T) {
 	registerPgTest()
 	doTestBulkInsert(t)
+}
+
+func TestPgQueryStruct(t *testing.T) {
+	registerPgTest()
+	doTestQueryStruct(t)
 }
 
 func TestPgAddColumnSQL(t *testing.T) {

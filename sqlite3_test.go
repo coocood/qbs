@@ -110,8 +110,8 @@ func TestSqlite3StringPk(t *testing.T) {
 }
 
 func TestSqlite3Count(t *testing.T) {
-	mg, q := setupSqlite3Db()
-	doTestCount(t, mg, q)
+	registerSqlite3Test()
+	doTestCount(t)
 }
 
 func TestSqlite3QueryMap(t *testing.T) {
@@ -122,6 +122,11 @@ func TestSqlite3QueryMap(t *testing.T) {
 func TestSqlite3BulkInsert(t *testing.T) {
 	registerSqlite3Test()
 	doTestBulkInsert(t)
+}
+
+func TestSqlite3QueryStruct(t *testing.T) {
+	registerSqlite3Test()
+	doTestQueryStruct(t)
 }
 
 func TestSqlite3AddColumnSQL(t *testing.T) {
