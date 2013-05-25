@@ -29,7 +29,7 @@ var pgSyntax = dialectSyntax{
 }
 
 func registerPgTest() {
-	Register(pgDriver, fmt.Sprintf(pgDrvFormat, testDbUser, testDbUser, testDbName), testDbName, NewPostgres())
+	Register(pgDriver, fmt.Sprintf(pgDrvFormat, "postgres", "", testDbName), testDbName, NewPostgres())
 }
 
 func setupPgDb() (*Migration, *Qbs) {
