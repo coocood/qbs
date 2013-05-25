@@ -60,8 +60,8 @@ func TestSqlite3SqlType(t *testing.T) {
 }
 
 func TestSqlite3Transaction(t *testing.T) {
-	mg, q := setupSqlite3Db()
-	doTestTransaction(t, mg, q)
+	registerSqlite3Test()
+	doTestTransaction(t)
 }
 
 func TestSqlite3SaveAndDelete(t *testing.T) {
@@ -140,6 +140,11 @@ func TestSqlite3CustomNameConvertion(t *testing.T) {
 	FieldNameToColumnName = toSnake
 	TableNameToStructName = snakeToUpperCamel
 	StructNameToTableName = toSnake
+}
+
+func TestSqlite3ConnectionLimit(t *testing.T) {
+	registerSqlite3Test()
+	doTestConnectionLimit(t)
 }
 
 func TestSqlite3AddColumnSQL(t *testing.T) {

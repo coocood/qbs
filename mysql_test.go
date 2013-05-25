@@ -56,8 +56,8 @@ func TestMysqlSqlType(t *testing.T) {
 }
 
 func TestMysqlTransaction(t *testing.T) {
-	mg, q := setupMysqlDb()
-	doTestTransaction(t, mg, q)
+	registerMysqlTest()
+	doTestTransaction(t)
 }
 
 func TestMysqlSaveAndDelete(t *testing.T) {
@@ -136,6 +136,11 @@ func TestMysqlCustomNameConvertion(t *testing.T) {
 	FieldNameToColumnName = toSnake
 	TableNameToStructName = snakeToUpperCamel
 	StructNameToTableName = toSnake
+}
+
+func TestMysqlConnectionLimit(t *testing.T) {
+	registerMysqlTest()
+	doTestConnectionLimit(t)
 }
 
 func TestMysqlAddColumnSQL(t *testing.T) {

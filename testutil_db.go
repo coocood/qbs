@@ -22,8 +22,7 @@ func (table *addColumn) Indexes(indexes *Indexes) {
 	indexes.AddUnique("first", "last")
 }
 
-func doTestTransaction(t *testing.T, mg *Migration, q *Qbs) {
-	defer closeMigrationAndQbs(mg, q)
+func doTestTransaction(t *testing.T) {
 	assert := assrt.NewAssert(t)
 	type txModel struct {
 		Id int64
@@ -32,27 +31,35 @@ func doTestTransaction(t *testing.T, mg *Migration, q *Qbs) {
 	table := txModel{
 		A: "A",
 	}
-	mg.dropTableIfExists(&table)
-	mg.CreateTableIfNotExists(&table)
-	q.Begin()
-	assert.NotNil(q.tx)
-	_, err := q.Save(&table)
-	assert.Nil(err)
-	err = q.Rollback()
-	assert.Nil(err)
-	out := new(txModel)
-	err = q.Find(out)
-	assert.Equal(sql.ErrNoRows, err)
-	q.Begin()
-	table.Id = 0
-	_, err = q.Save(&table)
-	assert.Nil(err)
-	err = q.Commit()
-	assert.Nil(err)
-	out.Id = table.Id
-	err = q.Find(out)
-	assert.Nil(err)
-	assert.Equal("A", out.A)
+	err := WithMigration(func(mg *Migration) error {
+		mg.dropTableIfExists(&table)
+		mg.CreateTableIfNotExists(&table)
+		return nil
+	})
+	assert.MustNil(err)
+	WithQbs(func(q *Qbs) error {
+		q.Begin()
+		assert.NotNil(q.tx)
+		_, err := q.Save(&table)
+		assert.Nil(err)
+		err = q.Rollback()
+		assert.Nil(err)
+		out := new(txModel)
+		err = q.Find(out)
+		assert.Equal(sql.ErrNoRows, err)
+		q.Begin()
+		table.Id = 0
+		_, err = q.Save(&table)
+		assert.Nil(err)
+		err = q.Commit()
+		assert.Nil(err)
+		out.Id = table.Id
+		err = q.Find(out)
+		assert.Nil(err)
+		assert.Equal("A", out.A)
+		return nil
+	})
+
 }
 
 func doTestSaveAndDelete(t *testing.T, mg *Migration, q *Qbs) {
@@ -487,6 +494,29 @@ func doTestQueryStruct(t *testing.T) {
 		assert.Equal("abc", slice[0].Name)
 		return nil
 	})
+}
+
+func doTestConnectionLimit(t *testing.T) {
+	assert := assrt.NewAssert(t)
+	SetConnectionLimit(2, false)
+	q0, _ := GetQbs()
+	GetQbs()
+	GetQbs()
+	_, err := GetQbs()
+	assert.Equal(ConnectionLimitError, err)
+	q0.Close()
+	q4, _ := GetQbs()
+	assert.NotNil(q4)
+	SetConnectionLimit(0, true)
+	a := 0
+	go func() {
+		a = 1
+		q4.Close()
+	}()
+	GetQbs()
+	assert.Equal(1, a)
+	SetConnectionLimit(-1, false)
+	assert.Nil(connectionLimit)
 }
 
 func setupBasicDb() {

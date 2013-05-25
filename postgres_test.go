@@ -56,8 +56,8 @@ func TestSqlTypeForPgDialect(t *testing.T) {
 }
 
 func TestPgTransaction(t *testing.T) {
-	mg, q := setupPgDb()
-	doTestTransaction(t, mg, q)
+	registerPgTest()
+	doTestTransaction(t)
 }
 
 func TestPgSaveAndDelete(t *testing.T) {
@@ -123,6 +123,11 @@ func TestPgBulkInsert(t *testing.T) {
 func TestPgQueryStruct(t *testing.T) {
 	registerPgTest()
 	doTestQueryStruct(t)
+}
+
+func TestPgConnectionLimit(t *testing.T) {
+	registerPgTest()
+	doTestConnectionLimit(t)
 }
 
 func TestPgAddColumnSQL(t *testing.T) {

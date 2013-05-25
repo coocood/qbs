@@ -2,6 +2,7 @@ package qbs
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -11,6 +12,9 @@ import (
 var connectionPool chan *Qbs = make(chan *Qbs, 100)
 var driver, driverSource, dbName string
 var dial Dialect
+var connectionLimit chan struct{}
+var blockingOnLimit bool
+var ConnectionLimitError = errors.New("Connection limit reached")
 
 type Qbs struct {
 	db           *sql.DB
@@ -59,6 +63,17 @@ func GetQbs() (q *Qbs, err error) {
 	if driver == "" || dial == nil {
 		panic("database driver has not been registered, should call Register first.")
 	}
+	if connectionLimit != nil {
+		if blockingOnLimit {
+			connectionLimit <- struct{}{}
+		} else {
+			select {
+			case connectionLimit <- struct{}{}:
+			default:
+				return nil, ConnectionLimitError
+			}
+		}
+	}
 	select {
 	case q := <-connectionPool:
 		return q, nil
@@ -80,6 +95,17 @@ func GetQbs() (q *Qbs, err error) {
 //The default connection pool size is 100.
 func ChangePoolSize(size int) {
 	connectionPool = make(chan *Qbs, size)
+}
+
+//Set the connection limit, there is no limit by default.
+//If blocking is true, GetQbs method will be blocked, otherwise returns ConnectionLimitError.
+func SetConnectionLimit(maxCon int, blocking bool) {
+	if maxCon > 0 {
+		connectionLimit = make(chan struct{}, maxCon)
+	} else if maxCon < 0 {
+		connectionLimit = nil
+	}
+	blockingOnLimit = blocking
 }
 
 // Create a new criteria for subsequent query
@@ -531,12 +557,13 @@ func (q *Qbs) ContainsValue(table interface{}, column string, value interface{})
 	return err == nil
 }
 
-// It is safe to call it even if *sql.DB is nil.
-// So it's better to call "defer q.Close()" right after qbs.New() to release resource.
 // If the connection pool is not full, the Db will be sent back into the pool, otherwise the Db will get closed.
 func (q *Qbs) Close() error {
 	if q.tx != nil {
 		q.Rollback()
+	}
+	if connectionLimit != nil {
+		<-connectionLimit
 	}
 	select {
 	case connectionPool <- q:

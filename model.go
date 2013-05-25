@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 )
+
 //convert struct field name to column name.
 var FieldNameToColumnName func(string) string = toSnake
 
