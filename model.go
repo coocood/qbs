@@ -139,8 +139,22 @@ func (model *model) pkZero() bool {
 	switch model.pk.value.(type) {
 	case string:
 		return model.pk.value.(string) == ""
+	case int8:
+		return model.pk.value.(int8) == 0
+	case int16:
+		return model.pk.value.(int16) == 0
+	case int32:
+		return model.pk.value.(int32) == 0
 	case int64:
 		return model.pk.value.(int64) == 0
+	case uint8:
+		return model.pk.value.(uint8) == 0
+	case uint16:
+		return model.pk.value.(uint16) == 0
+	case uint32:
+		return model.pk.value.(uint32) == 0
+	case uint64:
+		return model.pk.value.(uint64) == 0
 	}
 	return true
 }
