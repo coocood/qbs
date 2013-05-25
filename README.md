@@ -2,6 +2,7 @@ Qbs
 ===
 
 Qbs stands for Query By Struct. A Go ORM. [中文版 README](https://github.com/coocood/qbs/blob/master/README_ZH.md)
+[![Build Status](https://drone.io/github.com/coocood/qbs/status.png)](https://drone.io/github.com/coocood/qbs/latest)
 
 ##ChangeLog
 
