@@ -10,7 +10,7 @@ import (
 
 const (
 	pgDriver    = "postgres"
-	pgDrvFormat = "user=%v password=%v dbname=%v sslmode=disable"
+	pgDrvFormat = "user=%v dbname=%v sslmode=disable"
 )
 
 var pgSyntax = dialectSyntax{
@@ -29,7 +29,7 @@ var pgSyntax = dialectSyntax{
 }
 
 func registerPgTest() {
-	Register(pgDriver, fmt.Sprintf(pgDrvFormat, "postgres", "", testDbName), testDbName, NewPostgres())
+	Register(pgDriver, fmt.Sprintf(pgDrvFormat, "postgres", testDbName), testDbName, NewPostgres())
 }
 
 func setupPgDb() (*Migration, *Qbs) {
