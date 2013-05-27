@@ -6,37 +6,48 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 )
 
-var connectionPool chan *Qbs = make(chan *Qbs, 100)
 var driver, driverSource, dbName string
 var dial Dialect
 var connectionLimit chan struct{}
 var blockingOnLimit bool
 var ConnectionLimitError = errors.New("Connection limit reached")
+var db *sql.DB
+var stmtMap map[string]*sql.Stmt
+var mu *sync.RWMutex
 
 type Qbs struct {
-	db           *sql.DB
 	Dialect      Dialect
 	Log          bool
 	tx           *sql.Tx
 	txStmtMap    map[string]*sql.Stmt
 	criteria     *criteria
 	firstTxError error
-	stmtMap      map[string]*sql.Stmt
 }
 
 type Validator interface {
 	Validate(*Qbs) error
 }
 
-//Register a database, should be call at the beginning of the application
+//Register a database, should be call at the beginning of the application.
 func Register(driverName, driverSourceName, databaseName string, dialect Dialect) {
 	driver = driverName
 	driverSource = driverSourceName
 	dial = dialect
 	dbName = databaseName
+	if db == nil {
+		var err error
+		db, err = sql.Open(driver, driverSource)
+		if err != nil {
+			panic(err)
+		}
+		db.SetMaxIdleConns(100)
+		stmtMap = make(map[string]*sql.Stmt)
+		mu = new(sync.RWMutex)
+	}
 }
 
 //A safe and easy way to work with *Qbs instance without the need to open and close it.
@@ -74,27 +85,15 @@ func GetQbs() (q *Qbs, err error) {
 			}
 		}
 	}
-	select {
-	case q := <-connectionPool:
-		return q, nil
-	default:
-	}
-	db, err := sql.Open(driver, driverSource)
-	if err != nil {
-		return nil, err
-	}
 	q = new(Qbs)
-	q.db = db
 	q.Dialect = dial
 	q.criteria = new(criteria)
-	q.stmtMap = make(map[string]*sql.Stmt)
-	q.txStmtMap = make(map[string]*sql.Stmt)
 	return q, nil
 }
 
 //The default connection pool size is 100.
 func ChangePoolSize(size int) {
-	connectionPool = make(chan *Qbs, size)
+	db.SetMaxIdleConns(size)
 }
 
 //Set the connection limit, there is no limit by default.
@@ -121,8 +120,9 @@ func (q *Qbs) Begin() error {
 	if q.tx != nil {
 		panic("cannot start nested transaction")
 	}
-	tx, err := q.db.Begin()
+	tx, err := db.Begin()
 	q.tx = tx
+	q.txStmtMap = make(map[string]*sql.Stmt)
 	return err
 }
 
@@ -147,9 +147,7 @@ func (q *Qbs) Commit() error {
 	err := q.tx.Commit()
 	q.updateTxError(err)
 	q.tx = nil
-	for key, _ := range q.txStmtMap {
-		delete(q.txStmtMap, key)
-	}
+	q.txStmtMap = nil
 	return q.firstTxError
 }
 
@@ -157,9 +155,7 @@ func (q *Qbs) Commit() error {
 func (q *Qbs) Rollback() error {
 	err := q.tx.Rollback()
 	q.tx = nil
-	for key, _ := range q.txStmtMap {
-		delete(q.txStmtMap, key)
-	}
+	q.txStmtMap = nil
 	return q.updateTxError(err)
 }
 
@@ -398,16 +394,21 @@ func (q *Qbs) prepare(query string) (stmt *sql.Stmt, err error) {
 		}
 		q.txStmtMap[query] = stmt
 	} else {
-		stmt, ok = q.stmtMap[query]
+		mu.RLock()
+		stmt, ok = stmtMap[query]
+		mu.RUnlock()
 		if ok {
 			return
 		}
-		stmt, err = q.db.Prepare(query + ";")
+
+		stmt, err = db.Prepare(query + ";")
 		if err != nil {
 			q.updateTxError(err)
 			return
 		}
-		q.stmtMap[query] = stmt
+		mu.Lock()
+		stmtMap[query] = stmt
+		mu.Unlock()
 	}
 	return
 }
@@ -559,18 +560,13 @@ func (q *Qbs) ContainsValue(table interface{}, column string, value interface{})
 
 // If the connection pool is not full, the Db will be sent back into the pool, otherwise the Db will get closed.
 func (q *Qbs) Close() error {
-	if q.tx != nil {
-		q.Rollback()
-	}
 	if connectionLimit != nil {
 		<-connectionLimit
 	}
-	select {
-	case connectionPool <- q:
-		return nil
-	default:
+	if q.tx != nil {
+		return q.Rollback()
 	}
-	return q.db.Close()
+	return nil
 }
 
 //Query the count of rows in a table the talbe parameter can be either a string or struct pointer.
