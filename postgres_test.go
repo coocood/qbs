@@ -130,6 +130,11 @@ func TestPgConnectionLimit(t *testing.T) {
 	doTestConnectionLimit(t)
 }
 
+func TestPgIterate(t *testing.T) {
+	registerPgTest()
+	doTestIterate(t)
+}
+
 func TestPgAddColumnSQL(t *testing.T) {
 	doTestAddColumSQL(t, pgSyntax)
 }

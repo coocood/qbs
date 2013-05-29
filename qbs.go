@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
+	"os"
 	"reflect"
 	"strings"
 	"sync"
@@ -18,6 +20,8 @@ var ConnectionLimitError = errors.New("Connection limit reached")
 var db *sql.DB
 var stmtMap map[string]*sql.Stmt
 var mu *sync.RWMutex
+var queryLogger *log.Logger = log.New(os.Stdout, "qbs:", log.LstdFlags)
+var errorLogger *log.Logger = log.New(os.Stderr, "qbs:", log.LstdFlags)
 
 type Qbs struct {
 	Dialect      Dialect
@@ -96,6 +100,11 @@ func ChangePoolSize(size int) {
 	db.SetMaxIdleConns(size)
 }
 
+func SetLogger(query *log.Logger, err *log.Logger) {
+	queryLogger = query
+	errorLogger = err
+}
+
 //Set the connection limit, there is no limit by default.
 //If blocking is true, GetQbs method will be blocked, otherwise returns ConnectionLimitError.
 func SetConnectionLimit(maxCon int, blocking bool) {
@@ -132,7 +141,9 @@ func (q *Qbs) InTransaction() bool {
 
 func (q *Qbs) updateTxError(e error) error {
 	if e != nil {
-		q.log("ERROR: ", e)
+		if errorLogger != nil {
+			errorLogger.Println(e)
+		}
 		// don't shadow the first error
 		if q.firstTxError == nil {
 			q.firstTxError = e
@@ -467,7 +478,7 @@ func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 			}
 		}
 	}
-	return affected, err
+	return affected, q.updateTxError(err)
 }
 
 func (q *Qbs) BulkInsert(sliceOfStructPtr interface{}) error {
@@ -714,11 +725,39 @@ func (q *Qbs) QueryStruct(dest interface{}, query string, args ...interface{}) e
 	return nil
 }
 
-func (q *Qbs) log(query string, args ...interface{}) {
-	if q.Log {
-		fmt.Println(query)
-		if len(args) > 0 {
-			fmt.Println(args...)
+//Iterate the rows, the first parameter is a struct pointer, the second parameter is a fucntion
+//which will get called on each row, the in `do` function the structPtr's value will be set to the current row's value..
+//if `do` function returns an error, the iteration will be stopped.
+func (q *Qbs) Iterate(structPtr interface{}, do func() error) error {
+	q.criteria.model = structPtrToModel(structPtr, !q.criteria.omitJoin, q.criteria.omitFields)
+	query, args := q.Dialect.querySql(q.criteria)
+	q.log(query, args...)
+	defer q.Reset()
+	stmt, err := q.prepare(query)
+	if err != nil {
+		return q.updateTxError(err)
+	}
+	rows, err := stmt.Query(args...)
+	if err != nil {
+		return q.updateTxError(err)
+	}
+	rowValue := reflect.ValueOf(structPtr)
+	defer rows.Close()
+	for rows.Next() {
+		err = q.scanRows(rowValue, rows)
+		if err != nil {
+			return err
 		}
+		if err = do(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (q *Qbs) log(query string, args ...interface{}) {
+	if q.Log && queryLogger != nil {
+		queryLogger.Print(query)
+		queryLogger.Println(args...)
 	}
 }

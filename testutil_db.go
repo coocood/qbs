@@ -519,6 +519,28 @@ func doTestConnectionLimit(t *testing.T) {
 	assert.Nil(connectionLimit)
 }
 
+func doTestIterate(t *testing.T) {
+	assert := assrt.NewAssert(t)
+	setupBasicDb()
+	q, _ := GetQbs()
+	for i := 0; i < 4; i++ {
+		b := new(basic)
+		b.State = int64(i)
+		q.Save(b)
+	}
+	var stateSum int64
+	b := new(basic)
+	err := q.Iterate(b, func() error {
+		if b.State == 3 {
+			return errors.New("A error")
+		}
+		stateSum += b.State
+		return nil
+	})
+	assert.Equal("A error", err.Error())
+	assert.Equal(3, stateSum)
+}
+
 func setupBasicDb() {
 	WithMigration(func(mg *Migration) error {
 		b := new(basic)

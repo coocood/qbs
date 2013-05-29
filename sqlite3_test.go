@@ -147,6 +147,11 @@ func TestSqlite3ConnectionLimit(t *testing.T) {
 	doTestConnectionLimit(t)
 }
 
+func TestSqlite3Iterate(t *testing.T) {
+	registerSqlite3Test()
+	doTestIterate(t)
+}
+
 func TestSqlite3AddColumnSQL(t *testing.T) {
 	doTestAddColumSQL(t, sqlite3Syntax)
 }

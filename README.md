@@ -14,7 +14,8 @@ Qbs stands for Query By Struct. A Go ORM. [中文版 README](https://github.com/
 * 2013.05.23: Breaking change, improved performance up to 100%, removed deprecated methods, make Db and Tx field unexported.
 * 2013.05.25: Added `QueryStruct` method to do raw SQL query and fill the result into struct or slice of struct.
  Added support for define custom table/struct and column/filed name convertion function, so you are not forced to use snake case in database.
-* 2013.05.27: dropped go 1.0 support, only support go 1.1, changed to use build-in sql.DB connection pool. 
+* 2013.05.27: dropped go 1.0 support, only support go 1.1, changed to use build-in sql.DB connection pool.
+* 2013.05.29: Added `Iterate` method for processing large data without loading all rows into memory.
 
 ##Features
 

@@ -143,6 +143,11 @@ func TestMysqlConnectionLimit(t *testing.T) {
 	doTestConnectionLimit(t)
 }
 
+func TestMysqlIterate(t *testing.T) {
+	registerMysqlTest()
+	doTestIterate(t)
+}
+
 func TestMysqlAddColumnSQL(t *testing.T) {
 	doTestAddColumSQL(t, mysqlSyntax)
 }
