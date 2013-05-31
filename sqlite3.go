@@ -62,9 +62,18 @@ func (d sqlite3) setModelValue(value reflect.Value, field reflect.Value) error {
 		}
 	case reflect.Struct:
 		if _, ok := field.Interface().(time.Time); ok {
-			t, err := time.Parse("2006-01-02 15:04:05", value.Elem().String())
-			if err != nil {
-				return err
+			var t time.Time
+			var err error
+			switch value.Elem().Kind() {
+			case reflect.String:
+				t, err = time.Parse("2006-01-02 15:04:05", value.Elem().String())
+				if err != nil {
+					return err
+				}
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				t = time.Unix(value.Elem().Int(), 0)
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				t = time.Unix(int64(value.Elem().Uint()), 0)
 			}
 			v := reflect.NewAt(reflect.TypeOf(time.Time{}), unsafe.Pointer(&t))
 			field.Set(v.Elem())
