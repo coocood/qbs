@@ -1,13 +1,12 @@
 package qbs
 
 import (
-	"github.com/coocood/assrt"
 	"testing"
 	"time"
 )
 
 func TestParseTags(t *testing.T) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	m := parseTags(`fk:User`)
 	_, ok := m["fk"]
 	assert.True(ok)
@@ -19,18 +18,18 @@ func TestParseTags(t *testing.T) {
 }
 
 func TestFieldOmit(t *testing.T) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	type Schema struct {
 		A string `qbs:"-"`
 		B string
 		C string
 	}
 	m := structPtrToModel(&Schema{}, true, []string{"C"})
-	assert.OneLen(m.fields)
+	assert.Equal(1, len(m.fields))
 }
 
 func TestInterfaceToModelWithReference(t *testing.T) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	type parent struct {
 		Id    int64
 		Name  string
@@ -66,7 +65,7 @@ func (table *indexedTable) Indexes(indexes *Indexes) {
 }
 
 func TestInterfaceToModel(t *testing.T) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	now := time.Now()
 	table1 := &indexedTable{
 		ColPrimary: 6,
@@ -100,7 +99,7 @@ func TestInterfaceToModel(t *testing.T) {
 }
 
 func TestInterfaceToSubModel(t *testing.T) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	type User struct {
 		Id   int64
 		Name string
@@ -113,11 +112,11 @@ func TestInterfaceToSubModel(t *testing.T) {
 	}
 	pst := new(Post)
 	model := structPtrToModel(pst, true, nil)
-	assert.OneLen(model.refs)
+	assert.Equal(1, len(model.refs))
 }
 
 func TestColumnsAndValues(t *testing.T) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	type User struct {
 		Id   int64
 		Name string
@@ -125,6 +124,6 @@ func TestColumnsAndValues(t *testing.T) {
 	user := new(User)
 	model := structPtrToModel(user, true, nil)
 	columns, values := model.columnsAndValues(false)
-	assert.MustOneLen(columns)
-	assert.MustOneLen(values)
+	assert.MustEqual(1, len(columns))
+	assert.MustEqual(1, len(values))
 }

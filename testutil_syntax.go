@@ -1,7 +1,6 @@
 package qbs
 
 import (
-	"github.com/coocood/assrt"
 	"testing"
 )
 
@@ -30,13 +29,13 @@ type sqlGenModel struct {
 var sqlGenSampleData = &sqlGenModel{3, "FirstName", "LastName", 6}
 
 func doTestAddColumSQL(t *testing.T, info dialectSyntax) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	sql := info.dialect.addColumnSql("a", "c", "", 100)
 	assert.Equal(info.addColumnSql, sql)
 }
 
 func doTestCreateTableSQL(t *testing.T, info dialectSyntax) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	type withoutPk struct {
 		First  string
 		Last   string
@@ -59,7 +58,7 @@ func doTestCreateTableSQL(t *testing.T, info dialectSyntax) {
 }
 
 func doTestCreateIndexSQL(t *testing.T, info dialectSyntax) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	sql := info.dialect.createIndexSql("iname", "itable", true, "a", "b", "c")
 	assert.Equal(info.createUniqueIndexSql, sql)
 	sql = info.dialect.createIndexSql("iname2", "itable2", false, "d", "e")
@@ -67,7 +66,7 @@ func doTestCreateIndexSQL(t *testing.T, info dialectSyntax) {
 }
 
 func doTestInsertSQL(t *testing.T, info dialectSyntax) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	model := structPtrToModel(sqlGenSampleData, true, nil)
 	criteria := &criteria{model: model}
 	criteria.mergePkCondition(info.dialect)
@@ -77,7 +76,7 @@ func doTestInsertSQL(t *testing.T, info dialectSyntax) {
 }
 
 func doTestUpdateSQL(t *testing.T, info dialectSyntax) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	model := structPtrToModel(sqlGenSampleData, true, nil)
 	criteria := &criteria{model: model}
 	criteria.mergePkCondition(info.dialect)
@@ -87,7 +86,7 @@ func doTestUpdateSQL(t *testing.T, info dialectSyntax) {
 }
 
 func doTestDeleteSQL(t *testing.T, info dialectSyntax) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	model := structPtrToModel(sqlGenSampleData, true, nil)
 	criteria := &criteria{model: model}
 	criteria.mergePkCondition(info.dialect)
@@ -97,7 +96,7 @@ func doTestDeleteSQL(t *testing.T, info dialectSyntax) {
 }
 
 func doTestSelectionSQL(t *testing.T, info dialectSyntax) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	type User struct {
 		Id   int64
 		Name string
@@ -117,7 +116,7 @@ func doTestSelectionSQL(t *testing.T, info dialectSyntax) {
 }
 
 func doTestQuerySQL(t *testing.T, info dialectSyntax) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	type Student struct {
 		Name  string
 		Grade int
@@ -139,7 +138,7 @@ func doTestQuerySQL(t *testing.T, info dialectSyntax) {
 }
 
 func doTestDropTableSQL(t *testing.T, info dialectSyntax) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	sql := info.dialect.dropTableSql("drop_table")
 	assert.Equal(info.dropTableIfExistsSql, sql)
 }

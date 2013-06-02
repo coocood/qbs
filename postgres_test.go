@@ -2,7 +2,6 @@ package qbs
 
 import (
 	"fmt"
-	"github.com/coocood/assrt"
 	_ "github.com/lib/pq"
 	"testing"
 	"time"
@@ -40,7 +39,7 @@ func setupPgDb() (*Migration, *Qbs) {
 }
 
 func TestSqlTypeForPgDialect(t *testing.T) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	d := NewPostgres()
 	assert.Equal("boolean", d.sqlType(true, 0))
 	var indirect interface{} = true

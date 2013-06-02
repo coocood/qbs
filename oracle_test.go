@@ -1,13 +1,12 @@
 package qbs
 
 import (
-	"github.com/coocood/assrt"
 	"testing"
 	"time"
 )
 
 func TestSqlTypeForOrDialect(t *testing.T) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	d := NewOracle()
 	assert.Equal("NUMBER", d.sqlType(uint32(2), 0))
 	assert.Equal("NUMBER", d.sqlType(int64(1), 0))

@@ -3,7 +3,6 @@ package qbs
 import (
 	"database/sql"
 	"errors"
-	"github.com/coocood/assrt"
 	"testing"
 	"time"
 )
@@ -23,7 +22,7 @@ func (table *addColumn) Indexes(indexes *Indexes) {
 }
 
 func doTestTransaction(t *testing.T) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	type txModel struct {
 		Id int64
 		A  string
@@ -64,9 +63,9 @@ func doTestTransaction(t *testing.T) {
 
 func doTestSaveAndDelete(t *testing.T, mg *Migration, q *Qbs) {
 	defer closeMigrationAndQbs(mg, q)
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	x := time.Now()
-	assert.Zero(x.Sub(x.UTC()))
+	assert.Equal(0, x.Sub(x.UTC()))
 	now := time.Now()
 	type saveModel struct {
 		Id      int64
@@ -97,7 +96,7 @@ func doTestSaveAndDelete(t *testing.T, mg *Migration, q *Qbs) {
 	err = q.WhereEqual("id", model1.Id).FindAll(&model1r)
 
 	assert.MustNil(err)
-	assert.MustOneLen(model1r)
+	assert.MustEqual(1, len(model1r))
 	assert.Equal(model1.Created.Unix(), model1r[0].Created.Unix())
 	assert.Equal(model1.Updated.Unix(), model1r[0].Updated.Unix())
 
@@ -117,7 +116,7 @@ func doTestSaveAndDelete(t *testing.T, mg *Migration, q *Qbs) {
 	var model1r2 []*saveModel
 	err = q.Where("id = ?", model1.Id).FindAll(&model1r2)
 	assert.MustNil(err)
-	assert.MustOneLen(model1r2)
+	assert.MustEqual(1, len(model1r2))
 	assert.True(model1r2[0].Updated.Sub(model1r2[0].Created) >= 1)
 	assert.Equal(model1.Created.Unix(), model1r2[0].Created.Unix())
 	assert.Equal(model1.Updated.Unix(), model1r2[0].Updated.Unix())
@@ -133,7 +132,7 @@ func doTestSaveAndDelete(t *testing.T, mg *Migration, q *Qbs) {
 
 func doTestSaveAgain(t *testing.T, mg *Migration, q *Qbs) {
 	defer closeMigrationAndQbs(mg, q)
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	b := new(basic)
 	mg.dropTableIfExists(b)
 	mg.CreateTableIfNotExists(b)
@@ -152,7 +151,7 @@ func doTestSaveAgain(t *testing.T, mg *Migration, q *Qbs) {
 }
 
 func doTestForeignKey(t *testing.T) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	type User struct {
 		Id   int64
 		Name string
@@ -201,14 +200,14 @@ func doTestForeignKey(t *testing.T) {
 		var psts []*Post
 		err = q.FindAll(&psts)
 		assert.MustNil(err)
-		assert.OneLen(psts)
+		assert.MustEqual(1, len(psts))
 		assert.Equal("john", psts[0].Author.Name)
 		return nil
 	})
 }
 
 func doTestFind(t *testing.T) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	now := time.Now()
 	type types struct {
 		Id    int64
@@ -276,7 +275,7 @@ func doTestFind(t *testing.T) {
 
 func doTestCreateTable(t *testing.T, mg *Migration) {
 	defer mg.Close()
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	{
 		type AddColumn struct {
 			Prim int64 `qbs:"pk"`
@@ -285,7 +284,7 @@ func doTestCreateTable(t *testing.T, mg *Migration) {
 		mg.dropTableIfExists(table)
 		mg.CreateTableIfNotExists(table)
 		columns := mg.dialect.columnsInTable(mg, table)
-		assert.OneLen(columns)
+		assert.Equal(1, len(columns))
 		assert.True(columns["prim"])
 	}
 	table := &addColumn{}
@@ -303,7 +302,7 @@ type basic struct {
 
 func doTestUpdate(t *testing.T, mg *Migration, q *Qbs) {
 	defer closeMigrationAndQbs(mg, q)
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	mg.dropTableIfExists(&basic{})
 	mg.CreateTableIfNotExists(&basic{})
 	_, err := q.Save(&basic{Name: "a", State: 1})
@@ -351,7 +350,7 @@ func (v *validatorTable) Validate(q *Qbs) error {
 
 func doTestValidation(t *testing.T, mg *Migration, q *Qbs) {
 	defer closeMigrationAndQbs(mg, q)
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	valid := new(validatorTable)
 	mg.dropTableIfExists(valid)
 	mg.CreateTableIfNotExists(valid)
@@ -365,7 +364,7 @@ func doTestValidation(t *testing.T, mg *Migration, q *Qbs) {
 
 func doTestBoolType(t *testing.T, mg *Migration, q *Qbs) {
 	defer closeMigrationAndQbs(mg, q)
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	type BoolType struct {
 		Id     int64
 		Active bool
@@ -382,7 +381,7 @@ func doTestBoolType(t *testing.T, mg *Migration, q *Qbs) {
 
 func doTestStringPk(t *testing.T, mg *Migration, q *Qbs) {
 	defer closeMigrationAndQbs(mg, q)
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	type StringPk struct {
 		Tag   string `qbs:"pk,size:16"`
 		Count int32
@@ -400,7 +399,7 @@ func doTestStringPk(t *testing.T, mg *Migration, q *Qbs) {
 }
 
 func doTestCount(t *testing.T) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	setupBasicDb()
 	WithQbs(func(q *Qbs) error {
 		basic := new(basic)
@@ -422,7 +421,7 @@ func doTestCount(t *testing.T) {
 
 func doTestQueryMap(t *testing.T, mg *Migration, q *Qbs) {
 	defer closeMigrationAndQbs(mg, q)
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	type types struct {
 		Id      int64
 		Name    string `qbs:"size:64"`
@@ -455,7 +454,7 @@ func doTestQueryMap(t *testing.T, mg *Migration, q *Qbs) {
 }
 
 func doTestBulkInsert(t *testing.T) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	setupBasicDb()
 	WithQbs(func(q *Qbs) error {
 		var bulk []*basic
@@ -475,7 +474,7 @@ func doTestBulkInsert(t *testing.T) {
 }
 
 func doTestQueryStruct(t *testing.T) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	setupBasicDb()
 	WithQbs(func(q *Qbs) error {
 		b := new(basic)
@@ -490,14 +489,14 @@ func doTestQueryStruct(t *testing.T) {
 		assert.Equal(2, b.State)
 		var slice []*basic
 		q.QueryStruct(&slice, "SELECT * FROM basic")
-		assert.OneLen(slice)
+		assert.Equal(1, len(slice))
 		assert.Equal("abc", slice[0].Name)
 		return nil
 	})
 }
 
 func doTestConnectionLimit(t *testing.T) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	SetConnectionLimit(2, false)
 	q0, _ := GetQbs()
 	GetQbs()
@@ -520,7 +519,7 @@ func doTestConnectionLimit(t *testing.T) {
 }
 
 func doTestIterate(t *testing.T) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	setupBasicDb()
 	q, _ := GetQbs()
 	for i := 0; i < 4; i++ {

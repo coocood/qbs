@@ -2,7 +2,6 @@ package qbs
 
 import (
 	"database/sql"
-	"github.com/coocood/assrt"
 	"testing"
 	"time"
 
@@ -44,7 +43,7 @@ func setupSqlite3Db() (*Migration, *Qbs) {
 }
 
 func TestSqlite3SqlType(t *testing.T) {
-	assert := assrt.NewAssert(t)
+	assert := NewAssert(t)
 	d := NewSqlite3()
 	assert.Equal("integer", d.sqlType(true, 0))
 	var indirect interface{} = true
