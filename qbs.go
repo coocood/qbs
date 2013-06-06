@@ -262,6 +262,7 @@ func (q *Qbs) FindAll(ptrOfSliceOfStructPtr interface{}) error {
 func (q *Qbs) doQueryRow(out interface{}, query string, args ...interface{}) error {
 	defer q.Reset()
 	rowValue := reflect.ValueOf(out)
+	q.log(query, args...)
 	stmt, err := q.prepare(query)
 	if err != nil {
 		return q.updateTxError(err)
