@@ -25,7 +25,7 @@ var errorLogger *log.Logger = log.New(os.Stderr, "qbs:", log.LstdFlags)
 
 type Qbs struct {
 	Dialect      Dialect
-	Log          bool
+	Log          bool //Set to true to print out sql statement.
 	tx           *sql.Tx
 	txStmtMap    map[string]*sql.Stmt
 	criteria     *criteria
