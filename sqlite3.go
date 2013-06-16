@@ -16,6 +16,13 @@ func NewSqlite3() Dialect {
 	return d
 }
 
+func RegisterSqlite3(dbFileName string) {
+	dsn := new(DataSourceName)
+	dsn.DbName = dbFileName
+	dsn.Dialect = NewSqlite3()
+	RegisterWithDataSourceName(dsn)
+}
+
 func (d sqlite3) sqlType(f interface{}, size int) string {
 	switch f.(type) {
 	case bool:

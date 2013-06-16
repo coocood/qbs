@@ -50,30 +50,17 @@ func (ix *Indexes) AddUnique(columns ...string) {
 type modelField struct {
 	name      string // Column name
 	camelName string
-	value     interface{}       // Value
-	sqlTags   map[string]string // The sql struct tags for this field
+	value     interface{} // Value
 	pk        bool
-}
-
-// NotNull tests if the field is declared as NOT NULL
-func (field *modelField) notNull() bool {
-	_, ok := field.sqlTags["notnull"]
-	return ok
-}
-
-// Default returns the default value for the field
-func (field *modelField) dfault() string {
-	return field.sqlTags["default"]
-}
-
-// Size returns the field size, e.g. for varchars
-func (field *modelField) size() int {
-	v, ok := field.sqlTags["size"]
-	if ok {
-		i, _ := strconv.Atoi(v)
-		return i
-	}
-	return 0
+	notnull   bool
+	index     bool
+	unique    bool
+	updated   bool
+	created   bool
+	size      int
+	dfault    string
+	fk        string
+	join      string
 }
 
 // Model represents a parsed schema interface{}.
@@ -118,11 +105,17 @@ func (model *model) columnsAndValues(forUpdate bool) ([]string, []interface{}) {
 	return columns, values
 }
 
-func (model *model) timeFiled(name string) *modelField {
+func (model *model) timeField(name string) *modelField {
 	for _, v := range model.fields {
 		if _, ok := v.value.(time.Time); ok {
-			if _, ok := v.sqlTags[name]; ok {
-				return v
+			if name == "created" {
+				if v.created {
+					return v
+				}
+			} else if name == "updated" {
+				if v.updated {
+					return v
+				}
 			}
 			if v.name == name {
 				return v
@@ -193,15 +186,12 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 				continue
 			}
 		}
-		parsedSqlTags := parseTags(sqlTag)
+
 		fd := new(modelField)
+		parseTags(fd, sqlTag)
 		fd.camelName = structFiled.Name
 		fd.name = FieldNameToColumnName(structFiled.Name)
-		fd.sqlTags = parsedSqlTags
 		fd.value = structValue.FieldByName(structFiled.Name).Interface()
-		if _, ok := fd.sqlTags["pk"]; ok {
-			fd.pk = true
-		}
 		if _, ok := fd.value.(int64); ok && fd.camelName == "Id" {
 			fd.pk = true
 		}
@@ -213,9 +203,12 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 		if root {
 			var fk, explicitJoin, implicitJoin bool
 			var refName string
-			refName, fk = parsedSqlTags["fk"]
-			if !fk {
-				refName, explicitJoin = parsedSqlTags["join"]
+			if fd.fk != "" {
+				refName = fd.fk
+				fk = true
+			} else if fd.join != "" {
+				refName = fd.join
+				explicitJoin = true
 			}
 			if len(fd.camelName) > 3 && strings.HasSuffix(fd.camelName, "Id") {
 				fdValue := reflect.ValueOf(fd.value)
@@ -255,9 +248,9 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 					panic("Can not find referenced field")
 				}
 			}
-			if _, ok := parsedSqlTags["unique"]; ok {
+			if fd.unique {
 				model.indexes.AddUnique(fd.name)
-			} else if _, ok := parsedSqlTags["index"]; ok {
+			} else if fd.index {
 				model.indexes.Add(fd.name)
 			}
 		}
@@ -289,22 +282,46 @@ func tableName(talbe interface{}) string {
 	return StructNameToTableName(t.Name())
 }
 
-func parseTags(s string) map[string]string {
+func parseTags(fd *modelField, s string) {
 	if s == "" {
-		return nil
+		return
 	}
 	c := strings.Split(s, ",")
-	m := make(map[string]string)
 	for _, v := range c {
 		c2 := strings.Split(v, ":")
 		if len(c2) == 2 {
-			m[c2[0]] = c2[1]
+			switch c2[0] {
+			case "fk":
+				fd.fk = c2[1]
+			case "size":
+				fd.size, _ = strconv.Atoi(c2[1])
+			case "default":
+				fd.dfault = c2[1]
+			case "join":
+				fd.join = c2[1]
+			default:
+				panic(c2[0] + " tag syntax error")
+			}
 		} else {
-			m[v] = ""
+			switch c2[0] {
+			case "created":
+				fd.created = true
+			case "pk":
+				fd.pk = true
+			case "updated":
+				fd.updated = true
+			case "index":
+				fd.index = true
+			case "unique":
+				fd.unique = true
+			case "notnull":
+				fd.notnull = true
+			default:
+				panic(c2[0] + " tag syntax error")
+			}
 		}
 	}
-	validateTag(m)
-	return m
+	return
 }
 
 func toSnake(s string) string {
@@ -339,28 +356,6 @@ func snakeToUpperCamel(s string) string {
 		}
 	}
 	return buf.String()
-}
-
-func validateTag(tagMap map[string]string) {
-	for k, v := range tagMap {
-		if _, ok := ValidTags[k]; !ok {
-			panic("invalid tag:" + k + v)
-		}
-		switch k {
-		case "fk", "join", "default":
-			if len(v) == 0 {
-				panic(k + " tag syntax error")
-			}
-		case "size":
-			if _, err := strconv.Atoi(v); err != nil {
-				panic(k + " tag syntax error")
-			}
-		default:
-			if len(v) != 0 {
-				panic(k + " tag syntax error")
-			}
-		}
-	}
 }
 
 var ValidTags = map[string]bool{

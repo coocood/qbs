@@ -1,15 +1,9 @@
 package qbs
 
 import (
-	"fmt"
 	_ "github.com/lib/pq"
 	"testing"
 	"time"
-)
-
-const (
-	pgDriver    = "postgres"
-	pgDrvFormat = "user=%v dbname=%v sslmode=disable"
 )
 
 var pgSyntax = dialectSyntax{
@@ -28,7 +22,7 @@ var pgSyntax = dialectSyntax{
 }
 
 func registerPgTest() {
-	Register(pgDriver, fmt.Sprintf(pgDrvFormat, "postgres", testDbName), testDbName, NewPostgres())
+	RegisterWithDataSourceName(DefaultPostgresDataSourceName(testDbName))
 }
 
 func setupPgDb() (*Migration, *Qbs) {
@@ -168,6 +162,23 @@ func TestPgQuerySQL(t *testing.T) {
 
 func TestPgDropTableSQL(t *testing.T) {
 	doTestDropTableSQL(t, pgSyntax)
+}
+
+func TestPgDataSourceName(t *testing.T) {
+	dsn := new(DataSourceName)
+	dsn.DbName = "abc"
+	dsn.Username = "john"
+	dsn.Dialect = NewPostgres()
+	assert := NewAssert(t)
+	assert.Equal("user=john dbname=abc", dsn)
+	dsn.Password = "123"
+	assert.Equal("user=john password=123 dbname=abc", dsn)
+	dsn.Host = "192.168.1.3"
+	assert.Equal("user=john password=123 dbname=abc host=192.168.1.3", dsn)
+	dsn.UnixSocket = true
+	assert.Equal("user=john password=123 dbname=abc host=/192.168.1.3", dsn)
+	dsn.Port = "9876"
+	assert.Equal("user=john password=123 dbname=abc host=/192.168.1.3 port=9876", dsn)
 }
 
 func BenchmarkPgFind(b *testing.B) {

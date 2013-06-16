@@ -1,15 +1,10 @@
 package qbs
 
 import (
-	"database/sql"
 	"testing"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
-)
-
-const (
-	sqlite3Driver = "sqlite3"
 )
 
 var sqlite3Syntax = dialectSyntax{
@@ -27,12 +22,8 @@ var sqlite3Syntax = dialectSyntax{
 	"CREATE INDEX `iname2` ON `itable2` (`d`, `e`)",
 }
 
-func openSqlite3Db() (*sql.DB, error) {
-	return sql.Open(sqlite3Driver, "/tmp/foo.db")
-}
 func registerSqlite3Test() {
-	//	os.Remove("/tmp/foo.db")
-	Register(sqlite3Driver, "/tmp/foo.db", testDbName, NewSqlite3())
+	RegisterSqlite3("/tmp/foo.db")
 }
 
 func setupSqlite3Db() (*Migration, *Qbs) {

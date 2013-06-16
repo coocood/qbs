@@ -19,6 +19,15 @@ func NewPostgres() Dialect {
 	return d
 }
 
+func DefaultPostgresDataSourceName(dbName string) *DataSourceName {
+	dsn := new(DataSourceName)
+	dsn.Dialect = NewPostgres()
+	dsn.Username = "postgres"
+	dsn.DbName = dbName
+	dsn.Append("sslmode", "disable")
+	return dsn
+}
+
 func (d postgres) quote(s string) string {
 	segs := strings.Split(s, ".")
 	buf := new(bytes.Buffer)

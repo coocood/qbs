@@ -1,7 +1,9 @@
 package qbs
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
 )
 
 type Dialect interface {
@@ -47,4 +49,91 @@ type Dialect interface {
 	primaryKeySql(isString bool, size int) string
 
 	catchMigrationError(err error) bool
+}
+
+type DataSourceName struct {
+	DbName     string
+	Username   string
+	Password   string
+	UnixSocket bool
+	Host       string
+	Port       string
+	Variables  []string
+	Dialect    Dialect
+}
+
+func (dsn *DataSourceName) String() string {
+	if dsn.Dialect == nil {
+		panic("DbDialect is not set")
+	}
+	switch dsn.Dialect.(type) {
+	case *mysql:
+		dsnformat := "%v@%v/%v%v"
+		login := dsn.Username
+		if dsn.Password != "" {
+			login += ":" + dsn.Password
+		}
+		var address string
+		if dsn.Host != "" {
+			address = dsn.Host
+			if dsn.Port != "" {
+				address += ":" + dsn.Port
+			}
+			protocol := "tcp"
+			if dsn.UnixSocket {
+				protocol = "unix"
+			}
+			address = protocol + "(" + address + ")"
+		}
+		var variables string
+		if dsn.Variables != nil {
+			variables = "?" + strings.Join(dsn.Variables, "&")
+		}
+		return fmt.Sprintf(dsnformat, login, address, dsn.DbName, variables)
+	case *sqlite3:
+		return dsn.DbName
+	case *postgres:
+		pairs := []string{"user=" + dsn.Username}
+		if dsn.Password != "" {
+			pairs = append(pairs, "password="+dsn.Password)
+		}
+		if dsn.DbName != "" {
+			pairs = append(pairs, "dbname="+dsn.DbName)
+		}
+		pairs = append(pairs, dsn.Variables...)
+		if dsn.Host != "" {
+			host := dsn.Host
+			if dsn.UnixSocket {
+				host = "/" + host
+			}
+			pairs = append(pairs, "host="+host)
+		}
+		if dsn.Port != "" {
+			pairs = append(pairs, "port="+dsn.Port)
+		}
+		return strings.Join(pairs, " ")
+	}
+	panic("Unknown DbDialect.")
+}
+
+func (dsn *DataSourceName) Append(key, value string) *DataSourceName {
+	dsn.Variables = append(dsn.Variables, key+"="+value)
+	return dsn
+}
+
+func RegisterWithDataSourceName(dsn *DataSourceName) {
+	var driverName string
+	switch dsn.Dialect.(type) {
+	case *mysql:
+		driverName = "mysql"
+	case *sqlite3:
+		driverName = "sqlite3"
+	case *postgres:
+		driverName = "postgres"
+	}
+	dbName := dsn.DbName
+	if driverName == "sqlite3" {
+		dbName = ""
+	}
+	Register(driverName, dsn.String(), dbName, dsn.Dialect)
 }

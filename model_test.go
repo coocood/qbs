@@ -7,14 +7,13 @@ import (
 
 func TestParseTags(t *testing.T) {
 	assert := NewAssert(t)
-	m := parseTags(`fk:User`)
-	_, ok := m["fk"]
-	assert.True(ok)
-	m = parseTags(`notnull,default:'banana'`)
-	_, ok = m["notnull"]
-	assert.True(ok)
-	x, _ := m["default"]
-	assert.Equal("'banana'", x)
+	fd := new(modelField)
+	parseTags(fd, `fk:User`)
+	assert.Equal("User", fd.fk)
+	fd = new(modelField)
+	parseTags(fd, `notnull,default:'banana'`)
+	assert.True(fd.notnull)
+	assert.Equal("'banana'", fd.dfault)
 }
 
 func TestFieldOmit(t *testing.T) {
@@ -86,12 +85,12 @@ func TestInterfaceToModel(t *testing.T) {
 	assert.True(f.pk)
 
 	f = m.fields[1]
-	assert.Equal("'banana'", f.dfault())
+	assert.Equal("'banana'", f.dfault)
 
 	f = m.fields[2]
 	str, _ := f.value.(string)
 	assert.Equal("orange", str)
-	assert.Equal(64, f.size())
+	assert.Equal(64, f.size)
 
 	f = m.fields[3]
 	tm, _ := f.value.(time.Time)

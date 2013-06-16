@@ -1,15 +1,9 @@
 package qbs
 
 import (
-	"fmt"
 	_ "github.com/coocood/mysql"
 	"testing"
 	"time"
-)
-
-const (
-	mysqlDrvformat = "%v@/%v?charset=utf8&parseTime=true&loc=Local"
-	mysqlDriver    = "mysql"
 )
 
 var mysqlSyntax = dialectSyntax{
@@ -35,7 +29,12 @@ func setupMysqlDb() (*Migration, *Qbs) {
 }
 
 func registerMysqlTest() {
-	Register(mysqlDriver, fmt.Sprintf(mysqlDrvformat, "root", testDbName), testDbName, NewMysql())
+	dsn := new(DataSourceName)
+	dsn.DbName = testDbName
+	dsn.Username = "root"
+	dsn.Dialect = NewMysql()
+	dsn.Append("parseTime", "true").Append("loc", "Local")
+	RegisterWithDataSourceName(dsn)
 }
 
 func TestMysqlSqlType(t *testing.T) {
@@ -182,10 +181,36 @@ func TestMysqlDropTableSQL(t *testing.T) {
 	doTestDropTableSQL(t, mysqlSyntax)
 }
 
+func TestMysqlDataSourceName(t *testing.T) {
+	dsn := new(DataSourceName)
+	dsn.DbName = "abc"
+	dsn.Username = "john"
+	dsn.Dialect = NewMysql()
+	assert := NewAssert(t)
+	assert.Equal("john@/abc", dsn)
+	dsn.Password = "123"
+	assert.Equal("john:123@/abc", dsn)
+	dsn.Host = "192.168.1.3"
+	assert.Equal("john:123@tcp(192.168.1.3)/abc", dsn)
+	dsn.UnixSocket = true
+	assert.Equal("john:123@unix(192.168.1.3)/abc", dsn)
+	dsn.Append("charset", "utf8")
+	dsn.Append("parseTime", "true")
+	assert.Equal("john:123@unix(192.168.1.3)/abc?charset=utf8&parseTime=true", dsn)
+	dsn.Port = "3336"
+	assert.Equal("john:123@unix(192.168.1.3:3336)/abc?charset=utf8&parseTime=true", dsn)
+}
+
 func BenchmarkMysqlFind(b *testing.B) {
 	registerMysqlTest()
 	doBenchmarkFind(b)
 }
+
+func BenchmarkMysqlQueryStruct(b *testing.B) {
+	registerMysqlTest()
+	doBenchmarkQueryStruct(b)
+}
+
 func BenchmarkMysqlDbQuery(b *testing.B) {
 	registerMysqlTest()
 	doBenchmarkDbQuery(b)

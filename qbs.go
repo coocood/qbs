@@ -444,11 +444,11 @@ func (q *Qbs) Save(structPtr interface{}) (affected int64, err error) {
 	q.criteria.model = model
 	now := time.Now()
 	var id int64 = 0
-	updateModelField := model.timeFiled("updated")
+	updateModelField := model.timeField("updated")
 	if updateModelField != nil {
 		updateModelField.value = now
 	}
-	createdModelField := model.timeFiled("created")
+	createdModelField := model.timeField("created")
 	var isInsert bool
 	if !model.pkZero() && q.WhereEqual(model.pk.name, model.pk.value).Count(model.table) > 0 { //id is given, can be an update operation.
 		affected, err = q.Dialect.update(q)

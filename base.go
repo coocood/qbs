@@ -210,13 +210,13 @@ func (d base) createTableSql(model *model, ifNotExists bool) string {
 		}
 		if field.pk {
 			_, ok := field.value.(string)
-			b = append(b, d.dialect.primaryKeySql(ok, field.size()))
+			b = append(b, d.dialect.primaryKeySql(ok, field.size))
 		} else {
-			b = append(b, d.dialect.sqlType(field.value, field.size()))
-			if field.notNull() {
+			b = append(b, d.dialect.sqlType(field.value, field.size))
+			if field.notnull {
 				b = append(b, "NOT NULL")
 			}
-			if x := field.dfault(); x != "" {
+			if x := field.dfault; x != "" {
 				b = append(b, "DEFAULT "+x)
 			}
 		}

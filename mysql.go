@@ -17,6 +17,17 @@ func NewMysql() Dialect {
 	return d
 }
 
+func DefaultMysqlDataSourceName(dbName string) *DataSourceName {
+	dsn := new(DataSourceName)
+	dsn.Dialect = new(mysql)
+	dsn.Username = "root"
+	dsn.DbName = dbName
+	dsn.Append("loc", "Local")
+	dsn.Append("charset", "utf8")
+	dsn.Append("parseTime", "true")
+	return dsn
+}
+
 func (d mysql) parseBool(value reflect.Value) bool {
 	return value.Int() != 0
 }

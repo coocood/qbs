@@ -138,3 +138,11 @@ func StringsToInterfaces(strs ...string) []interface{} {
 	}
 	return ret
 }
+
+func IntsToInterfaces(ints ...int64) []interface{} {
+	ret := make([]interface{}, len(ints))
+	for i := 0; i < len(ints); i++ {
+		ret[i] = ints[i]
+	}
+	return ret
+}
