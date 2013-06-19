@@ -162,26 +162,30 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 	structType := reflect.TypeOf(f).Elem()
 	structValue := reflect.ValueOf(f).Elem()
 	for i := 0; i < structType.NumField(); i++ {
-		structFiled := structType.Field(i)
+		structField := structType.Field(i)
 		omit := false
 		for _, v := range omitFields {
-			if v == structFiled.Name {
+			if v == structField.Name {
 				omit = true
 			}
 		}
 		if omit {
 			continue
 		}
-		sqlTag := structFiled.Tag.Get("qbs")
+		fieldValue := structValue.FieldByName(structField.Name)
+		if !fieldValue.CanInterface() {
+			continue
+		}
+		sqlTag := structField.Tag.Get("qbs")
 		if sqlTag == "-" {
 			continue
 		}
-		kind := structFiled.Type.Kind()
+		kind := structField.Type.Kind()
 		switch kind {
 		case reflect.Ptr, reflect.Map:
 			continue
 		case reflect.Slice:
-			elemKind := structFiled.Type.Elem().Kind()
+			elemKind := structField.Type.Elem().Kind()
 			if elemKind != reflect.Uint8 {
 				continue
 			}
@@ -189,9 +193,9 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 
 		fd := new(modelField)
 		parseTags(fd, sqlTag)
-		fd.camelName = structFiled.Name
-		fd.name = FieldNameToColumnName(structFiled.Name)
-		fd.value = structValue.FieldByName(structFiled.Name).Interface()
+		fd.camelName = structField.Name
+		fd.name = FieldNameToColumnName(structField.Name)
+		fd.value = fieldValue.Interface()
 		if _, ok := fd.value.(int64); ok && fd.camelName == "Id" {
 			fd.pk = true
 		}

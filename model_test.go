@@ -104,10 +104,11 @@ func TestInterfaceToSubModel(t *testing.T) {
 		Name string
 	}
 	type Post struct {
-		Id       int64
-		AuthorId int64 `qbs:"fk:Author"`
-		Author   *User
-		Content  string
+		Id         int64
+		AuthorId   int64 `qbs:"fk:Author"`
+		Author     *User
+		Content    string
+		unexported int64
 	}
 	pst := new(Post)
 	model := structPtrToModel(pst, true, nil)
