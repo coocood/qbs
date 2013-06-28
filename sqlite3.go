@@ -24,19 +24,24 @@ func RegisterSqlite3(dbFileName string) {
 }
 
 func (d sqlite3) sqlType(f interface{}, size int) string {
-	switch f.(type) {
-	case bool:
+	fieldValue := reflect.ValueOf(f)
+	switch fieldValue.Kind() {
+	case reflect.Bool:
 		return "integer"
-	case int, int8, int16, int32, uint, uint8, uint16, uint32, int64, uint64:
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return "integer"
-	case float32, float64:
+	case reflect.Float32, reflect.Float64:
 		return "real"
-	case []byte:
+	case reflect.String:
 		return "text"
-	case string:
-		return "text"
-	case time.Time:
-		return "text"
+	case reflect.Slice:
+		if reflect.TypeOf(f).Elem().Kind() == reflect.Uint8 {
+			return "text"
+		}
+	case reflect.Struct:
+		if _, ok := fieldValue.Interface().(time.Time); ok {
+			return "text"
+		}
 	}
 	panic("invalid sql type")
 }

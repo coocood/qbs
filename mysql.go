@@ -33,27 +33,32 @@ func (d mysql) parseBool(value reflect.Value) bool {
 }
 
 func (d mysql) sqlType(f interface{}, size int) string {
-	switch f.(type) {
-	case time.Time:
-		return "timestamp"
-	case bool:
+	fieldValue := reflect.ValueOf(f)
+	switch fieldValue.Kind() {
+	case reflect.Bool:
 		return "boolean"
-	case int, int8, int16, int32, uint, uint8, uint16, uint32:
+	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Uint8, reflect.Uint16, reflect.Uint32:
 		return "int"
-	case int64, uint64:
+	case reflect.Uint, reflect.Uint64, reflect.Int, reflect.Int64:
 		return "bigint"
-	case float32, float64:
+	case reflect.Float32, reflect.Float64:
 		return "double"
-	case []byte:
-		if size > 0 && size < 65532 {
-			return fmt.Sprintf("varbinary(%d)", size)
-		}
-		return "longblob"
-	case string:
+	case reflect.String:
 		if size > 0 && size < 65532 {
 			return fmt.Sprintf("varchar(%d)", size)
 		}
 		return "longtext"
+	case reflect.Slice:
+		if reflect.TypeOf(f).Elem().Kind() == reflect.Uint8 {
+			if size > 0 && size < 65532 {
+				return fmt.Sprintf("varbinary(%d)", size)
+			}
+			return "longblob"
+		}
+	case reflect.Struct:
+		if _, ok := fieldValue.Interface().(time.Time); ok {
+			return "timestamp"
+		}
 	}
 	panic("invalid sql type")
 }

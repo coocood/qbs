@@ -8,8 +8,8 @@ import (
 
 var pgSyntax = dialectSyntax{
 	NewPostgres(),
-	`CREATE TABLE IF NOT EXISTS "without_pk" ( "first" text, "last" text, "amount" integer )`,
-	`CREATE TABLE "with_pk" ( "primary" bigserial PRIMARY KEY, "first" text, "last" text, "amount" integer )`,
+	`CREATE TABLE IF NOT EXISTS "without_pk" ( "first" text, "last" text, "amount" bigint )`,
+	`CREATE TABLE "with_pk" ( "primary" bigserial PRIMARY KEY, "first" text, "last" text, "amount" bigint )`,
 	`INSERT INTO "sql_gen_model" ("prim", "first", "last", "amount") VALUES ($1, $2, $3, $4) RETURNING "prim"`,
 	`UPDATE "sql_gen_model" SET "first" = $1, "last" = $2, "amount" = $3 WHERE "prim" = $4`,
 	`DELETE FROM "sql_gen_model" WHERE "prim" = $1`,

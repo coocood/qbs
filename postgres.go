@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -42,24 +43,32 @@ func (d postgres) quote(s string) string {
 }
 
 func (d postgres) sqlType(f interface{}, size int) string {
-	switch f.(type) {
-	case time.Time:
-		return "timestamp with time zone"
-	case bool:
+	fieldValue := reflect.ValueOf(f)
+	switch fieldValue.Kind() {
+	case reflect.Bool:
 		return "boolean"
-	case int, int8, int16, int32, uint, uint8, uint16, uint32:
+	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Uint8, reflect.Uint16, reflect.Uint32:
 		return "integer"
-	case int64, uint64:
+	case reflect.Uint, reflect.Uint64, reflect.Int, reflect.Int64:
 		return "bigint"
-	case float32, float64:
+	case reflect.Float32, reflect.Float64:
 		return "double precision"
-	case []byte:
-		return "bytea"
-	case string:
+	case reflect.String:
 		if size > 0 && size < 65532 {
 			return fmt.Sprintf("varchar(%d)", size)
 		}
 		return "text"
+	case reflect.Slice:
+		if reflect.TypeOf(f).Elem().Kind() == reflect.Uint8 {
+			if size > 0 && size < 65532 {
+				return fmt.Sprintf("varbinary(%d)", size)
+			}
+			return "bytea"
+		}
+	case reflect.Struct:
+		if _, ok := fieldValue.Interface().(time.Time); ok {
+			return "timestamp with time zone"
+		}
 	}
 	panic("invalid sql type")
 }
