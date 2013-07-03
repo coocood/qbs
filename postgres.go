@@ -66,8 +66,20 @@ func (d postgres) sqlType(f interface{}, size int) string {
 			return "bytea"
 		}
 	case reflect.Struct:
-		if _, ok := fieldValue.Interface().(time.Time); ok {
+		switch fieldValue.Interface().(type) {
+		case time.Time:
 			return "timestamp with time zone"
+		case sql.NullBool:
+			return "boolean"
+		case sql.NullInt64:
+			return "bigint"
+		case sql.NullFloat64:
+			return "double"
+		case sql.NullString:
+			if size > 0 && size < 65532 {
+				return fmt.Sprintf("varchar(%d)", size)
+			}
+			return "text"
 		}
 	}
 	panic("invalid sql type")

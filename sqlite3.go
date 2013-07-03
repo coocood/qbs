@@ -1,6 +1,7 @@
 package qbs
 
 import (
+	"database/sql"
 	"reflect"
 	"time"
 	"unsafe"
@@ -39,7 +40,16 @@ func (d sqlite3) sqlType(f interface{}, size int) string {
 			return "text"
 		}
 	case reflect.Struct:
-		if _, ok := fieldValue.Interface().(time.Time); ok {
+		switch fieldValue.Interface().(type) {
+		case time.Time:
+			return "text"
+		case sql.NullBool:
+			return "integer"
+		case sql.NullInt64:
+			return "integer"
+		case sql.NullFloat64:
+			return "real"
+		case sql.NullString:
 			return "text"
 		}
 	}

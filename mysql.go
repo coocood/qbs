@@ -56,8 +56,20 @@ func (d mysql) sqlType(f interface{}, size int) string {
 			return "longblob"
 		}
 	case reflect.Struct:
-		if _, ok := fieldValue.Interface().(time.Time); ok {
+		switch fieldValue.Interface().(type) {
+		case time.Time:
 			return "timestamp"
+		case sql.NullBool:
+			return "boolean"
+		case sql.NullInt64:
+			return "bigint"
+		case sql.NullFloat64:
+			return "double"
+		case sql.NullString:
+			if size > 0 && size < 65532 {
+				return fmt.Sprintf("varchar(%d)", size)
+			}
+			return "longtext"
 		}
 	}
 	panic("invalid sql type")
