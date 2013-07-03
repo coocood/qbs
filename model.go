@@ -2,6 +2,7 @@ package qbs
 
 import (
 	"bytes"
+	"database/sql"
 	"reflect"
 	"strconv"
 	"strings"
@@ -216,7 +217,7 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 			}
 			if len(fd.camelName) > 3 && strings.HasSuffix(fd.camelName, "Id") {
 				fdValue := reflect.ValueOf(fd.value)
-				if fdValue.Kind() == reflect.Int64 {
+				if _, ok := fd.value.(sql.NullInt64); ok || fdValue.Kind() == reflect.Int64 {
 					i := strings.LastIndex(fd.camelName, "Id")
 					refName = fd.camelName[:i]
 					implicitJoin = true

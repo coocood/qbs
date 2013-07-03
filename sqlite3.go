@@ -1,6 +1,7 @@
 package qbs
 
 import (
+	"database/sql"
 	"reflect"
 	"time"
 	"unsafe"
@@ -39,7 +40,16 @@ func (d sqlite3) sqlType(f interface{}, size int) string {
 			return "text"
 		}
 	case reflect.Struct:
-		if _, ok := fieldValue.Interface().(time.Time); ok {
+		switch fieldValue.Interface().(type) {
+		case time.Time:
+			return "text"
+		case sql.NullBool:
+			return "integer"
+		case sql.NullInt64:
+			return "integer"
+		case sql.NullFloat64:
+			return "real"
+		case sql.NullString:
 			return "text"
 		}
 	}
@@ -73,7 +83,8 @@ func (d sqlite3) setModelValue(value reflect.Value, field reflect.Value) error {
 			field.SetBytes(value.Elem().Bytes())
 		}
 	case reflect.Struct:
-		if _, ok := field.Interface().(time.Time); ok {
+		switch field.Interface().(type) {
+		case time.Time:
 			var t time.Time
 			var err error
 			switch value.Elem().Kind() {
@@ -89,6 +100,23 @@ func (d sqlite3) setModelValue(value reflect.Value, field reflect.Value) error {
 			}
 			v := reflect.NewAt(reflect.TypeOf(time.Time{}), unsafe.Pointer(&t))
 			field.Set(v.Elem())
+		case sql.NullBool:
+			b := true
+			if value.Elem().Int() == 0 {
+				b = false
+			}
+			field.Set(reflect.ValueOf(sql.NullBool{b, true}))
+		case sql.NullFloat64:
+			if f, ok := value.Elem().Interface().(float64); ok {
+				field.Set(reflect.ValueOf(sql.NullFloat64{f, true}))
+			}
+		case sql.NullInt64:
+			if i, ok := value.Elem().Interface().(int64); ok {
+				field.Set(reflect.ValueOf(sql.NullInt64{i, true}))
+			}
+		case sql.NullString:
+			str := string(value.Elem().String())
+			field.Set(reflect.ValueOf(sql.NullString{str, true}))
 		}
 	}
 	return nil
