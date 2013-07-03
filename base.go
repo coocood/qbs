@@ -61,9 +61,8 @@ func (d base) setModelValue(driverValue, fieldValue reflect.Value) error {
 		case time.Time:
 			fieldValue.Set(driverValue.Elem())
 		case sql.NullBool:
-			if b, ok := driverValue.Elem().Interface().(bool); ok {
-				fieldValue.Set(reflect.ValueOf(sql.NullBool{b, true}))
-			}
+			b := d.dialect.parseBool(driverValue.Elem())
+			fieldValue.Set(reflect.ValueOf(sql.NullBool{b, true}))
 		case sql.NullFloat64:
 			if f, ok := driverValue.Elem().Interface().(float64); ok {
 				fieldValue.Set(reflect.ValueOf(sql.NullFloat64{f, true}))
