@@ -74,7 +74,7 @@ func (d postgres) sqlType(f interface{}, size int) string {
 		case sql.NullInt64:
 			return "bigint"
 		case sql.NullFloat64:
-			return "double"
+			return "double precision"
 		case sql.NullString:
 			if size > 0 && size < 65532 {
 				return fmt.Sprintf("varchar(%d)", size)
