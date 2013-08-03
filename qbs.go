@@ -158,6 +158,9 @@ func (q *Qbs) Commit() error {
 	err := q.tx.Commit()
 	q.updateTxError(err)
 	q.tx = nil
+	for _, v := range q.txStmtMap {
+		v.Close()
+	}
 	q.txStmtMap = nil
 	return q.firstTxError
 }
@@ -166,6 +169,9 @@ func (q *Qbs) Commit() error {
 func (q *Qbs) Rollback() error {
 	err := q.tx.Rollback()
 	q.tx = nil
+	for _, v := range q.txStmtMap {
+		v.Close()
+	}
 	q.txStmtMap = nil
 	return q.updateTxError(err)
 }
