@@ -90,3 +90,7 @@ func (d mysql) primaryKeySql(isString bool, size int) string {
 	}
 	return "bigint PRIMARY KEY AUTO_INCREMENT"
 }
+
+func (d mysql) listAllTableNames() []string {
+	panic("not implemented yet")
+}

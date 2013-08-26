@@ -170,3 +170,7 @@ func (d sqlite3) primaryKeySql(isString bool, size int) string {
 	}
 	return "integer PRIMARY KEY AUTOINCREMENT NOT NULL"
 }
+
+func (d sqlite3) listAllTableNames() []string {
+	return d.listAllTableNamesHelper("SELECT name FROM sqlite_master WHERE type = \"table\"")
+}

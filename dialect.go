@@ -49,6 +49,8 @@ type Dialect interface {
 	primaryKeySql(isString bool, size int) string
 
 	catchMigrationError(err error) bool
+
+	listAllTableNames() []string
 }
 
 type DataSourceName struct {
