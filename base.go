@@ -266,6 +266,14 @@ func (d base) addColumnSql(table, column string, typ interface{}, size int) stri
 	)
 }
 
+func (d base) dropColumnSql(table, column string) string {
+	return fmt.Sprintf(
+		"ALTER TABLE %v DROP COLUMN %v",
+		d.dialect.quote(table),
+		d.dialect.quote(column),
+	)
+}
+
 func (d base) createIndexSql(name, table string, unique bool, columns ...string) string {
 	a := []string{"CREATE"}
 	if unique {

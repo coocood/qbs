@@ -43,7 +43,7 @@ func (mg *Migration) CreateTableIfNotExists(structPtr interface{}) error {
 			panic("Column name has changed, rename column migration is not supported.")
 		}
 		for _, v := range newFields {
-			mg.addColumn(model.table, v)
+			mg.AddColumn(model.table, v)
 		}
 	}
 	var indexErr error
@@ -75,8 +75,21 @@ func (mg *Migration) DropTableIfExists(strutPtr interface{}) {
 	mg.dropTableIfExists(strutPtr)
 }
 
-func (mg *Migration) addColumn(table string, column *modelField) {
+//AddColumn adds a column to the given table.
+func (mg *Migration) AddColumn(table string, column *modelField) {
 	sql := mg.dialect.addColumnSql(table, column.name, column.value, column.size)
+	if mg.Log {
+		fmt.Println(sql)
+	}
+	_, err := mg.db.Exec(sql)
+	if err != nil {
+		panic(err)
+	}
+}
+
+//DropColumn removes a column from the given table.
+func (mg *Migration) DropColumn(table string, column *modelField) {
+	sql := mg.dialect.dropColumnSql(table, column.name)
 	if mg.Log {
 		fmt.Println(sql)
 	}

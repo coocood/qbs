@@ -40,6 +40,8 @@ type Dialect interface {
 
 	addColumnSql(table, column string, typ interface{}, size int) string
 
+	dropColumnSql(table, column string) string
+
 	createIndexSql(name, table string, unique bool, columns ...string) string
 
 	indexExists(mg *Migration, tableName string, indexName string) bool
