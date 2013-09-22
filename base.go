@@ -75,6 +75,9 @@ func (d base) setModelValue(driverValue, fieldValue reflect.Value) error {
 			str := string(driverValue.Elem().Bytes())
 			fieldValue.Set(reflect.ValueOf(sql.NullString{str, true}))
 		}
+		if scanner, ok := fieldValue.Addr().Interface().(sql.Scanner); ok {
+			return scanner.Scan(driverValue.Interface())
+		}
 	}
 	return nil
 }
