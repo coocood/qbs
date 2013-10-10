@@ -56,6 +56,11 @@ func (d sqlite3) sqlType(f interface{}, size int) string {
 	panic("invalid sql type")
 }
 
+func (d sqlite3) dropColumnSql(table, column string) string {
+	//http://stackoverflow.com/questions/8442147/how-to-delete-or-add-column-in-sqlite
+	panic("not implemented yet--no direct drop column in sqlite3")
+}
+
 func (d sqlite3) setModelValue(value reflect.Value, field reflect.Value) error {
 	switch field.Type().Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -169,4 +174,8 @@ func (d sqlite3) primaryKeySql(isString bool, size int) string {
 		return "text PRIMARY KEY NOT NULL"
 	}
 	return "integer PRIMARY KEY AUTOINCREMENT NOT NULL"
+}
+
+func (d sqlite3) listAllTableNames() []string {
+	return d.listAllTableNamesHelper("SELECT name FROM sqlite_master WHERE type = \"table\"")
 }

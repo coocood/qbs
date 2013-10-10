@@ -232,6 +232,10 @@ func (q *Qbs) OmitJoin() *Qbs {
 	return q
 }
 
+func (q *Qbs) TableNames() []string {
+	return q.Dialect.listAllTableNames()
+}
+
 // Perform select query by parsing the struct's type and then fill the values into the struct
 // All fields of supported types in the struct will be added in select clause.
 // If Id value is provided, it will be added into the where clause

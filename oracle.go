@@ -156,3 +156,7 @@ func (d oracle) dropTableSql(table string) string {
 	a = append(a, d.dialect.quote(table))
 	return strings.Join(a, " ")
 }
+
+func (d oracle) listAllTableNames() []string {
+	panic("not implemented yet")
+}

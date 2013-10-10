@@ -257,6 +257,14 @@ func (d base) addColumnSql(table, column string, typ interface{}, size int) stri
 	)
 }
 
+func (d base) dropColumnSql(table, column string) string {
+	return fmt.Sprintf(
+		"ALTER TABLE %v DROP COLUMN %v",
+		d.dialect.quote(table),
+		d.dialect.quote(column),
+	)
+}
+
 func (d base) createIndexSql(name, table string, unique bool, columns ...string) string {
 	a := []string{"CREATE"}
 	if unique {
@@ -297,4 +305,23 @@ func (d base) columnsInTable(mg *Migration, table interface{}) map[string]bool {
 
 func (d base) catchMigrationError(err error) bool {
 	return false
+}
+
+func (d base) listAllTableNamesHelper(query string) []string {
+	//should I be using this package var 'db' here???
+	rows, err := db.Query(query)
+	defer rows.Close()
+	if err != nil {
+		panic(err)
+	}
+	result := []string{}
+	for rows.Next() {
+		tname := ""
+		err := rows.Scan(&tname)
+		if err == nil {
+			panic(err)
+		}
+		result = append(result, tname)
+	}
+	return result
 }
