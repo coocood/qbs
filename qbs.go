@@ -38,6 +38,7 @@ type Validator interface {
 
 //Register a database, should be call at the beginning of the application.
 func Register(driverName, driverSourceName, databaseName string, dialect Dialect) {
+	queryLogger.Println("Using dslysenko's fork of qbs...")
 	driver = driverName
 	driverSource = driverSourceName
 	dial = dialect
