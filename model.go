@@ -3,6 +3,8 @@ package qbs
 import (
 	"bytes"
 	"database/sql"
+	"fmt"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -349,8 +351,10 @@ func toSnake(s string) string {
 
 func toSnakeTable(s string) string {
 	if PluralizeTableNames {
+		fmt.Fprintln(os.Stdout, "qbs model: PluralizeTableNames is in effect")
 		return toSnake(s) + "s"
 	} else {
+		fmt.Fprintln(os.Stdout, "qbs model: PluralizeTableNames is NOT in effect")
 		return toSnake(s)
 	}
 }
@@ -375,7 +379,10 @@ func snakeToUpperCamel(s string) string {
 
 func snakeToUpperCamelTable(s string) string {
 	if PluralizeTableNames {
+		fmt.Fprintln(os.Stdout, "qbs model: PluralizeTableNames is in effect")
 		s = s[:len(s)-1]
+	} else {
+		fmt.Fprintln(os.Stdout, "qbs model: PluralizeTableNames is NOT in effect")
 	}
 	return snakeToUpperCamel(s)
 }
