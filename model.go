@@ -3,8 +3,6 @@ package qbs
 import (
 	"bytes"
 	"database/sql"
-	"fmt"
-	"os"
 	"reflect"
 	"strconv"
 	"strings"
