@@ -9,17 +9,19 @@ import (
 	"time"
 )
 
+var PluralizeTableNames = true
+
 //convert struct field name to column name.
 var FieldNameToColumnName func(string) string = toSnake
 
 //convert struct name to table name.
-var StructNameToTableName func(string) string = toSnake
+var StructNameToTableName func(string) string = toSnakeTable
 
 //onvert column name to struct field name.
 var ColumnNameToFieldName func(string) string = snakeToUpperCamel
 
 //convert table name to struct name.
-var TableNameToStructName func(string) string = snakeToUpperCamel
+var TableNameToStructName func(string) string = snakeToUpperCamelTable
 
 // Index represents a table index and is returned via the Indexed interface.
 type index struct {
@@ -345,6 +347,14 @@ func toSnake(s string) string {
 	return buf.String()
 }
 
+func toSnakeTable(s string) string {
+	if PluralizeTableNames {
+		return toSnake(s) + "s"
+	} else {
+		return toSnake(s)
+	}
+}
+
 func snakeToUpperCamel(s string) string {
 	buf := new(bytes.Buffer)
 	first := true
@@ -361,6 +371,14 @@ func snakeToUpperCamel(s string) string {
 		}
 	}
 	return buf.String()
+}
+
+func snakeToUpperCamelTable(s string) string {
+	if PluralizeTableNames {
+		s = s[:len(s)-1]
+	}
+
+	return snakeToUpperCamel(s)
 }
 
 var ValidTags = map[string]bool{
