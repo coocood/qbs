@@ -350,12 +350,9 @@ func toSnake(s string) string {
 }
 
 func toSnakeTable(s string) string {
-	queryLogger.Println("Using dslysenko's fork of qbs... toSnakeTable")
 	if PluralizeTableNames {
-		fmt.Fprintln(os.Stdout, "qbs model: PluralizeTableNames is in effect")
 		return toSnake(s) + "s"
 	} else {
-		fmt.Fprintln(os.Stdout, "qbs model: PluralizeTableNames is NOT in effect")
 		return toSnake(s)
 	}
 }
@@ -379,13 +376,10 @@ func snakeToUpperCamel(s string) string {
 }
 
 func snakeToUpperCamelTable(s string) string {
-	queryLogger.Println("Using dslysenko's fork of qbs... snakeToUpperCamel")
 	if PluralizeTableNames {
-		fmt.Fprintln(os.Stdout, "qbs model: PluralizeTableNames is in effect")
 		s = s[:len(s)-1]
-	} else {
-		fmt.Fprintln(os.Stdout, "qbs model: PluralizeTableNames is NOT in effect")
 	}
+
 	return snakeToUpperCamel(s)
 }
 
