@@ -9,6 +9,13 @@ import (
 	"time"
 )
 
+const QBS_COLTYPE_INT = "int"
+const QBS_COLTYPE_BOOL = "boolean"
+const QBS_COLTYPE_BIGINT = "bigint"
+const QBS_COLTYPE_DOUBLE = "double"
+const QBS_COLTYPE_TIME = "timestamp"
+const QBS_COLTYPE_TEXT = "text"
+
 //convert struct field name to column name.
 var FieldNameToColumnName func(string) string = toSnake
 

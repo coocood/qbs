@@ -3,7 +3,7 @@ package qbs
 import (
 	_ "github.com/lib/pq"
 	"testing"
-	"time"
+	//"time"
 )
 
 var pgSyntax = dialectSyntax{
@@ -16,7 +16,7 @@ var pgSyntax = dialectSyntax{
 	`SELECT "post"."id", "post"."author_id", "post"."content", "author"."id" AS author___id, "author"."name" AS author___name FROM "post" LEFT JOIN "user" AS "author" ON "post"."author_id" = "author"."id"`,
 	`SELECT "name", "grade", "score" FROM "student" WHERE (grade IN ($1, $2, $3)) AND ((score <= $4) OR (score >= $5)) ORDER BY "name", "grade" DESC LIMIT $6 OFFSET $7`,
 	`DROP TABLE IF EXISTS "drop_table"`,
-	`ALTER TABLE "a" ADD COLUMN "c" varchar(100)`,
+	`ALTER TABLE "a" ADD COLUMN "newc" varchar(100)`,
 	`CREATE UNIQUE INDEX "iname" ON "itable" ("a", "b", "c")`,
 	`CREATE INDEX "iname2" ON "itable2" ("d", "e")`,
 }
@@ -32,20 +32,43 @@ func setupPgDb() (*Migration, *Qbs) {
 	return mg, q
 }
 
+var postgresSqlTypeResults []string = []string{
+	"boolean",
+	"integer",
+	"integer",
+	"integer",
+	"integer",
+	"integer",
+	"integer",
+	"bigint",
+	"bigint",
+	"bigint",
+	"bigint",
+	"double precision",
+	"double precision",
+	"varchar(128)",
+	"text",
+	"timestamp with time zone",
+	"bytea",
+	"bigint",
+	"integer",
+	"boolean",
+	"double precision",
+	"timestamp with time zone",
+	"varchar(128)",
+	"text",
+}
+
 func TestSqlTypeForPgDialect(t *testing.T) {
 	assert := NewAssert(t)
 	d := NewPostgres()
-	assert.Equal("boolean", d.sqlType(true, 0))
-	var indirect interface{} = true
-	assert.Equal("boolean", d.sqlType(indirect, 0))
-	assert.Equal("integer", d.sqlType(uint32(2), 0))
-	assert.Equal("bigint", d.sqlType(int64(1), 0))
-	assert.Equal("double precision", d.sqlType(1.8, 0))
-	assert.Equal("bytea", d.sqlType([]byte("asdf"), 0))
-	assert.Equal("text", d.sqlType("astring", 0))
-	assert.Equal("varchar(255)", d.sqlType("a", 255))
-	assert.Equal("varchar(128)", d.sqlType("b", 128))
-	assert.Equal("timestamp with time zone", d.sqlType(time.Now(), 0))
+	testModel := structPtrToModel(new(typeTestTable), false, nil)
+	for index, column := range testModel.fields {
+		if storedResult := postgresSqlTypeResults[index]; storedResult != "-" {
+			result := d.sqlType(*column)
+			assert.Equal(storedResult, result)
+		}
+	}
 }
 
 func TestPgTransaction(t *testing.T) {

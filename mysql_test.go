@@ -16,7 +16,7 @@ var mysqlSyntax = dialectSyntax{
 	"SELECT `post`.`id`, `post`.`author_id`, `post`.`content`, `author`.`id` AS author___id, `author`.`name` AS author___name FROM `post` LEFT JOIN `user` AS `author` ON `post`.`author_id` = `author`.`id`",
 	"SELECT `name`, `grade`, `score` FROM `student` WHERE (grade IN (?, ?, ?)) AND ((score <= ?) OR (score >= ?)) ORDER BY `name`, `grade` DESC LIMIT ? OFFSET ?",
 	"DROP TABLE IF EXISTS `drop_table`",
-	"ALTER TABLE `a` ADD COLUMN `c` varchar(100)",
+	"ALTER TABLE `a` ADD COLUMN `newc` varchar(100)",
 	"CREATE UNIQUE INDEX `iname` ON `itable` (`a`, `b`, `c`)",
 	"CREATE INDEX `iname2` ON `itable2` (`d`, `e`)",
 }
@@ -36,21 +36,86 @@ func registerMysqlTest() {
 	dsn.Append("parseTime", "true").Append("loc", "Local")
 	RegisterWithDataSourceName(dsn)
 }
+			
+type FakeInt    int
+type FakeInt16	int16
+type FakeBool	bool
+type FakeFloat	float32
+type FakeTime	time.Time
+type FakeString	string
+
+type typeTestTable struct {
+	Bool		bool		`qbs:""`
+	
+	Int8 	    int8		`qbs:""`
+	Int16   	int16		`qbs:""`
+	Int32   	int32		`qbs:""`
+	UInt8		uint8		`qbs:""`
+	UInt16		uint16		`qbs:""`
+	UInt32		uint32		`qbs:""`
+	
+	Int 	    int		    `qbs:""`
+	UInt 	    uint	    `qbs:""`
+	Int64	 	int64		`qbs:""`
+	UInt64	 	uint64		`qbs:""`
+	
+	Float32		float32
+	Float64		float64
+	
+	Varchar 	string		`qbs:"size:128"`
+	LongText 	string		`qbs:"size:65536"`
+	
+	Time    	time.Time
+	
+	Slice		[]byte
+	
+	DerivedInt		FakeInt			`qbs:"coltype:int"`
+	DerivedInt16	FakeInt16		`qbs:"coltype:bigint"`
+	DerivedBool		FakeBool		`qbs:"coltype:boolean"`
+	DerivedFloat	FakeFloat		`qbs:"coltype:double"`
+	DerivedTime		FakeTime		`qbs:"coltype:timestamp"`
+	DerivedVarChar	FakeTime		`qbs:"coltype:text,size:128"`
+	DerivedLongText	FakeTime		`qbs:"coltype:text,size:65536"`
+}
+
+var mysqlSqlTypeResults []string = []string{
+	"boolean",
+	"int",
+	"int",
+	"int",
+	"int",
+	"int",
+	"int",
+	"bigint",
+	"bigint",
+	"bigint",
+	"bigint",
+	"double",
+	"double",
+	"varchar(128)",
+	"longtext",
+	"timestamp",
+	"longblob",
+	"bigint",
+	"int",
+	"boolean",
+	"double",
+	"timestamp",
+	"varchar(128)",
+	"longtext",
+}
 
 func TestMysqlSqlType(t *testing.T) {
 	assert := NewAssert(t)
+	
 	d := NewMysql()
-	assert.Equal("boolean", d.sqlType(true, 0))
-	var indirect interface{} = true
-	assert.Equal("boolean", d.sqlType(indirect, 0))
-	assert.Equal("int", d.sqlType(uint32(2), 0))
-	assert.Equal("bigint", d.sqlType(int64(1), 0))
-	assert.Equal("double", d.sqlType(1.8, 0))
-	assert.Equal("longblob", d.sqlType([]byte("asdf"), 0))
-	assert.Equal("longtext", d.sqlType("astring", 0))
-	assert.Equal("longtext", d.sqlType("a", 65536))
-	assert.Equal("varchar(128)", d.sqlType("b", 128))
-	assert.Equal("timestamp", d.sqlType(time.Now(), 0))
+	testModel := structPtrToModel(new(typeTestTable), false, nil)
+	for index, column := range testModel.fields {
+		if storedResult := mysqlSqlTypeResults[index]; storedResult != "-" {
+			result := d.sqlType(*column)
+			assert.Equal(storedResult, result)
+		}
+	}
 }
 
 func TestMysqlTransaction(t *testing.T) {

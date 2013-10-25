@@ -51,16 +51,31 @@ func (d oracle) sqlType(field modelField) string {
 			return fmt.Sprintf("VARCHAR2(%d)", field.size)
 		}
 		return "CLOB"
-	}
-	/*if len(field.colType) != 0 {
-		switch field.colType {
-			case "DATE", "NUMBER":
-				return field.colType
+	default:
+		if len(field.colType) != 0 {
+			switch field.colType {
+			case QBS_COLTYPE_BOOL:
+				panic("Qbs doesn't support column type "+field.colType+"for Oracle")
+			case QBS_COLTYPE_INT, QBS_COLTYPE_BIGINT:
+				return "NUMBER"
+			case QBS_COLTYPE_DOUBLE:
+				if field.size > 0 {
+					return fmt.Sprintf("NUMBER(%d,%d)", field.size/10, field.size%10)
+				}
+				return "NUMBER(16,2)"
+			case QBS_COLTYPE_TIME:
+				return "DATE"
+			case QBS_COLTYPE_TEXT:
+				if field.size > 0 && field.size < 4000 {
+					return fmt.Sprintf("VARCHAR2(%d)", field.size)
+				}
+				return "CLOB"
 			default:
 				panic("Qbs doesn't support column type "+field.colType+ "for Oracle")
+			}
 		}
-	}*/
-	panic("invalid sql type")
+	}
+	panic("invalid sql type for field:"+field.name)
 }
 
 func (d oracle) insert(q *Qbs) (int64, error) {

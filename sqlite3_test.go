@@ -2,7 +2,7 @@ package qbs
 
 import (
 	"testing"
-	"time"
+	//"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -17,7 +17,7 @@ var sqlite3Syntax = dialectSyntax{
 	"SELECT `post`.`id`, `post`.`author_id`, `post`.`content`, `author`.`id` AS author___id, `author`.`name` AS author___name FROM `post` LEFT JOIN `user` AS `author` ON `post`.`author_id` = `author`.`id`",
 	"SELECT `name`, `grade`, `score` FROM `student` WHERE (grade IN (?, ?, ?)) AND ((score <= ?) OR (score >= ?)) ORDER BY `name`, `grade` DESC LIMIT ? OFFSET ?",
 	"DROP TABLE IF EXISTS `drop_table`",
-	"ALTER TABLE `a` ADD COLUMN `c` text",
+	"ALTER TABLE `a` ADD COLUMN `newc` text",
 	"CREATE UNIQUE INDEX `iname` ON `itable` (`a`, `b`, `c`)",
 	"CREATE INDEX `iname2` ON `itable2` (`d`, `e`)",
 }
@@ -33,20 +33,100 @@ func setupSqlite3Db() (*Migration, *Qbs) {
 	return mg, q
 }
 
+var sqlite3SqlTypeResults []string = []string{
+	"integer",
+	"integer",
+	"integer",
+	"integer",
+	"integer",
+	"integer",
+	"integer",
+	"integer",
+	"integer",
+	"integer",
+	"integer",
+	"real",
+	"real",
+	"text",
+	"text",
+	"text",
+	"text",
+	"integer",
+	"integer",
+	"integer",
+	"real",
+	"text",
+	"text",
+	"text",
+}
+
 func TestSqlite3SqlType(t *testing.T) {
 	assert := NewAssert(t)
 	d := NewSqlite3()
-	assert.Equal("integer", d.sqlType(true, 0))
-	var indirect interface{} = true
-	assert.Equal("integer", d.sqlType(indirect, 0))
-	assert.Equal("integer", d.sqlType(uint32(2), 0))
-	assert.Equal("integer", d.sqlType(int64(1), 0))
-	assert.Equal("real", d.sqlType(1.8, 0))
-	assert.Equal("text", d.sqlType([]byte("asdf"), 0))
-	assert.Equal("text", d.sqlType("astring", 0))
-	assert.Equal("text", d.sqlType("a", 65536))
-	assert.Equal("text", d.sqlType("b", 128))
-	assert.Equal("text", d.sqlType(time.Now(), 0))
+	testModel := structPtrToModel(new(typeTestTable), false, nil)
+	for index, column := range testModel.fields {
+		if storedResult := sqlite3SqlTypeResults[index]; storedResult != "-" {
+			result := d.sqlType(*column)
+			assert.Equal(storedResult, result)
+		}
+	}
+	/*for _, column := range testModel.fields {
+		result := d.sqlType(*column)
+		
+		switch column.camelName {
+		case "Bool":
+			assert.Equal("integer", result)
+		
+		case "Int8":
+			assert.Equal("integer", result)
+		case "Int16":
+			assert.Equal("integer", result)
+		case "Int32":
+			assert.Equal("integer", result)
+		case "UInt8":
+			assert.Equal("integer", result)
+		case "UInt16":
+			assert.Equal("integer", result)
+		case "UInt32":
+			assert.Equal("integer", result)
+			
+		case "Int":
+			assert.Equal("integer", result)
+		case "UInt":
+			assert.Equal("integer", result)
+		case "Int64":
+			assert.Equal("integer", result)
+		case "UInt64":
+			assert.Equal("integer", result)
+			
+		case "Float32":
+			assert.Equal("real", result)
+		case "Float64":
+			assert.Equal("real", result)
+		
+		case "Varchar":
+			assert.Equal("text", result)
+		case "LongText":
+			assert.Equal("text", result)
+			
+		case "Time":
+			assert.Equal("text", result)
+		
+		case "Slice":
+			assert.Equal("text", result)
+			
+		case "DerivedInt":
+			assert.Equal("integer", result)
+		case "DerivedInt16":
+			assert.Equal("integer", result)
+		case "DerivedBool":
+			assert.Equal("integer", result)
+		case "DerivedFloat":
+			assert.Equal("real", result)
+		case "DerivedTime":
+			assert.Equal("text", result)
+		}
+	}*/
 }
 
 func TestSqlite3Transaction(t *testing.T) {

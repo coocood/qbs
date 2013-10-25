@@ -81,17 +81,30 @@ func (d postgres) sqlType(field modelField) string {
 				return fmt.Sprintf("varchar(%d)", field.size)
 			}
 			return "text"
+		default:
+			if len(field.colType) != 0 {
+				switch field.colType {
+				case QBS_COLTYPE_BOOL, QBS_COLTYPE_BIGINT:
+					return field.colType
+				case QBS_COLTYPE_INT:
+					return "integer"
+				case QBS_COLTYPE_DOUBLE:
+					return "double precision"
+				case QBS_COLTYPE_TIME:
+					return "timestamp with time zone"
+				case QBS_COLTYPE_TEXT:
+					if field.size > 0 && field.size < 65532 {
+						return fmt.Sprintf("varchar(%d)", field.size)
+					}
+					return "text"
+				default:
+					panic("Qbs doesn't support column type "+
+						field.colType+" for postgres")
+				}
+			}
 		}
 	}
-	if len(field.colType) != 0 {
-		switch field.colType {
-			case "boolean", "integer", "bigint", "text", "double precision":
-				return field.colType
-			default:
-				panic("Qbs doesn't support column type "+field.colType+ "for postgres")
-		}
-	}
-	panic("invalid sql type")
+	panic("invalid sql type for field:"+field.name)
 }
 
 func (d postgres) insert(q *Qbs) (int64, error) {
