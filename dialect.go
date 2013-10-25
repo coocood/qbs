@@ -14,7 +14,7 @@ type Dialect interface {
 	// Quote will quote identifiers in a SQL statement.
 	quote(s string) string
 
-	sqlType(f interface{}, size int) string
+	sqlType(field modelField) string
 
 	parseBool(value reflect.Value) bool
 
@@ -38,7 +38,7 @@ type Dialect interface {
 
 	dropTableSql(table string) string
 
-	addColumnSql(table, column string, typ interface{}, size int) string
+	addColumnSql(table string, column modelField) string
 
 	createIndexSql(name, table string, unique bool, columns ...string) string
 

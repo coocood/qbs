@@ -62,6 +62,7 @@ type modelField struct {
 	dfault    string
 	fk        string
 	join      string
+	colType	  string
 }
 
 // Model represents a parsed schema interface{}.
@@ -304,6 +305,8 @@ func parseTags(fd *modelField, s string) {
 				fd.dfault = c2[1]
 			case "join":
 				fd.join = c2[1]
+			case "coltype":
+				fd.colType = c2[1]
 			default:
 				panic(c2[0] + " tag syntax error")
 			}
@@ -375,4 +378,5 @@ var ValidTags = map[string]bool{
 	"notnull": true,
 	"updated": true,
 	"created": true,
+	"coltype": true,
 }

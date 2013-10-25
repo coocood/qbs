@@ -42,7 +42,8 @@ func (d postgres) quote(s string) string {
 	return buf.String()
 }
 
-func (d postgres) sqlType(f interface{}, size int) string {
+func (d postgres) sqlType(field modelField) string {
+	f := field.value
 	fieldValue := reflect.ValueOf(f)
 	switch fieldValue.Kind() {
 	case reflect.Bool:
@@ -54,14 +55,14 @@ func (d postgres) sqlType(f interface{}, size int) string {
 	case reflect.Float32, reflect.Float64:
 		return "double precision"
 	case reflect.String:
-		if size > 0 && size < 65532 {
-			return fmt.Sprintf("varchar(%d)", size)
+		if field.size > 0 && field.size < 65532 {
+			return fmt.Sprintf("varchar(%d)", field.size)
 		}
 		return "text"
 	case reflect.Slice:
 		if reflect.TypeOf(f).Elem().Kind() == reflect.Uint8 {
-			if size > 0 && size < 65532 {
-				return fmt.Sprintf("varbinary(%d)", size)
+			if field.size > 0 && field.size < 65532 {
+				return fmt.Sprintf("varbinary(%d)", field.size)
 			}
 			return "bytea"
 		}
@@ -76,10 +77,18 @@ func (d postgres) sqlType(f interface{}, size int) string {
 		case sql.NullFloat64:
 			return "double precision"
 		case sql.NullString:
-			if size > 0 && size < 65532 {
-				return fmt.Sprintf("varchar(%d)", size)
+			if field.size > 0 && field.size < 65532 {
+				return fmt.Sprintf("varchar(%d)", field.size)
 			}
 			return "text"
+		}
+	}
+	if len(field.colType) != 0 {
+		switch field.colType {
+			case "boolean", "integer", "bigint", "text", "double precision":
+				return field.colType
+			default:
+				panic("Qbs doesn't support column type "+field.colType+ "for postgres")
 		}
 	}
 	panic("invalid sql type")

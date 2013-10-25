@@ -27,7 +27,8 @@ func (d oracle) quote(s string) string {
 	return strings.Join(a, sep)
 }
 
-func (d oracle) sqlType(f interface{}, size int) string {
+func (d oracle) sqlType(field modelField) string {
+	f := field.value
 	switch f.(type) {
 	case time.Time:
 		return "DATE"
@@ -36,21 +37,29 @@ func (d oracle) sqlType(f interface{}, size int) string {
 				return "boolean"
 	*/
 	case int, int8, int16, int32, uint, uint8, uint16, uint32, int64, uint64:
-		if size > 0 {
-			return fmt.Sprintf("NUMBER(%d)", size)
+		if field.size > 0 {
+			return fmt.Sprintf("NUMBER(%d)", field.size)
 		}
 		return "NUMBER"
 	case float32, float64:
-		if size > 0 {
-			return fmt.Sprintf("NUMBER(%d,%d)", size/10, size%10)
+		if field.size > 0 {
+			return fmt.Sprintf("NUMBER(%d,%d)", field.size/10, field.size%10)
 		}
 		return "NUMBER(16,2)"
 	case []byte, string:
-		if size > 0 && size < 4000 {
-			return fmt.Sprintf("VARCHAR2(%d)", size)
+		if field.size > 0 && field.size < 4000 {
+			return fmt.Sprintf("VARCHAR2(%d)", field.size)
 		}
 		return "CLOB"
 	}
+	/*if len(field.colType) != 0 {
+		switch field.colType {
+			case "DATE", "NUMBER":
+				return field.colType
+			default:
+				panic("Qbs doesn't support column type "+field.colType+ "for Oracle")
+		}
+	}*/
 	panic("invalid sql type")
 }
 

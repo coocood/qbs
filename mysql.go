@@ -32,7 +32,8 @@ func (d mysql) parseBool(value reflect.Value) bool {
 	return value.Int() != 0
 }
 
-func (d mysql) sqlType(f interface{}, size int) string {
+func (d mysql) sqlType(field modelField) string {
+	f := field.value
 	fieldValue := reflect.ValueOf(f)
 	switch fieldValue.Kind() {
 	case reflect.Bool:
@@ -44,14 +45,14 @@ func (d mysql) sqlType(f interface{}, size int) string {
 	case reflect.Float32, reflect.Float64:
 		return "double"
 	case reflect.String:
-		if size > 0 && size < 65532 {
-			return fmt.Sprintf("varchar(%d)", size)
+		if field.size > 0 && field.size < 65532 {
+			return fmt.Sprintf("varchar(%d)", field.size)
 		}
 		return "longtext"
 	case reflect.Slice:
 		if reflect.TypeOf(f).Elem().Kind() == reflect.Uint8 {
-			if size > 0 && size < 65532 {
-				return fmt.Sprintf("varbinary(%d)", size)
+			if field.size > 0 && field.size < 65532 {
+				return fmt.Sprintf("varbinary(%d)", field.size)
 			}
 			return "longblob"
 		}
@@ -66,10 +67,18 @@ func (d mysql) sqlType(f interface{}, size int) string {
 		case sql.NullFloat64:
 			return "double"
 		case sql.NullString:
-			if size > 0 && size < 65532 {
-				return fmt.Sprintf("varchar(%d)", size)
+			if field.size > 0 && field.size < 65532 {
+				return fmt.Sprintf("varchar(%d)", field.size)
 			}
 			return "longtext"
+		}
+	}
+	if len(field.colType) != 0 {
+		switch field.colType {
+			case "boolean", "int", "bigint", "double", "timestamp":
+				return field.colType
+			default:
+				panic("Qbs doesn't support column type "+field.colType+ "for MySQL")
 		}
 	}
 	panic("invalid sql type")

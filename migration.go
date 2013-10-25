@@ -72,7 +72,7 @@ func (mg *Migration) DropTable(strutPtr interface{}) {
 }
 
 func (mg *Migration) addColumn(table string, column *modelField) {
-	sql := mg.dialect.addColumnSql(table, column.name, column.value, column.size)
+	sql := mg.dialect.addColumnSql(table, *column)
 	if mg.Log {
 		fmt.Println(sql)
 	}
