@@ -259,4 +259,4 @@ so whenever you pass a column name or table name parameter in string, it should 
 Qbs was originally a fork from [hood](https://github.com/eaigner/hood) by [Erik Aigner](https://github.com/eaigner), 
 but I changed more than 80% of the code, then it ended up become a totally different ORM.
 
-[NuVivo314](https://github.com/NuVivo314),  [Jason McVetta](https://github.com/jmcvetta), [pix64](https://github.com/pix64), [vadimi](https://github.com/vadimi).
+[NuVivo314](https://github.com/NuVivo314),  [Jason McVetta](https://github.com/jmcvetta), [pix64](https://github.com/pix64), [vadimi](https://github.com/vadimi), [Ravi Teja](https://github.com/tejainece).
