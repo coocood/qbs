@@ -292,6 +292,21 @@ func doTestCreateTable(t *testing.T, mg *Migration) {
 	assert.True(mg.dialect.indexExists(mg, "add_column", "add_column_first_last"))
 	columns := mg.dialect.columnsInTable(mg, table)
 	assert.Equal(4, len(columns))
+	
+	{
+		tableWithCustomTypes := new(typeTestTable)
+		mg.dropTableIfExists(tableWithCustomTypes)
+		mg.CreateTableIfNotExists(tableWithCustomTypes)
+		columns := mg.dialect.columnsInTable(mg, tableWithCustomTypes)
+		assert.Equal(24, len(columns))
+		assert.True(columns["derived_int"])
+		assert.True(columns["derived_int16"])
+		assert.True(columns["derived_bool"])
+		assert.True(columns["derived_float"])
+		assert.True(columns["derived_time"])
+		assert.True(columns["derived_var_char"])
+		assert.True(columns["derived_long_text"])
+	}
 }
 
 type basic struct {

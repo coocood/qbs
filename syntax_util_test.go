@@ -28,9 +28,14 @@ type sqlGenModel struct {
 
 var sqlGenSampleData = &sqlGenModel{3, "FirstName", "LastName", 6}
 
+type addColumnTestTable struct {
+	Newc	string  `qbs:"size:100"`
+}
+
 func doTestAddColumSQL(t *testing.T, info dialectSyntax) {
 	assert := NewAssert(t)
-	sql := info.dialect.addColumnSql("a", "c", "", 100)
+	testModel := structPtrToModel(new(addColumnTestTable), false, nil)
+	sql := info.dialect.addColumnSql("a", *testModel.fields[0])
 	assert.Equal(info.addColumnSql, sql)
 }
 

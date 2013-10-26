@@ -24,7 +24,8 @@ func RegisterSqlite3(dbFileName string) {
 	RegisterWithDataSourceName(dsn)
 }
 
-func (d sqlite3) sqlType(f interface{}, size int) string {
+func (d sqlite3) sqlType(field modelField) string {
+	f := field.value
 	fieldValue := reflect.ValueOf(f)
 	switch fieldValue.Kind() {
 	case reflect.Bool:
@@ -51,9 +52,28 @@ func (d sqlite3) sqlType(f interface{}, size int) string {
 			return "real"
 		case sql.NullString:
 			return "text"
+		default:
+			if len(field.colType) != 0 {
+				switch field.colType {
+				case QBS_COLTYPE_INT:
+					return "integer"
+				case QBS_COLTYPE_BIGINT:
+					return "integer"
+				case QBS_COLTYPE_BOOL:
+					return "integer"
+				case QBS_COLTYPE_TIME:
+					return "text"
+				case QBS_COLTYPE_DOUBLE:
+					return "real"
+				case QBS_COLTYPE_TEXT:
+					return "text"
+				default:
+					panic("Qbs doesn't support column type "+field.colType+ "for SQLite3")
+				}
+			}
 		}
 	}
-	panic("invalid sql type")
+	panic("invalid sql type for field:"+field.name)
 }
 
 func (d sqlite3) setModelValue(value reflect.Value, field reflect.Value) error {

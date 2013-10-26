@@ -32,7 +32,8 @@ func (d mysql) parseBool(value reflect.Value) bool {
 	return value.Int() != 0
 }
 
-func (d mysql) sqlType(f interface{}, size int) string {
+func (d mysql) sqlType(field modelField) string {
+	f := field.value
 	fieldValue := reflect.ValueOf(f)
 	switch fieldValue.Kind() {
 	case reflect.Bool:
@@ -44,14 +45,14 @@ func (d mysql) sqlType(f interface{}, size int) string {
 	case reflect.Float32, reflect.Float64:
 		return "double"
 	case reflect.String:
-		if size > 0 && size < 65532 {
-			return fmt.Sprintf("varchar(%d)", size)
+		if field.size > 0 && field.size < 65532 {
+			return fmt.Sprintf("varchar(%d)", field.size)
 		}
 		return "longtext"
 	case reflect.Slice:
 		if reflect.TypeOf(f).Elem().Kind() == reflect.Uint8 {
-			if size > 0 && size < 65532 {
-				return fmt.Sprintf("varbinary(%d)", size)
+			if field.size > 0 && field.size < 65532 {
+				return fmt.Sprintf("varbinary(%d)", field.size)
 			}
 			return "longblob"
 		}
@@ -66,13 +67,27 @@ func (d mysql) sqlType(f interface{}, size int) string {
 		case sql.NullFloat64:
 			return "double"
 		case sql.NullString:
-			if size > 0 && size < 65532 {
-				return fmt.Sprintf("varchar(%d)", size)
+			if field.size > 0 && field.size < 65532 {
+				return fmt.Sprintf("varchar(%d)", field.size)
 			}
 			return "longtext"
+		default:
+			if len(field.colType) != 0 {
+			switch field.colType {
+			case QBS_COLTYPE_BOOL, QBS_COLTYPE_INT, QBS_COLTYPE_BIGINT, QBS_COLTYPE_DOUBLE, QBS_COLTYPE_TIME:
+				return field.colType
+			case QBS_COLTYPE_TEXT:
+				if field.size > 0 && field.size < 65532 {
+					return fmt.Sprintf("varchar(%d)", field.size)
+				}
+				return "longtext"
+			default:
+				panic("Qbs doesn't support column type "+field.colType+ " for MySQL")
+			}
+	}
 		}
 	}
-	panic("invalid sql type")
+	panic("invalid sql type for field:"+field.name)
 }
 
 func (d mysql) indexExists(mg *Migration, tableName, indexName string) bool {

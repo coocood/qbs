@@ -219,7 +219,7 @@ func (d base) createTableSql(model *model, ifNotExists bool) string {
 			_, ok := field.value.(string)
 			b = append(b, d.dialect.primaryKeySql(ok, field.size))
 		} else {
-			b = append(b, d.dialect.sqlType(field.value, field.size))
+			b = append(b, d.dialect.sqlType(*field))
 			if field.notnull {
 				b = append(b, "NOT NULL")
 			}
@@ -248,12 +248,12 @@ func (d base) dropTableSql(table string) string {
 	return strings.Join(a, " ")
 }
 
-func (d base) addColumnSql(table, column string, typ interface{}, size int) string {
+func (d base) addColumnSql(table string, column modelField) string {
 	return fmt.Sprintf(
 		"ALTER TABLE %v ADD COLUMN %v %v",
 		d.dialect.quote(table),
-		d.dialect.quote(column),
-		d.dialect.sqlType(typ, size),
+		d.dialect.quote(column.name),
+		d.dialect.sqlType(column),
 	)
 }
 
