@@ -4,10 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"runtime"
-	"testing"
 )
 
-func doBenchmarkFind(b *testing.B) {
+func doBenchmarkFind(b benchmarker, n int) {
 	b.StopTimer()
 	bas := new(basic)
 	bas.Name = "Basic"
@@ -19,7 +18,7 @@ func doBenchmarkFind(b *testing.B) {
 	q.Save(bas)
 	closeMigrationAndQbs(mg, q)
 	b.StartTimer()
-	for i := 0; i < b.N; i++ {
+	for i := 0; i < n; i++ {
 		ba := new(basic)
 		ba.Id = 1
 		q, _ = GetQbs()
@@ -36,7 +35,7 @@ func doBenchmarkFind(b *testing.B) {
 	fmt.Printf("alloc:%d, total:%d\n", stats.Alloc, stats.TotalAlloc)
 }
 
-func doBenchmarkQueryStruct(b *testing.B) {
+func doBenchmarkQueryStruct(b benchmarker, n int) {
 	b.StopTimer()
 	bas := new(basic)
 	bas.Name = "Basic"
@@ -48,7 +47,7 @@ func doBenchmarkQueryStruct(b *testing.B) {
 	q.Save(bas)
 	closeMigrationAndQbs(mg, q)
 	b.StartTimer()
-	for i := 0; i < b.N; i++ {
+	for i := 0; i < n; i++ {
 		ba := new(basic)
 		q, _ = GetQbs()
 		err := q.QueryStruct(ba, "SELECT * FROM basic WHERE id = ?", 1)
@@ -64,7 +63,7 @@ func doBenchmarkQueryStruct(b *testing.B) {
 	fmt.Printf("alloc:%d, total:%d\n", stats.Alloc, stats.TotalAlloc)
 }
 
-func doBenchmarkStmtQuery(b *testing.B) {
+func doBenchmarkStmtQuery(b benchmarker, n int) {
 	b.StopTimer()
 	bas := new(basic)
 	bas.Name = "Basic"
@@ -79,7 +78,7 @@ func doBenchmarkStmtQuery(b *testing.B) {
 	db, _ := sql.Open(driver, driverSource)
 	query := q.Dialect.substituteMarkers("SELECT * FROM basic WHERE id = ?")
 	stmt, _ := db.Prepare(query)
-	for i := 0; i < b.N; i++ {
+	for i := 0; i < n; i++ {
 		ba := new(basic)
 		rows, err := stmt.Query(1)
 		if err != nil {
@@ -101,7 +100,7 @@ func doBenchmarkStmtQuery(b *testing.B) {
 	fmt.Printf("alloc:%d, total:%d\n", stats.Alloc, stats.TotalAlloc)
 }
 
-func doBenchmarkDbQuery(b *testing.B) {
+func doBenchmarkDbQuery(b benchmarker, n int) {
 	b.StopTimer()
 	bas := new(basic)
 	bas.Name = "Basic"
@@ -115,7 +114,7 @@ func doBenchmarkDbQuery(b *testing.B) {
 	b.StartTimer()
 	db, _ := sql.Open(driver, driverSource)
 	query := q.Dialect.substituteMarkers("SELECT * FROM basic WHERE id = ?")
-	for i := 0; i < b.N; i++ {
+	for i := 0; i < n; i++ {
 		ba := new(basic)
 		rows, err := db.Query(query, 1)
 		if err != nil {
@@ -136,7 +135,7 @@ func doBenchmarkDbQuery(b *testing.B) {
 	fmt.Printf("alloc:%d, total:%d\n", stats.Alloc, stats.TotalAlloc)
 }
 
-func doBenchmarkTransaction(b *testing.B) {
+func doBenchmarkTransaction(b benchmarker, n int) {
 	b.StopTimer()
 	bas := new(basic)
 	bas.Name = "Basic"
@@ -148,7 +147,7 @@ func doBenchmarkTransaction(b *testing.B) {
 	q.Save(bas)
 	closeMigrationAndQbs(mg, q)
 	b.StartTimer()
-	for i := 0; i < b.N; i++ {
+	for i := 0; i < n; i++ {
 		ba := new(basic)
 		ba.Id = 1
 		q, _ = GetQbs()

@@ -73,118 +73,118 @@ func TestSqlTypeForPgDialect(t *testing.T) {
 
 func TestPgTransaction(t *testing.T) {
 	registerPgTest()
-	doTestTransaction(t)
+	doTestTransaction(NewAssert(t))
 }
 
 func TestPgSaveAndDelete(t *testing.T) {
 	mg, q := setupPgDb()
-	doTestSaveAndDelete(t, mg, q)
+	doTestSaveAndDelete(NewAssert(t), mg, q)
 }
 
 func TestPgSaveAgain(t *testing.T) {
 	mg, q := setupPgDb()
-	doTestSaveAgain(t, mg, q)
+	doTestSaveAgain(NewAssert(t), mg, q)
 }
 
 func TestPgForeignKey(t *testing.T) {
 	registerPgTest()
-	doTestForeignKey(t)
+	doTestForeignKey(NewAssert(t))
 }
 
 func TestPgFind(t *testing.T) {
 	registerPgTest()
-	doTestFind(t)
+	doTestFind(NewAssert(t))
 }
 
 func TestPgCreateTable(t *testing.T) {
 	mg, _ := setupPgDb()
-	doTestCreateTable(t, mg)
+	doTestCreateTable(NewAssert(t), mg)
 }
 
 func TestPgUpdate(t *testing.T) {
 	mg, q := setupPgDb()
-	doTestUpdate(t, mg, q)
+	doTestUpdate(NewAssert(t), mg, q)
 }
 
 func TestPgValidation(t *testing.T) {
 	mg, q := setupPgDb()
-	doTestValidation(t, mg, q)
+	doTestValidation(NewAssert(t), mg, q)
 }
 
 func TestPgBoolType(t *testing.T) {
 	mg, q := setupPgDb()
-	doTestBoolType(t, mg, q)
+	doTestBoolType(NewAssert(t), mg, q)
 }
 
 func TestPgStringPk(t *testing.T) {
 	mg, q := setupPgDb()
-	doTestStringPk(t, mg, q)
+	doTestStringPk(NewAssert(t), mg, q)
 }
 
 func TestPgCount(t *testing.T) {
 	registerPgTest()
-	doTestCount(t)
+	doTestCount(NewAssert(t))
 }
 
 func TestPgQueryMap(t *testing.T) {
 	mg, q := setupPgDb()
-	doTestQueryMap(t, mg, q)
+	doTestQueryMap(NewAssert(t), mg, q)
 }
 
 func TestPgBulkInsert(t *testing.T) {
 	registerPgTest()
-	doTestBulkInsert(t)
+	doTestBulkInsert(NewAssert(t))
 }
 
 func TestPgQueryStruct(t *testing.T) {
 	registerPgTest()
-	doTestQueryStruct(t)
+	doTestQueryStruct(NewAssert(t))
 }
 
 func TestPgConnectionLimit(t *testing.T) {
 	registerPgTest()
-	doTestConnectionLimit(t)
+	doTestConnectionLimit(NewAssert(t))
 }
 
 func TestPgIterate(t *testing.T) {
 	registerPgTest()
-	doTestIterate(t)
+	doTestIterate(NewAssert(t))
 }
 
 func TestPgAddColumnSQL(t *testing.T) {
-	doTestAddColumSQL(t, pgSyntax)
+	doTestAddColumSQL(NewAssert(t), pgSyntax)
 }
 
 func TestPgCreateTableSQL(t *testing.T) {
-	doTestCreateTableSQL(t, pgSyntax)
+	doTestCreateTableSQL(NewAssert(t), pgSyntax)
 }
 
 func TestPgCreateIndexSQL(t *testing.T) {
-	doTestCreateIndexSQL(t, pgSyntax)
+	doTestCreateIndexSQL(NewAssert(t), pgSyntax)
 }
 
 func TestPgInsertSQL(t *testing.T) {
-	doTestInsertSQL(t, pgSyntax)
+	doTestInsertSQL(NewAssert(t), pgSyntax)
 }
 
 func TestPgUpdateSQL(t *testing.T) {
-	doTestUpdateSQL(t, pgSyntax)
+	doTestUpdateSQL(NewAssert(t), pgSyntax)
 }
 
 func TestPgDeleteSQL(t *testing.T) {
-	doTestDeleteSQL(t, pgSyntax)
+	doTestDeleteSQL(NewAssert(t), pgSyntax)
 }
 
 func TestPgSelectionSQL(t *testing.T) {
-	doTestSelectionSQL(t, pgSyntax)
+	doTestSelectionSQL(NewAssert(t), pgSyntax)
 }
 
 func TestPgQuerySQL(t *testing.T) {
-	doTestQuerySQL(t, pgSyntax)
+	doTestQuerySQL(NewAssert(t), pgSyntax)
 }
 
 func TestPgDropTableSQL(t *testing.T) {
-	doTestDropTableSQL(t, pgSyntax)
+	doTestDropTableSQL(NewAssert(t), pgSyntax)
 }
 
 func TestPgDataSourceName(t *testing.T) {
@@ -206,20 +206,20 @@ func TestPgDataSourceName(t *testing.T) {
 
 func BenchmarkPgFind(b *testing.B) {
 	registerPgTest()
-	doBenchmarkFind(b)
+	doBenchmarkFind(b, b.N)
 }
 
 func BenchmarkPgDbQuery(b *testing.B) {
 	registerPgTest()
-	doBenchmarkDbQuery(b)
+	doBenchmarkDbQuery(b, b.N)
 }
 
 func BenchmarkPgStmtQuery(b *testing.B) {
 	registerPgTest()
-	doBenchmarkStmtQuery(b)
+	doBenchmarkStmtQuery(b, b.N)
 }
 
 func BenchmarkPgTransaction(b *testing.B) {
 	registerPgTest()
-	doBenchmarkTransaction(b)
+	doBenchmarkTransaction(b, b.N)
 }

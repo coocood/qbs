@@ -69,7 +69,7 @@ type modelField struct {
 	dfault    string
 	fk        string
 	join      string
-	colType	  string
+	colType   string
 }
 
 // Model represents a parsed schema interface{}.

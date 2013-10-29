@@ -3,7 +3,6 @@ package qbs
 import (
 	_ "github.com/coocood/mysql"
 	"testing"
-	"time"
 )
 
 var mysqlSyntax = dialectSyntax{
@@ -36,47 +35,6 @@ func registerMysqlTest() {
 	dsn.Append("parseTime", "true").Append("loc", "Local")
 	RegisterWithDataSourceName(dsn)
 }
-			
-type FakeInt    int
-type FakeInt16	int16
-type FakeBool	bool
-type FakeFloat	float32
-type FakeTime	time.Time
-type FakeString	string
-
-type typeTestTable struct {
-	Bool		bool		`qbs:""`
-	
-	Int8 	    int8		`qbs:""`
-	Int16   	int16		`qbs:""`
-	Int32   	int32		`qbs:""`
-	UInt8		uint8		`qbs:""`
-	UInt16		uint16		`qbs:""`
-	UInt32		uint32		`qbs:""`
-	
-	Int 	    int		    `qbs:""`
-	UInt 	    uint	    `qbs:""`
-	Int64	 	int64		`qbs:""`
-	UInt64	 	uint64		`qbs:""`
-	
-	Float32		float32
-	Float64		float64
-	
-	Varchar 	string		`qbs:"size:128"`
-	LongText 	string		`qbs:"size:65536"`
-	
-	Time    	time.Time
-	
-	Slice		[]byte
-	
-	DerivedInt		FakeInt			`qbs:"coltype:int"`
-	DerivedInt16	FakeInt16		`qbs:"coltype:bigint"`
-	DerivedBool		FakeBool		`qbs:"coltype:boolean"`
-	DerivedFloat	FakeFloat		`qbs:"coltype:double"`
-	DerivedTime		FakeTime		`qbs:"coltype:timestamp"`
-	DerivedVarChar	FakeTime		`qbs:"coltype:text,size:128"`
-	DerivedLongText	FakeTime		`qbs:"coltype:text,size:65536"`
-}
 
 var mysqlSqlTypeResults []string = []string{
 	"boolean",
@@ -107,7 +65,7 @@ var mysqlSqlTypeResults []string = []string{
 
 func TestMysqlSqlType(t *testing.T) {
 	assert := NewAssert(t)
-	
+
 	d := NewMysql()
 	testModel := structPtrToModel(new(typeTestTable), false, nil)
 	for index, column := range testModel.fields {
@@ -120,72 +78,72 @@ func TestMysqlSqlType(t *testing.T) {
 
 func TestMysqlTransaction(t *testing.T) {
 	registerMysqlTest()
-	doTestTransaction(t)
+	doTestTransaction(NewAssert(t))
 }
 
 func TestMysqlSaveAndDelete(t *testing.T) {
 	mg, q := setupMysqlDb()
-	doTestSaveAndDelete(t, mg, q)
+	doTestSaveAndDelete(NewAssert(t), mg, q)
 }
 
 func TestMysqlSaveAgain(t *testing.T) {
 	mg, q := setupMysqlDb()
-	doTestSaveAgain(t, mg, q)
+	doTestSaveAgain(NewAssert(t), mg, q)
 }
 
 func TestMysqlForeignKey(t *testing.T) {
 	registerMysqlTest()
-	doTestForeignKey(t)
+	doTestForeignKey(NewAssert(t))
 }
 
 func TestMysqlFind(t *testing.T) {
 	registerMysqlTest()
-	doTestFind(t)
+	doTestFind(NewAssert(t))
 }
 
 func TestMysqlCreateTable(t *testing.T) {
 	mg, _ := setupMysqlDb()
-	doTestCreateTable(t, mg)
+	doTestCreateTable(NewAssert(t), mg)
 }
 
 func TestMysqlUpdate(t *testing.T) {
 	mg, q := setupMysqlDb()
-	doTestUpdate(t, mg, q)
+	doTestUpdate(NewAssert(t), mg, q)
 }
 
 func TestMysqlValidation(t *testing.T) {
 	mg, q := setupMysqlDb()
-	doTestValidation(t, mg, q)
+	doTestValidation(NewAssert(t), mg, q)
 }
 
 func TestMysqlBoolType(t *testing.T) {
 	mg, q := setupMysqlDb()
-	doTestBoolType(t, mg, q)
+	doTestBoolType(NewAssert(t), mg, q)
 }
 
 func TestMysqlStringPk(t *testing.T) {
 	mg, q := setupMysqlDb()
-	doTestStringPk(t, mg, q)
+	doTestStringPk(NewAssert(t), mg, q)
 }
 
 func TestMysqlCount(t *testing.T) {
 	registerMysqlTest()
-	doTestCount(t)
+	doTestCount(NewAssert(t))
 }
 
 func TestMysqlQueryMap(t *testing.T) {
 	mg, q := setupMysqlDb()
-	doTestQueryMap(t, mg, q)
+	doTestQueryMap(NewAssert(t), mg, q)
 }
 
 func TestMysqlBulkInsert(t *testing.T) {
 	registerMysqlTest()
-	doTestBulkInsert(t)
+	doTestBulkInsert(NewAssert(t))
 }
 
 func TestMysqlQueryStruct(t *testing.T) {
 	registerMysqlTest()
-	doTestQueryStruct(t)
+	doTestQueryStruct(NewAssert(t))
 }
 
 func TestMysqlCustomNameConvertion(t *testing.T) {
@@ -194,7 +152,7 @@ func TestMysqlCustomNameConvertion(t *testing.T) {
 	FieldNameToColumnName = noConvert
 	TableNameToStructName = noConvert
 	StructNameToTableName = noConvert
-	doTestForeignKey(t)
+	doTestForeignKey(NewAssert(t))
 	ColumnNameToFieldName = snakeToUpperCamel
 	FieldNameToColumnName = toSnake
 	TableNameToStructName = snakeToUpperCamel
@@ -203,47 +161,47 @@ func TestMysqlCustomNameConvertion(t *testing.T) {
 
 func TestMysqlConnectionLimit(t *testing.T) {
 	registerMysqlTest()
-	doTestConnectionLimit(t)
+	doTestConnectionLimit(NewAssert(t))
 }
 
 func TestMysqlIterate(t *testing.T) {
 	registerMysqlTest()
-	doTestIterate(t)
+	doTestIterate(NewAssert(t))
 }
 
 func TestMysqlAddColumnSQL(t *testing.T) {
-	doTestAddColumSQL(t, mysqlSyntax)
+	doTestAddColumSQL(NewAssert(t), mysqlSyntax)
 }
 
 func TestMysqlCreateTableSQL(t *testing.T) {
-	doTestCreateTableSQL(t, mysqlSyntax)
+	doTestCreateTableSQL(NewAssert(t), mysqlSyntax)
 }
 
 func TestMysqlCreateIndexSQL(t *testing.T) {
-	doTestCreateIndexSQL(t, mysqlSyntax)
+	doTestCreateIndexSQL(NewAssert(t), mysqlSyntax)
 }
 
 func TestMysqlInsertSQL(t *testing.T) {
-	doTestInsertSQL(t, mysqlSyntax)
+	doTestInsertSQL(NewAssert(t), mysqlSyntax)
 }
 
 func TestMysqlUpdateSQL(t *testing.T) {
-	doTestUpdateSQL(t, mysqlSyntax)
+	doTestUpdateSQL(NewAssert(t), mysqlSyntax)
 }
 
 func TestMysqlDeleteSQL(t *testing.T) {
-	doTestDeleteSQL(t, mysqlSyntax)
+	doTestDeleteSQL(NewAssert(t), mysqlSyntax)
 }
 
 func TestMysqlSelectionSQL(t *testing.T) {
-	doTestSelectionSQL(t, mysqlSyntax)
+	doTestSelectionSQL(NewAssert(t), mysqlSyntax)
 }
 
 func TestMysqlQuerySQL(t *testing.T) {
-	doTestQuerySQL(t, mysqlSyntax)
+	doTestQuerySQL(NewAssert(t), mysqlSyntax)
 }
 func TestMysqlDropTableSQL(t *testing.T) {
-	doTestDropTableSQL(t, mysqlSyntax)
+	doTestDropTableSQL(NewAssert(t), mysqlSyntax)
 }
 
 func TestMysqlDataSourceName(t *testing.T) {
@@ -268,25 +226,25 @@ func TestMysqlDataSourceName(t *testing.T) {
 
 func BenchmarkMysqlFind(b *testing.B) {
 	registerMysqlTest()
-	doBenchmarkFind(b)
+	doBenchmarkFind(b, b.N)
 }
 
 func BenchmarkMysqlQueryStruct(b *testing.B) {
 	registerMysqlTest()
-	doBenchmarkQueryStruct(b)
+	doBenchmarkQueryStruct(b, b.N)
 }
 
 func BenchmarkMysqlDbQuery(b *testing.B) {
 	registerMysqlTest()
-	doBenchmarkDbQuery(b)
+	doBenchmarkDbQuery(b, b.N)
 }
 
 func BenchmarkMysqlStmtQuery(b *testing.B) {
 	registerMysqlTest()
-	doBenchmarkStmtQuery(b)
+	doBenchmarkStmtQuery(b, b.N)
 }
 
 func BenchmarkMysqlTransaction(b *testing.B) {
 	registerMysqlTest()
-	doBenchmarkTransaction(b)
+	doBenchmarkTransaction(b, b.N)
 }

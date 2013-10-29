@@ -55,7 +55,7 @@ func (d oracle) sqlType(field modelField) string {
 		if len(field.colType) != 0 {
 			switch field.colType {
 			case QBS_COLTYPE_BOOL:
-				panic("Qbs doesn't support column type "+field.colType+"for Oracle")
+				panic("Qbs doesn't support column type " + field.colType + "for Oracle")
 			case QBS_COLTYPE_INT, QBS_COLTYPE_BIGINT:
 				return "NUMBER"
 			case QBS_COLTYPE_DOUBLE:
@@ -71,11 +71,11 @@ func (d oracle) sqlType(field modelField) string {
 				}
 				return "CLOB"
 			default:
-				panic("Qbs doesn't support column type "+field.colType+ "for Oracle")
+				panic("Qbs doesn't support column type " + field.colType + "for Oracle")
 			}
 		}
 	}
-	panic("invalid sql type for field:"+field.name)
+	panic("invalid sql type for field:" + field.name)
 }
 
 func (d oracle) insert(q *Qbs) (int64, error) {

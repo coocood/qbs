@@ -73,21 +73,21 @@ func (d mysql) sqlType(field modelField) string {
 			return "longtext"
 		default:
 			if len(field.colType) != 0 {
-			switch field.colType {
-			case QBS_COLTYPE_BOOL, QBS_COLTYPE_INT, QBS_COLTYPE_BIGINT, QBS_COLTYPE_DOUBLE, QBS_COLTYPE_TIME:
-				return field.colType
-			case QBS_COLTYPE_TEXT:
-				if field.size > 0 && field.size < 65532 {
-					return fmt.Sprintf("varchar(%d)", field.size)
+				switch field.colType {
+				case QBS_COLTYPE_BOOL, QBS_COLTYPE_INT, QBS_COLTYPE_BIGINT, QBS_COLTYPE_DOUBLE, QBS_COLTYPE_TIME:
+					return field.colType
+				case QBS_COLTYPE_TEXT:
+					if field.size > 0 && field.size < 65532 {
+						return fmt.Sprintf("varchar(%d)", field.size)
+					}
+					return "longtext"
+				default:
+					panic("Qbs doesn't support column type " + field.colType + " for MySQL")
 				}
-				return "longtext"
-			default:
-				panic("Qbs doesn't support column type "+field.colType+ " for MySQL")
 			}
-	}
 		}
 	}
-	panic("invalid sql type for field:"+field.name)
+	panic("invalid sql type for field:" + field.name)
 }
 
 func (d mysql) indexExists(mg *Migration, tableName, indexName string) bool {

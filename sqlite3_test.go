@@ -72,11 +72,11 @@ func TestSqlite3SqlType(t *testing.T) {
 	}
 	/*for _, column := range testModel.fields {
 		result := d.sqlType(*column)
-		
+
 		switch column.camelName {
 		case "Bool":
 			assert.Equal("integer", result)
-		
+
 		case "Int8":
 			assert.Equal("integer", result)
 		case "Int16":
@@ -89,7 +89,7 @@ func TestSqlite3SqlType(t *testing.T) {
 			assert.Equal("integer", result)
 		case "UInt32":
 			assert.Equal("integer", result)
-			
+
 		case "Int":
 			assert.Equal("integer", result)
 		case "UInt":
@@ -98,23 +98,23 @@ func TestSqlite3SqlType(t *testing.T) {
 			assert.Equal("integer", result)
 		case "UInt64":
 			assert.Equal("integer", result)
-			
+
 		case "Float32":
 			assert.Equal("real", result)
 		case "Float64":
 			assert.Equal("real", result)
-		
+
 		case "Varchar":
 			assert.Equal("text", result)
 		case "LongText":
 			assert.Equal("text", result)
-			
+
 		case "Time":
 			assert.Equal("text", result)
-		
+
 		case "Slice":
 			assert.Equal("text", result)
-			
+
 		case "DerivedInt":
 			assert.Equal("integer", result)
 		case "DerivedInt16":
@@ -131,72 +131,72 @@ func TestSqlite3SqlType(t *testing.T) {
 
 func TestSqlite3Transaction(t *testing.T) {
 	registerSqlite3Test()
-	doTestTransaction(t)
+	doTestTransaction(NewAssert(t))
 }
 
 func TestSqlite3SaveAndDelete(t *testing.T) {
 	mg, q := setupSqlite3Db()
-	doTestSaveAndDelete(t, mg, q)
+	doTestSaveAndDelete(NewAssert(t), mg, q)
 }
 
 func TestSqlite3SaveAgain(t *testing.T) {
 	mg, q := setupSqlite3Db()
-	doTestSaveAgain(t, mg, q)
+	doTestSaveAgain(NewAssert(t), mg, q)
 }
 
 func TestSqlite3ForeignKey(t *testing.T) {
 	registerSqlite3Test()
-	doTestForeignKey(t)
+	doTestForeignKey(NewAssert(t))
 }
 
 func TestSqlite3Find(t *testing.T) {
 	registerSqlite3Test()
-	doTestFind(t)
+	doTestFind(NewAssert(t))
 }
 
 func TestSqlite3CreateTable(t *testing.T) {
 	mg, _ := setupSqlite3Db()
-	doTestCreateTable(t, mg)
+	doTestCreateTable(NewAssert(t), mg)
 }
 
 func TestSqlite3Update(t *testing.T) {
 	mg, q := setupSqlite3Db()
-	doTestUpdate(t, mg, q)
+	doTestUpdate(NewAssert(t), mg, q)
 }
 
 func TestSqlite3Validation(t *testing.T) {
 	mg, q := setupSqlite3Db()
-	doTestValidation(t, mg, q)
+	doTestValidation(NewAssert(t), mg, q)
 }
 
 func TestSqlite3BoolType(t *testing.T) {
 	mg, q := setupSqlite3Db()
-	doTestBoolType(t, mg, q)
+	doTestBoolType(NewAssert(t), mg, q)
 }
 
 func TestSqlite3StringPk(t *testing.T) {
 	mg, q := setupSqlite3Db()
-	doTestStringPk(t, mg, q)
+	doTestStringPk(NewAssert(t), mg, q)
 }
 
 func TestSqlite3Count(t *testing.T) {
 	registerSqlite3Test()
-	doTestCount(t)
+	doTestCount(NewAssert(t))
 }
 
 func TestSqlite3QueryMap(t *testing.T) {
 	mg, q := setupSqlite3Db()
-	doTestQueryMap(t, mg, q)
+	doTestQueryMap(NewAssert(t), mg, q)
 }
 
 func TestSqlite3BulkInsert(t *testing.T) {
 	registerSqlite3Test()
-	doTestBulkInsert(t)
+	doTestBulkInsert(NewAssert(t))
 }
 
 func TestSqlite3QueryStruct(t *testing.T) {
 	registerSqlite3Test()
-	doTestQueryStruct(t)
+	doTestQueryStruct(NewAssert(t))
 }
 
 func TestSqlite3CustomNameConvertion(t *testing.T) {
@@ -205,7 +205,7 @@ func TestSqlite3CustomNameConvertion(t *testing.T) {
 	FieldNameToColumnName = noConvert
 	TableNameToStructName = noConvert
 	StructNameToTableName = noConvert
-	doTestForeignKey(t)
+	doTestForeignKey(NewAssert(t))
 	ColumnNameToFieldName = snakeToUpperCamel
 	FieldNameToColumnName = toSnake
 	TableNameToStructName = snakeToUpperCamel
@@ -214,66 +214,66 @@ func TestSqlite3CustomNameConvertion(t *testing.T) {
 
 func TestSqlite3ConnectionLimit(t *testing.T) {
 	registerSqlite3Test()
-	doTestConnectionLimit(t)
+	doTestConnectionLimit(NewAssert(t))
 }
 
 func TestSqlite3Iterate(t *testing.T) {
 	registerSqlite3Test()
-	doTestIterate(t)
+	doTestIterate(NewAssert(t))
 }
 
 func TestSqlite3AddColumnSQL(t *testing.T) {
-	doTestAddColumSQL(t, sqlite3Syntax)
+	doTestAddColumSQL(NewAssert(t), sqlite3Syntax)
 }
 
 func TestSqlite3CreateTableSQL(t *testing.T) {
-	doTestCreateTableSQL(t, sqlite3Syntax)
+	doTestCreateTableSQL(NewAssert(t), sqlite3Syntax)
 }
 
 func TestSqlite3CreateIndexSQL(t *testing.T) {
-	doTestCreateIndexSQL(t, sqlite3Syntax)
+	doTestCreateIndexSQL(NewAssert(t), sqlite3Syntax)
 }
 
 func TestSqlite3InsertSQL(t *testing.T) {
-	doTestInsertSQL(t, sqlite3Syntax)
+	doTestInsertSQL(NewAssert(t), sqlite3Syntax)
 }
 
 func TestSqlite3UpdateSQL(t *testing.T) {
-	doTestUpdateSQL(t, sqlite3Syntax)
+	doTestUpdateSQL(NewAssert(t), sqlite3Syntax)
 }
 
 func TestSqlite3DeleteSQL(t *testing.T) {
-	doTestDeleteSQL(t, sqlite3Syntax)
+	doTestDeleteSQL(NewAssert(t), sqlite3Syntax)
 }
 
 func TestSqlite3SelectionSQL(t *testing.T) {
-	doTestSelectionSQL(t, sqlite3Syntax)
+	doTestSelectionSQL(NewAssert(t), sqlite3Syntax)
 }
 
 func TestSqlite3QuerySQL(t *testing.T) {
-	doTestQuerySQL(t, sqlite3Syntax)
+	doTestQuerySQL(NewAssert(t), sqlite3Syntax)
 }
 
 func TestSqlite3DropTableSQL(t *testing.T) {
-	doTestDropTableSQL(t, sqlite3Syntax)
+	doTestDropTableSQL(NewAssert(t), sqlite3Syntax)
 }
 
 func BenchmarkSqlite3Find(b *testing.B) {
 	registerSqlite3Test()
-	doBenchmarkFind(b)
+	doBenchmarkFind(b, b.N)
 }
 
 func BenchmarkSqlite3DbQuery(b *testing.B) {
 	registerSqlite3Test()
-	doBenchmarkDbQuery(b)
+	doBenchmarkDbQuery(b, b.N)
 }
 
 func BenchmarkSqlite3StmtQuery(b *testing.B) {
 	registerSqlite3Test()
-	doBenchmarkStmtQuery(b)
+	doBenchmarkStmtQuery(b, b.N)
 }
 
 func BenchmarkSqlite3Transaction(b *testing.B) {
 	registerSqlite3Test()
-	doBenchmarkTransaction(b)
+	doBenchmarkTransaction(b, b.N)
 }

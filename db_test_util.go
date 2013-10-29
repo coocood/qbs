@@ -3,7 +3,6 @@ package qbs
 import (
 	"database/sql"
 	"errors"
-	"testing"
 	"time"
 )
 
@@ -17,12 +16,52 @@ type addColumn struct {
 	Amount int
 }
 
+type fakeInt int
+type fakeInt16 int16
+type fakeBool bool
+type fakeFloat float32
+type fakeTime time.Time
+type fakeString string
+
+type typeTestTable struct {
+	Bool bool `qbs:""`
+
+	Int8   int8   `qbs:""`
+	Int16  int16  `qbs:""`
+	Int32  int32  `qbs:""`
+	UInt8  uint8  `qbs:""`
+	UInt16 uint16 `qbs:""`
+	UInt32 uint32 `qbs:""`
+
+	Int    int    `qbs:""`
+	UInt   uint   `qbs:""`
+	Int64  int64  `qbs:""`
+	UInt64 uint64 `qbs:""`
+
+	Float32 float32
+	Float64 float64
+
+	Varchar  string `qbs:"size:128"`
+	LongText string `qbs:"size:65536"`
+
+	Time time.Time
+
+	Slice []byte
+
+	DerivedInt      fakeInt   `qbs:"coltype:int"`
+	DerivedInt16    fakeInt16 `qbs:"coltype:bigint"`
+	DerivedBool     fakeBool  `qbs:"coltype:boolean"`
+	DerivedFloat    fakeFloat `qbs:"coltype:double"`
+	DerivedTime     fakeTime  `qbs:"coltype:timestamp"`
+	DerivedVarChar  fakeTime  `qbs:"coltype:text,size:128"`
+	DerivedLongText fakeTime  `qbs:"coltype:text,size:65536"`
+}
+
 func (table *addColumn) Indexes(indexes *Indexes) {
 	indexes.AddUnique("first", "last")
 }
 
-func doTestTransaction(t *testing.T) {
-	assert := NewAssert(t)
+func doTestTransaction(assert *Assert) {
 	type txModel struct {
 		Id int64
 		A  string
@@ -61,9 +100,8 @@ func doTestTransaction(t *testing.T) {
 
 }
 
-func doTestSaveAndDelete(t *testing.T, mg *Migration, q *Qbs) {
+func doTestSaveAndDelete(assert *Assert, mg *Migration, q *Qbs) {
 	defer closeMigrationAndQbs(mg, q)
-	assert := NewAssert(t)
 	x := time.Now()
 	assert.Equal(0, x.Sub(x.UTC()))
 	now := time.Now()
@@ -130,9 +168,8 @@ func doTestSaveAndDelete(t *testing.T, mg *Migration, q *Qbs) {
 	assert.Equal(1, affected)
 }
 
-func doTestSaveAgain(t *testing.T, mg *Migration, q *Qbs) {
+func doTestSaveAgain(assert *Assert, mg *Migration, q *Qbs) {
 	defer closeMigrationAndQbs(mg, q)
-	assert := NewAssert(t)
 	b := new(basic)
 	mg.dropTableIfExists(b)
 	mg.CreateTableIfNotExists(b)
@@ -150,8 +187,7 @@ func doTestSaveAgain(t *testing.T, mg *Migration, q *Qbs) {
 	}
 }
 
-func doTestForeignKey(t *testing.T) {
-	assert := NewAssert(t)
+func doTestForeignKey(assert *Assert) {
 	type User struct {
 		Id   int64
 		Name string
@@ -206,8 +242,7 @@ func doTestForeignKey(t *testing.T) {
 	})
 }
 
-func doTestFind(t *testing.T) {
-	assert := NewAssert(t)
+func doTestFind(assert *Assert) {
 	now := time.Now()
 	type types struct {
 		Id    int64
@@ -273,9 +308,8 @@ func doTestFind(t *testing.T) {
 	})
 }
 
-func doTestCreateTable(t *testing.T, mg *Migration) {
+func doTestCreateTable(assert *Assert, mg *Migration) {
 	defer mg.Close()
-	assert := NewAssert(t)
 	{
 		type AddColumn struct {
 			Prim int64 `qbs:"pk"`
@@ -292,7 +326,7 @@ func doTestCreateTable(t *testing.T, mg *Migration) {
 	assert.True(mg.dialect.indexExists(mg, "add_column", "add_column_first_last"))
 	columns := mg.dialect.columnsInTable(mg, table)
 	assert.Equal(4, len(columns))
-	
+
 	{
 		tableWithCustomTypes := new(typeTestTable)
 		mg.dropTableIfExists(tableWithCustomTypes)
@@ -315,9 +349,8 @@ type basic struct {
 	State int64
 }
 
-func doTestUpdate(t *testing.T, mg *Migration, q *Qbs) {
+func doTestUpdate(assert *Assert, mg *Migration, q *Qbs) {
 	defer closeMigrationAndQbs(mg, q)
-	assert := NewAssert(t)
 	mg.dropTableIfExists(&basic{})
 	mg.CreateTableIfNotExists(&basic{})
 	_, err := q.Save(&basic{Name: "a", State: 1})
@@ -363,9 +396,8 @@ func (v *validatorTable) Validate(q *Qbs) error {
 	return nil
 }
 
-func doTestValidation(t *testing.T, mg *Migration, q *Qbs) {
+func doTestValidation(assert *Assert, mg *Migration, q *Qbs) {
 	defer closeMigrationAndQbs(mg, q)
-	assert := NewAssert(t)
 	valid := new(validatorTable)
 	mg.dropTableIfExists(valid)
 	mg.CreateTableIfNotExists(valid)
@@ -377,9 +409,8 @@ func doTestValidation(t *testing.T, mg *Migration, q *Qbs) {
 	assert.Equal("name already taken", err.Error())
 }
 
-func doTestBoolType(t *testing.T, mg *Migration, q *Qbs) {
+func doTestBoolType(assert *Assert, mg *Migration, q *Qbs) {
 	defer closeMigrationAndQbs(mg, q)
-	assert := NewAssert(t)
 	type BoolType struct {
 		Id     int64
 		Active bool
@@ -394,9 +425,8 @@ func doTestBoolType(t *testing.T, mg *Migration, q *Qbs) {
 	assert.True(bt.Active)
 }
 
-func doTestStringPk(t *testing.T, mg *Migration, q *Qbs) {
+func doTestStringPk(assert *Assert, mg *Migration, q *Qbs) {
 	defer closeMigrationAndQbs(mg, q)
-	assert := NewAssert(t)
 	type StringPk struct {
 		Tag   string `qbs:"pk,size:16"`
 		Count int32
@@ -413,8 +443,7 @@ func doTestStringPk(t *testing.T, mg *Migration, q *Qbs) {
 	assert.Equal(10, spk.Count)
 }
 
-func doTestCount(t *testing.T) {
-	assert := NewAssert(t)
+func doTestCount(assert *Assert) {
 	setupBasicDb()
 	WithQbs(func(q *Qbs) error {
 		basic := new(basic)
@@ -434,9 +463,8 @@ func doTestCount(t *testing.T) {
 	})
 }
 
-func doTestQueryMap(t *testing.T, mg *Migration, q *Qbs) {
+func doTestQueryMap(assert *Assert, mg *Migration, q *Qbs) {
 	defer closeMigrationAndQbs(mg, q)
-	assert := NewAssert(t)
 	type types struct {
 		Id      int64
 		Name    string `qbs:"size:64"`
@@ -468,8 +496,7 @@ func doTestQueryMap(t *testing.T, mg *Migration, q *Qbs) {
 	assert.Equal(3, len(results))
 }
 
-func doTestBulkInsert(t *testing.T) {
-	assert := NewAssert(t)
+func doTestBulkInsert(assert *Assert) {
 	setupBasicDb()
 	WithQbs(func(q *Qbs) error {
 		var bulk []*basic
@@ -488,8 +515,7 @@ func doTestBulkInsert(t *testing.T) {
 	})
 }
 
-func doTestQueryStruct(t *testing.T) {
-	assert := NewAssert(t)
+func doTestQueryStruct(assert *Assert) {
 	setupBasicDb()
 	WithQbs(func(q *Qbs) error {
 		b := new(basic)
@@ -510,8 +536,7 @@ func doTestQueryStruct(t *testing.T) {
 	})
 }
 
-func doTestConnectionLimit(t *testing.T) {
-	assert := NewAssert(t)
+func doTestConnectionLimit(assert *Assert) {
 	SetConnectionLimit(2, false)
 	q0, _ := GetQbs()
 	GetQbs()
@@ -533,8 +558,7 @@ func doTestConnectionLimit(t *testing.T) {
 	assert.Nil(connectionLimit)
 }
 
-func doTestIterate(t *testing.T) {
-	assert := NewAssert(t)
+func doTestIterate(assert *Assert) {
 	setupBasicDb()
 	q, _ := GetQbs()
 	for i := 0; i < 4; i++ {

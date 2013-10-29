@@ -4,14 +4,34 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
-	"testing"
 )
 
 type Assert struct {
-	*testing.T
+	tester
 }
 
-func NewAssert(t *testing.T) *Assert {
+type tester interface {
+	Fail()
+	Failed() bool
+	FailNow()
+	Log(args ...interface{})
+	Logf(format string, args ...interface{})
+	Error(args ...interface{})
+	Errorf(format string, args ...interface{})
+	Fatal(args ...interface{})
+	Fatalf(format string, args ...interface{})
+	Skip(args ...interface{})
+	Skipf(format string, args ...interface{})
+	SkipNow()
+	Skipped() bool
+}
+
+type benchmarker interface {
+	StartTimer()
+	StopTimer()
+}
+
+func NewAssert(t tester) *Assert {
 	return &Assert{t}
 }
 

@@ -98,13 +98,13 @@ func (d postgres) sqlType(field modelField) string {
 					}
 					return "text"
 				default:
-					panic("Qbs doesn't support column type "+
-						field.colType+" for postgres")
+					panic("Qbs doesn't support column type " +
+						field.colType + " for postgres")
 				}
 			}
 		}
 	}
-	panic("invalid sql type for field:"+field.name)
+	panic("invalid sql type for field:" + field.name)
 }
 
 func (d postgres) insert(q *Qbs) (int64, error) {

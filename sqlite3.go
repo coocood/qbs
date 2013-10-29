@@ -68,12 +68,12 @@ func (d sqlite3) sqlType(field modelField) string {
 				case QBS_COLTYPE_TEXT:
 					return "text"
 				default:
-					panic("Qbs doesn't support column type "+field.colType+ "for SQLite3")
+					panic("Qbs doesn't support column type " + field.colType + "for SQLite3")
 				}
 			}
 		}
 	}
-	panic("invalid sql type for field:"+field.name)
+	panic("invalid sql type for field:" + field.name)
 }
 
 func (d sqlite3) setModelValue(value reflect.Value, field reflect.Value) error {
