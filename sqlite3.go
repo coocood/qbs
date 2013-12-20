@@ -178,7 +178,11 @@ func (d sqlite3) columnsInTable(mg *Migration, table interface{}) map[string]boo
 		err = rows.Scan(containers...)
 		value := reflect.Indirect(reflect.ValueOf(containers[1]))
 		if err == nil {
-			columns[value.Elem().String()] = true
+			if value.Elem().Kind() == reflect.Slice {
+				columns[string(value.Elem().Bytes())] = true
+			} else {
+				columns[value.Elem().String()] = true
+			}
 		}
 	}
 	return columns
