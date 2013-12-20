@@ -97,7 +97,11 @@ func (d sqlite3) setModelValue(value reflect.Value, field reflect.Value) error {
 	case reflect.Float32, reflect.Float64:
 		field.SetFloat(value.Elem().Float())
 	case reflect.String:
-		field.SetString(value.Elem().String())
+		if value.Elem().Kind() == reflect.Slice {
+			field.SetString(string(value.Elem().Bytes()))
+		} else {
+			field.SetString(value.Elem().String())
+		}
 	case reflect.Slice:
 		if reflect.TypeOf(value.Interface()).Elem().Kind() == reflect.Uint8 {
 			field.SetBytes(value.Elem().Bytes())
