@@ -121,6 +121,11 @@ func (d sqlite3) setModelValue(value reflect.Value, field reflect.Value) error {
 				t = time.Unix(value.Elem().Int(), 0)
 			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 				t = time.Unix(int64(value.Elem().Uint()), 0)
+			case reflect.Slice:
+				t, err = time.Parse("2006-01-02 15:04:05", string(value.Elem().Bytes()))
+				if err != nil {
+					return err
+				}
 			}
 			v := reflect.NewAt(reflect.TypeOf(time.Time{}), unsafe.Pointer(&t))
 			field.Set(v.Elem())
