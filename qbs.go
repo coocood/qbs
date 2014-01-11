@@ -38,20 +38,26 @@ type Validator interface {
 
 //Register a database, should be call at the beginning of the application.
 func Register(driverName, driverSourceName, databaseName string, dialect Dialect) {
-	driver = driverName
 	driverSource = driverSourceName
-	dial = dialect
 	dbName = databaseName
 	if db == nil {
 		var err error
-		db, err = sql.Open(driver, driverSource)
+		var database *sql.DB
+		database, err = sql.Open(driver, driverSource)
 		if err != nil {
 			panic(err)
 		}
-		db.SetMaxIdleConns(100)
-		stmtMap = make(map[string]*sql.Stmt)
-		mu = new(sync.RWMutex)
+		RegisterWithDb(driverName, database, dialect)
 	}
+}
+
+func RegisterWithDb(driverName string, database *sql.DB, dialect Dialect) {
+	driver = driverName
+	dial = dialect
+	db = database
+	db.SetMaxIdleConns(100)
+	stmtMap = make(map[string]*sql.Stmt)
+	mu = new(sync.RWMutex)
 }
 
 //A safe and easy way to work with *Qbs instance without the need to open and close it.
