@@ -43,7 +43,7 @@ func Register(driverName, driverSourceName, databaseName string, dialect Dialect
 	if db == nil {
 		var err error
 		var database *sql.DB
-		database, err = sql.Open(driver, driverSource)
+		database, err = sql.Open(driverName, driverSource)
 		if err != nil {
 			panic(err)
 		}
