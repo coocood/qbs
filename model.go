@@ -74,6 +74,7 @@ type modelField struct {
 	fk        string
 	join      string
 	colType   string
+	nullable  bool
 }
 
 // Model represents a parsed schema interface{}.
@@ -100,7 +101,7 @@ func (model *model) columnsAndValues(forUpdate bool) ([]string, []interface{}) {
 			include = column.value != nil && !column.pk
 		} else {
 			include = true
-			if column.value == nil {
+			if column.value == nil && !column.nullable {
 				include = false
 			} else if column.pk {
 				if intValue, ok := column.value.(int64); ok {
@@ -193,9 +194,17 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 		if sqlTag == "-" {
 			continue
 		}
+		fieldIsNullable := false
 		kind := structField.Type.Kind()
 		switch kind {
-		case reflect.Ptr, reflect.Map:
+		case reflect.Ptr:
+			switch structField.Type.Elem().Kind() {
+			case reflect.Bool, reflect.String, reflect.Int64, reflect.Float64:
+				fieldIsNullable = true
+			default:
+				continue
+			}
+		case reflect.Map:
 			continue
 		case reflect.Slice:
 			elemKind := structField.Type.Elem().Kind()
@@ -208,13 +217,24 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 		parseTags(fd, sqlTag)
 		fd.camelName = structField.Name
 		fd.name = FieldNameToColumnName(structField.Name)
-		fd.value = fieldValue.Interface()
+		if fieldIsNullable {
+			fd.nullable = true
+			if fieldValue.IsNil() {
+				fd.value = nil
+			} else {
+				fd.value = fieldValue.Elem().Interface()
+			}
+		} else {
+			//not nullable case
+			fd.value = fieldValue.Interface()
+		}
 		if _, ok := fd.value.(int64); ok && fd.camelName == "Id" {
 			fd.pk = true
 		}
 		if fd.pk {
 			model.pk = fd
 		}
+
 		model.fields = append(model.fields, fd)
 		// fill in references map only in root model.
 		if root {
@@ -227,6 +247,7 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 				refName = fd.join
 				explicitJoin = true
 			}
+
 			if len(fd.camelName) > 3 && strings.HasSuffix(fd.camelName, "Id") {
 				fdValue := reflect.ValueOf(fd.value)
 				if _, ok := fd.value.(sql.NullInt64); ok || fdValue.Kind() == reflect.Int64 {
@@ -235,6 +256,7 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 					implicitJoin = true
 				}
 			}
+
 			if fk || explicitJoin || implicitJoin {
 				omit := false
 				for _, v := range omitFields {
