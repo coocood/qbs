@@ -9,6 +9,10 @@ import (
 	"time"
 )
 
+type TableNamer interface {
+	TableName() string
+}
+
 const QBS_COLTYPE_INT = "int"
 const QBS_COLTYPE_BOOL = "boolean"
 const QBS_COLTYPE_BIGINT = "bigint"
@@ -291,6 +295,9 @@ func tableName(talbe interface{}) string {
 		if !c {
 			break
 		}
+	}
+	if tn, ok := talbe.(TableNamer); ok {
+		return tn.TableName()
 	}
 	return StructNameToTableName(t.Name())
 }
