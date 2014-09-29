@@ -45,7 +45,11 @@ func (d postgres) quote(s string) string {
 func (d postgres) sqlType(field modelField) string {
 	f := field.value
 	fieldValue := reflect.ValueOf(f)
-	switch fieldValue.Kind() {
+	kind := fieldValue.Kind()
+	if field.nullable != reflect.Invalid {
+		kind = field.nullable
+	}
+	switch kind {
 	case reflect.Bool:
 		return "boolean"
 	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Uint8, reflect.Uint16, reflect.Uint32:

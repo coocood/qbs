@@ -74,7 +74,7 @@ type modelField struct {
 	fk        string
 	join      string
 	colType   string
-	nullable  bool
+	nullable  reflect.Kind
 }
 
 // Model represents a parsed schema interface{}.
@@ -101,7 +101,7 @@ func (model *model) columnsAndValues(forUpdate bool) ([]string, []interface{}) {
 			include = column.value != nil && !column.pk
 		} else {
 			include = true
-			if column.value == nil && !column.nullable {
+			if column.value == nil && column.nullable == reflect.Invalid {
 				include = false
 			} else if column.pk {
 				if intValue, ok := column.value.(int64); ok {
@@ -200,6 +200,7 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 		case reflect.Ptr:
 			switch structField.Type.Elem().Kind() {
 			case reflect.Bool, reflect.String, reflect.Int64, reflect.Float64:
+				kind = structField.Type.Elem().Kind()
 				fieldIsNullable = true
 			default:
 				continue
@@ -218,7 +219,7 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 		fd.camelName = structField.Name
 		fd.name = FieldNameToColumnName(structField.Name)
 		if fieldIsNullable {
-			fd.nullable = true
+			fd.nullable = kind
 			if fieldValue.IsNil() {
 				fd.value = nil
 			} else {

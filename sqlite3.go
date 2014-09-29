@@ -27,7 +27,11 @@ func RegisterSqlite3(dbFileName string) {
 func (d sqlite3) sqlType(field modelField) string {
 	f := field.value
 	fieldValue := reflect.ValueOf(f)
-	switch fieldValue.Kind() {
+	kind := fieldValue.Kind()
+	if field.nullable != reflect.Invalid {
+		kind = field.nullable
+	}
+	switch kind {
 	case reflect.Bool:
 		return "integer"
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -106,6 +110,8 @@ func (d sqlite3) setModelValue(value reflect.Value, field reflect.Value) error {
 		if reflect.TypeOf(value.Interface()).Elem().Kind() == reflect.Uint8 {
 			field.SetBytes(value.Elem().Bytes())
 		}
+	case reflect.Ptr:
+		d.setPtrValue(value, field)
 	case reflect.Struct:
 		switch field.Interface().(type) {
 		case time.Time:

@@ -224,6 +224,11 @@ func TestMysqlDataSourceName(t *testing.T) {
 	assert.Equal("john:123@unix(192.168.1.3:3336)/abc?charset=utf8&parseTime=true", dsn)
 }
 
+func TestMysqlSaveNullable(t *testing.T) {
+	mg, q := setupMysqlDb()
+	doTestSaveNullable(NewAssert(t), mg, q)
+}
+
 func BenchmarkMysqlFind(b *testing.B) {
 	registerMysqlTest()
 	doBenchmarkFind(b, b.N)
