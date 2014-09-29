@@ -187,6 +187,11 @@ func TestPgDropTableSQL(t *testing.T) {
 	doTestDropTableSQL(NewAssert(t), pgSyntax)
 }
 
+func TestPgSaveNullable(t *testing.T) {
+	mg, q := setupPgDb()
+	doTestSaveNullable(NewAssert(t), mg, q)
+}
+
 func TestPgDataSourceName(t *testing.T) {
 	dsn := new(DataSourceName)
 	dsn.DbName = "abc"

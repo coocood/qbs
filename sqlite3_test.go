@@ -258,6 +258,11 @@ func TestSqlite3DropTableSQL(t *testing.T) {
 	doTestDropTableSQL(NewAssert(t), sqlite3Syntax)
 }
 
+func TestSqlite3SaveNullable(t *testing.T) {
+	mg, q := setupSqlite3Db()
+	doTestSaveNullable(NewAssert(t), mg, q)
+}
+
 func BenchmarkSqlite3Find(b *testing.B) {
 	registerSqlite3Test()
 	doBenchmarkFind(b, b.N)

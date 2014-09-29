@@ -123,17 +123,32 @@ func (dsn *DataSourceName) Append(key, value string) *DataSourceName {
 
 func RegisterWithDataSourceName(dsn *DataSourceName) {
 	var driverName string
+	mustCloseDBForNewDatasource := false
 	switch dsn.Dialect.(type) {
 	case *mysql:
 		driverName = "mysql"
 	case *sqlite3:
 		driverName = "sqlite3"
+		mustCloseDBForNewDatasource = true
 	case *postgres:
 		driverName = "postgres"
+		mustCloseDBForNewDatasource = true
 	}
 	dbName := dsn.DbName
 	if driverName == "sqlite3" {
 		dbName = ""
+	}
+
+	//XXX This appears to something related to the specific way the tests
+	//XXX run and the db variable.  If the tests are run independently (with -test.run)
+	//XXX then the tests pass.  However, they fail if the database has already
+	//XXX been Registered and the db variable is not nil.
+	//XXX This is only needed for postgres and sqlite3.
+	if mustCloseDBForNewDatasource && db != nil {
+		if err := db.Close(); err != nil {
+			panic(err)
+		}
+		db = nil
 	}
 	Register(driverName, dsn.String(), dbName, dsn.Dialect)
 }

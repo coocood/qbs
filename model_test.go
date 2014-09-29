@@ -1,6 +1,7 @@
 package qbs
 
 import (
+	"reflect"
 	"testing"
 	"time"
 )
@@ -126,4 +127,42 @@ func TestColumnsAndValues(t *testing.T) {
 	columns, values := model.columnsAndValues(false)
 	assert.MustEqual(1, len(columns))
 	assert.MustEqual(1, len(values))
+}
+
+type SomethingNotUser struct {
+	Id   int64
+	Name string
+}
+
+func (s *SomethingNotUser) TableName() string {
+	return "User"
+}
+
+func TestTableNamer(t *testing.T) {
+	assert := NewAssert(t)
+	var u SomethingNotUser
+	model := structPtrToModel(&u, true, nil)
+	assert.Equal("User", model.table)
+}
+
+type PointerStructFields struct {
+	Id         uint64
+	StrPointer *string
+	Str        string
+	Ignored    *PointerStructFields
+}
+
+func TestModelFieldsIndicateNullable(t *testing.T) {
+	assert := NewAssert(t)
+	var p PointerStructFields
+	model := structPtrToModel(&p, true, nil)
+	assert.Equal(3, len(model.fields))
+	for i := 0; i < 3; i++ {
+		f := model.fields[i]
+		if f.name == "str_pointer" {
+			assert.Equal(f.nullable, reflect.String)
+		} else {
+			assert.Equal(f.nullable, reflect.Invalid)
+		}
+	}
 }

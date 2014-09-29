@@ -34,6 +34,21 @@ func (d base) parseBool(value reflect.Value) bool {
 	return value.Bool()
 }
 
+func (d base) setPtrValue(driverValue, fieldValue reflect.Value) {
+	t := fieldValue.Type().Elem()
+	v := reflect.New(t)
+	fieldValue.Set(v)
+	switch t.Kind() {
+	case reflect.String:
+		v.Elem().SetString(string(driverValue.Interface().([]uint8)))
+	case reflect.Int64:
+		v.Elem().SetInt(driverValue.Interface().(int64))
+	case reflect.Float64:
+		v.Elem().SetFloat(driverValue.Interface().(float64))
+	case reflect.Bool:
+		v.Elem().SetBool(driverValue.Interface().(bool))
+	}
+}
 func (d base) setModelValue(driverValue, fieldValue reflect.Value) error {
 	switch fieldValue.Type().Kind() {
 	case reflect.Bool:
@@ -56,6 +71,8 @@ func (d base) setModelValue(driverValue, fieldValue reflect.Value) error {
 		if reflect.TypeOf(driverValue.Interface()).Elem().Kind() == reflect.Uint8 {
 			fieldValue.SetBytes(driverValue.Elem().Bytes())
 		}
+	case reflect.Ptr:
+		d.setPtrValue(driverValue, fieldValue)
 	case reflect.Struct:
 		switch fieldValue.Interface().(type) {
 		case time.Time:

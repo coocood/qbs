@@ -596,3 +596,55 @@ func closeMigrationAndQbs(mg *Migration, q *Qbs) {
 func noConvert(s string) string {
 	return s
 }
+
+func doTestSaveNullable(assert *Assert, mg *Migration, q *Qbs) {
+	defer closeMigrationAndQbs(mg, q)
+	type nullable struct {
+		Id   int64
+		Name *string
+		Age  *int64
+	}
+	var n nullable
+	mg.dropTableIfExists(&n)
+	mg.CreateTableIfNotExists(&n)
+
+	n.Id = 0
+	n.Name = nil
+	n.Age = nil
+
+	_, err := q.Save(&n)
+	if err != nil {
+		panic(err)
+	}
+
+	//try to read it back, leave n.Id
+
+	if err := q.Find(&n); err != nil {
+		panic(err)
+	}
+	assert.Nil(n.Name)
+	assert.Nil(n.Age)
+
+	foo := "foo"
+	num := int64(99)
+
+	n.Id = 0
+	n.Name = &foo
+	n.Age = &num
+
+	_, err = q.Save(&n)
+	if err != nil {
+		panic(err)
+	}
+
+	//did not change the id, because we want to find it
+	n.Age = nil
+	n.Name = nil
+	if err := q.Find(&n); err != nil {
+		panic(err)
+	}
+	assert.NotNil(n.Name)
+	assert.NotNil(n.Age)
+	assert.Equal(*n.Name, "foo")
+	assert.Equal(*n.Age, 99)
+}
