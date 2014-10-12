@@ -175,6 +175,11 @@ func structPtrToModel(f interface{}, root bool, omitFields []string) *model {
 	}
 	structType := reflect.TypeOf(f).Elem()
 	structValue := reflect.ValueOf(f).Elem()
+	if structType.Kind() == reflect.Ptr {
+		if structType.Elem().Kind() == reflect.Struct {
+			panic("did you pass a pointer to a pointer to a struct?")
+		}
+	}
 	for i := 0; i < structType.NumField(); i++ {
 		structField := structType.Field(i)
 		omit := false
