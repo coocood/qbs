@@ -47,7 +47,7 @@ func (d sqlite3) sqlType(field modelField) string {
 	case reflect.Struct:
 		switch fieldValue.Interface().(type) {
 		case time.Time:
-			return "text"
+			return "datetime"
 		case sql.NullBool:
 			return "integer"
 		case sql.NullInt64:
@@ -66,7 +66,7 @@ func (d sqlite3) sqlType(field modelField) string {
 				case QBS_COLTYPE_BOOL:
 					return "integer"
 				case QBS_COLTYPE_TIME:
-					return "text"
+					return "datetime"
 				case QBS_COLTYPE_DOUBLE:
 					return "real"
 				case QBS_COLTYPE_TEXT:
