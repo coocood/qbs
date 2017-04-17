@@ -3,7 +3,7 @@ Qbs
 
 Qbs是一个Go语言的ORM
 
-##特性
+## 特性
 
 * 支持通过struct定义表结构，自动建表。
 * 如果表已经存在，而struct定义了新的字段，Qbs会自动向数据库表添加相应的字段。
@@ -18,22 +18,22 @@ Qbs是一个Go语言的ORM
 * 目前支持MySQL， PosgreSQL， SQLite3，即将支持Oracle。
 * 支持连接池。
 
-##安装
+## 安装
 
     go get github.com/coocood/qbs
 
-##API文档
+## API文档
 
 [GoDoc](http://godoc.org/github.com/coocood/qbs)
 
-##注意
+## 注意
 
 * 新的版本可能会不兼容旧的API，使旧程序不能正常工作。
 * 一次go get下载后，请保留当时的版本，如果需要其它机器上编辑，请复制当时的版本，不要在新的机器上通过go get来下载最新版本。
 * 或者Fork一下，版本的更新自己来掌握。
 * 每一次进行有可能破坏兼容性的更新时，会把之前的版本保存为一个新的branch, 名字是更新的日期。
 
-##使用手册
+## 使用手册
 
 
 ### 首先要注册数据库：
@@ -250,4 +250,4 @@ Qbs是一个Go语言的ORM
         	return posts, err
         }
 
-。。。未完代续
+。。。未完代
