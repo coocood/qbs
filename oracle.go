@@ -80,9 +80,11 @@ func (d oracle) sqlType(field modelField) string {
 
 func (d oracle) insert(q *Qbs) (int64, error) {
 	sql, args := d.dialect.insertSql(q.criteria)
-	row := q.QueryRow(sql, args...)
+	row, err := q.QueryRow(sql, args...)
+	if err != nil {
+		return 0, err
+	}
 	value := q.criteria.model.pk.value
-	var err error
 	var id int64
 	if _, ok := value.(int64); ok {
 		err = row.Scan(&id)
