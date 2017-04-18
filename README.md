@@ -5,7 +5,7 @@ Qbs stands for Query By Struct. A Go ORM. [中文版 README](https://github.com/
 
 [![Build Status](https://drone.io/github.com/coocood/qbs/status.png)](https://drone.io/github.com/coocood/qbs/latest)
 
-##ChangeLog
+## ChangeLog
 
 * 2013.03.14: index name has changed to `{table name}_{column name}`.
     - For existing application with existing database, update to this change may lead to creating redundant index, you may need to drop duplicated index manually.
@@ -18,7 +18,7 @@ Qbs stands for Query By Struct. A Go ORM. [中文版 README](https://github.com/
 * 2013.05.29: Added `Iterate` method for processing large data without loading all rows into memory.
 * 2013.08.03: Fixed a bug that exceeds max_prepared_stmt_count
 
-##Features
+## Features
 
 * Define table schema in struct type, create table if not exists.
 * Detect table columns in database and alter table add new column automatically.
@@ -38,7 +38,7 @@ Qbs stands for Query By Struct. A Go ORM. [中文版 README](https://github.com/
 `Qbs.Find` is about 60% faster on mysql, 130% faster on postgreSQL than raw `Db.Query`, about 20% slower than raw `Stmt.Query`. (benchmarked on windows).
 The reason why it is faster than `Db.Query` is because all prepared Statements are cached in map.
 
-##Install
+## Install
 
 Only support go 1.1+
 
@@ -57,9 +57,9 @@ tags with different minor version would break compatibility, e.g `v0.1.1` and `v
 
 See [Gowalker](http://gowalker.org/github.com/coocood/qbs) for complete documentation.
 
-##Get Started
+## Get Started
 
-###First you need to register your database
+### First you need to register your database
 
 * The `qbs.Register` function has two more arguments than `sql.Open`, they are database name and dilect instance.
 * You only need to call it once at the start time..
@@ -86,7 +86,7 @@ if you want define a primary key with name other than `Id`, you can set the tag 
             //indexes.Add("column_a", "column_b") or indexes.AddUnique("column_a", "column_b")
         }
 
-###Create a new table
+### Create a new table
 
 - call `qbs.GetMigration` function to get a Migration instance, and then use it to create a table.
 - When you create a table, if the table already exists, it will not recreate it, but looking for newly added columns or indexes in the model, and execute add column or add index operation.
@@ -249,13 +249,13 @@ so whenever you pass a column name or table name parameter in string, it should 
         	return posts, err
         }
 
-##Projects use Qbs:
+## Projects use Qbs:
 
 - a CMS system [toropress](https://github.com/insionng/toropress)
 - Go documentation reference website [Gowalker](http://gowalker.org/)
 - Nebri OS (https://nebrios.com/)
 
-##Contributors
+## Contributors
 [Erik Aigner](https://github.com/eaigner)
 Qbs was originally a fork from [hood](https://github.com/eaigner/hood) by [Erik Aigner](https://github.com/eaigner), 
 but I changed more than 80% of the code, then it ended up become a totally different ORM.
